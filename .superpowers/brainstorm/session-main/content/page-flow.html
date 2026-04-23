@@ -1,0 +1,75 @@
+<h2>Flujo de pantallas</h2>
+<p class="subtitle">Cada rol ve un subconjunto distinto — el SUPERUSER ve todo</p>
+
+<div style="display:flex;flex-direction:column;gap:12px;max-width:860px;margin:0 auto">
+
+  <!-- Login -->
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="background:rgba(79,126,255,0.12);border:1px solid rgba(79,126,255,0.4);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;color:#4F7EFF;min-width:160px;text-align:center">
+      🔐 Login<br/><span style="font-size:10px;font-weight:400;opacity:0.7">index.html</span>
+    </div>
+    <div style="color:#4A4F66;font-size:20px">→</div>
+    <div style="background:rgba(46,204,138,0.08);border:1px solid rgba(46,204,138,0.3);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;color:#2ECC8A;min-width:160px;text-align:center">
+      🏠 Dashboard<br/><span style="font-size:10px;font-weight:400;opacity:0.7">dashboard.html</span>
+    </div>
+  </div>
+
+  <!-- Dashboard branches -->
+  <div style="margin-left:196px;padding-left:12px;border-left:2px solid rgba(255,255,255,0.08)">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div style="background:rgba(124,93,255,0.1);border:1px solid rgba(124,93,255,0.35);border-radius:10px;padding:10px 16px;font-size:12px;color:#7C5DFF;text-align:center">
+        📋 Quiebre del Contrato<br/><span style="font-size:10px;opacity:0.6">quiebre.html</span>
+      </div>
+      <div style="background:rgba(79,126,255,0.06);border:1px dashed rgba(79,126,255,0.2);border-radius:10px;padding:10px 16px;font-size:12px;color:#4A4F66;text-align:center">
+        + App 2<br/><span style="font-size:10px">futura</span>
+      </div>
+    </div>
+
+    <!-- Quiebre branches -->
+    <div style="margin-left:160px;padding-left:12px;border-left:2px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:rgba(124,93,255,0.08);border:1px solid rgba(124,93,255,0.25);border-radius:8px;padding:8px 14px;font-size:12px;color:#9B8AFF">
+          📊 Vista tabla jerárquica<br/><span style="font-size:10px;opacity:0.6">Area → Subarea → Sistema → Subsistema</span>
+        </div>
+        <span style="font-size:10px;color:#4A4F66">Admin + SUPERUSER</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:rgba(124,93,255,0.08);border:1px solid rgba(124,93,255,0.25);border-radius:8px;padding:8px 14px;font-size:12px;color:#9B8AFF">
+          ✏️ Formulario manual<br/><span style="font-size:10px;opacity:0.6">Ingreso individual con selects en cascada</span>
+        </div>
+        <span style="font-size:10px;color:#4A4F66">Admin + SUPERUSER</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:rgba(124,93,255,0.08);border:1px solid rgba(124,93,255,0.25);border-radius:8px;padding:8px 14px;font-size:12px;color:#9B8AFF">
+          📤 Carga Excel<br/><span style="font-size:10px;opacity:0.6">Upload + validación duplicados + confirmación</span>
+        </div>
+        <span style="font-size:10px;color:#4A4F66">Admin + SUPERUSER</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:rgba(124,93,255,0.08);border:1px solid rgba(124,93,255,0.25);border-radius:8px;padding:8px 14px;font-size:12px;color:#9B8AFF">
+          📝 Log de auditoría<br/><span style="font-size:10px;opacity:0.6">Historial de cambios de su proyecto</span>
+        </div>
+        <span style="font-size:10px;color:#4A4F66">Admin + SUPERUSER</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPERUSER panel -->
+  <div style="margin-top:8px;background:rgba(255,179,71,0.06);border:1px solid rgba(255,179,71,0.25);border-radius:10px;padding:14px 20px">
+    <div style="font-size:12px;font-weight:600;color:#FFB347;margin-bottom:10px">👑 Panel SUPERUSER — superuser.html</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <div style="background:rgba(255,179,71,0.08);border:1px solid rgba(255,179,71,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#FFB347">Crear / editar proyectos</div>
+      <div style="background:rgba(255,179,71,0.08);border:1px solid rgba(255,179,71,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#FFB347">Crear / editar usuarios</div>
+      <div style="background:rgba(255,179,71,0.08);border:1px solid rgba(255,179,71,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#FFB347">Asignar usuarios a proyectos</div>
+      <div style="background:rgba(255,179,71,0.08);border:1px solid rgba(255,179,71,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#FFB347">Ver todos los logs de auditoría</div>
+      <div style="background:rgba(255,179,71,0.08);border:1px solid rgba(255,179,71,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#FFB347">Acceso a todos los proyectos</div>
+    </div>
+  </div>
+
+  <!-- Archivos backend -->
+  <div style="margin-top:4px;background:rgba(79,126,255,0.04);border:1px solid rgba(79,126,255,0.15);border-radius:10px;padding:12px 16px;font-size:11px;color:#4A4F66">
+    <strong style="color:#7A7F96">Backend Laravel (api/):</strong>
+    auth.php · proyectos.php · usuarios.php · areas.php · subareas.php · sistemas.php · subsistemas.php · excel.php · logs.php
+  </div>
+
+</div>

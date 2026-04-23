@@ -1,0 +1,50 @@
+<h2>¿Cómo estructuramos el backend?</h2>
+<p class="subtitle">Elige el enfoque que mejor se adapta a cómo quieres crecer el proyecto</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Archivos sueltos (estilo actual)</h3>
+      <p>Cada página es un HTML + un PHP independiente. Simple y directo, como el <code>login.php</code> que ya tienes.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Fácil de entender</li><li>Sin configuración extra</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Código se repite entre páginas</li><li>Difícil de mantener al escalar</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>REST API + Páginas HTML <span style="color:#4F7EFF;font-size:12px;margin-left:8px">★ Recomendado</span></h3>
+      <p>El PHP vive en una carpeta <code>/api/</code> y devuelve JSON. El HTML usa <code>fetch()</code> para consumirlo — igual que el login actual.</p>
+      <div style="font-family:monospace;font-size:12px;background:rgba(79,126,255,0.08);border-radius:8px;padding:12px;margin-top:10px">
+        apphub/<br>
+        ├── api/<br>
+        │&nbsp;&nbsp;&nbsp;├── login.php<br>
+        │&nbsp;&nbsp;&nbsp;├── proyectos.php<br>
+        │&nbsp;&nbsp;&nbsp;└── quiebre.php<br>
+        ├── index.html<br>
+        ├── dashboard.html<br>
+        └── quiebre.html
+      </div>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Consistente con lo que ya tienes</li><li>Fácil de extender</li><li>Cada app = su propia página</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Requiere organizar carpetas</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Framework PHP (Laravel / Slim)</h3>
+      <p>Backend completo con routing, ORM, autenticación y estructura MVC. El estándar de la industria para proyectos grandes.</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>Pros</h4><ul><li>Muy escalable</li><li>Autenticación robusta integrada</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Requiere Composer y configuración</li><li>Cambio grande respecto al stack actual</li><li>Curva de aprendizaje</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

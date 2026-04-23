@@ -1,0 +1,87 @@
+<h2>REST API vs Framework PHP — enfoque en seguridad</h2>
+<p class="subtitle">Comparación directa de qué protege cada uno por defecto</p>
+
+<div class="split" style="gap:20px;margin-bottom:24px">
+  <div class="mockup">
+    <div class="mockup-header">B · REST API estructurada</div>
+    <div class="mockup-body" style="padding:16px;font-size:13px">
+      <table style="width:100%;border-collapse:collapse">
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.07)">
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">SQL Injection</td>
+          <td style="padding:8px 4px;color:#FFB347">⚠ Tú lo implementas (PDO)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.07)">
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">Autenticación</td>
+          <td style="padding:8px 4px;color:#FFB347">⚠ Tú lo implementas (JWT)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.07)">
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">Roles y permisos</td>
+          <td style="padding:8px 4px;color:#FFB347">⚠ Tú lo implementas</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.07)">
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">CSRF / XSS</td>
+          <td style="padding:8px 4px;color:#FFB347">⚠ Tú lo implementas</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.07)">
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">Validación inputs</td>
+          <td style="padding:8px 4px;color:#FFB347">⚠ Tú lo implementas</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">Auditoría / logs</td>
+          <td style="padding:8px 4px;color:#FFB347">⚠ Tú lo implementas</td>
+        </tr>
+      </table>
+      <p style="margin-top:14px;font-size:12px;color:var(--muted,#7A7F96)">Todo es posible, pero requiere que lo construyas correctamente. Un error = vulnerabilidad.</p>
+    </div>
+  </div>
+
+  <div class="mockup" style="border-color:rgba(79,126,255,0.4)">
+    <div class="mockup-header" style="color:#4F7EFF">C · Laravel (Framework) ★ Recomendado para seguridad</div>
+    <div class="mockup-body" style="padding:16px;font-size:13px">
+      <table style="width:100%;border-collapse:collapse">
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.07)">
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">SQL Injection</td>
+          <td style="padding:8px 4px;color:#2ECC8A">✅ Integrado (Eloquent ORM)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.07)">
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">Autenticación</td>
+          <td style="padding:8px 4px;color:#2ECC8A">✅ Integrada (Sanctum/JWT)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.07)">
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">Roles y permisos</td>
+          <td style="padding:8px 4px;color:#2ECC8A">✅ Middleware + Gates</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.07)">
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">CSRF / XSS</td>
+          <td style="padding:8px 4px;color:#2ECC8A">✅ Protección automática</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.07)">
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">Validación inputs</td>
+          <td style="padding:8px 4px;color:#2ECC8A">✅ Form Requests integrados</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 4px;color:var(--muted,#7A7F96)">Auditoría / logs</td>
+          <td style="padding:8px 4px;color:#2ECC8A">✅ Activity Log (paquete)</td>
+        </tr>
+      </table>
+      <p style="margin-top:14px;font-size:12px;color:var(--muted,#7A7F96)">La seguridad viene incorporada. Tú te enfocas en la lógica del negocio.</p>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="laravel" onclick="toggleSelect(this)">
+    <div class="letter">→</div>
+    <div class="content">
+      <h3>Ir con Laravel</h3>
+      <p>Backend en Laravel + frontend en HTML/CSS/JS (como ahora). La API devuelve JSON, el frontend consume con fetch(). Más setup inicial, pero seguridad robusta desde el día 1 y fácil de escalar a nuevas apps.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="rest" onclick="toggleSelect(this)">
+    <div class="letter">→</div>
+    <div class="content">
+      <h3>Quedarse con REST API PHP puro</h3>
+      <p>Seguimos con PHP vanilla, pero aplicamos todas las prácticas de seguridad manualmente (PDO, JWT, validación). Más rápido de empezar, pero más riesgo de errores de seguridad en el camino.</p>
+    </div>
+  </div>
+</div>

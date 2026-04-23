@@ -1,0 +1,90 @@
+<h2>Flujo de pantallas — v2</h2>
+<p class="subtitle">Selector de proyecto obligatorio antes de acceder a cualquier app</p>
+
+<div style="display:flex;flex-direction:column;gap:12px;max-width:900px;margin:0 auto">
+
+  <!-- Step 1: Login -->
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="background:rgba(79,126,255,0.12);border:1px solid rgba(79,126,255,0.4);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;color:#4F7EFF;min-width:150px;text-align:center">
+      🔐 Login<br/><span style="font-size:10px;font-weight:400;opacity:0.7">index.html</span>
+    </div>
+    <div style="color:#4A4F66;font-size:20px">→</div>
+
+    <!-- Step 2: Project Selector -->
+    <div style="background:rgba(255,179,71,0.1);border:2px solid rgba(255,179,71,0.5);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;color:#FFB347;min-width:200px;text-align:center;position:relative">
+      📁 Selector de Proyecto<br/>
+      <span style="font-size:10px;font-weight:400;opacity:0.8">proyecto-selector.html</span>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
+        <div style="font-size:10px;background:rgba(255,179,71,0.1);border-radius:6px;padding:3px 8px;color:#FFB347">1 proyecto → auto-selecciona</div>
+        <div style="font-size:10px;background:rgba(255,179,71,0.1);border-radius:6px;padding:3px 8px;color:#FFB347">N proyectos → elige uno</div>
+        <div style="font-size:10px;background:rgba(255,179,71,0.1);border-radius:6px;padding:3px 8px;color:#FFB347">SUPERUSER → ve todos</div>
+      </div>
+    </div>
+    <div style="color:#4A4F66;font-size:20px">→</div>
+
+    <!-- Step 3: Dashboard -->
+    <div style="background:rgba(46,204,138,0.08);border:1px solid rgba(46,204,138,0.3);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;color:#2ECC8A;min-width:150px;text-align:center">
+      🏠 Dashboard<br/>
+      <span style="font-size:10px;font-weight:400;opacity:0.7">dashboard.html</span><br/>
+      <span style="font-size:10px;font-weight:400;color:#FFB347">Proyecto activo visible</span>
+    </div>
+  </div>
+
+  <!-- Nota del selector -->
+  <div style="margin-left:0;background:rgba(255,179,71,0.05);border:1px solid rgba(255,179,71,0.2);border-radius:8px;padding:10px 14px;font-size:11px;color:#7A7F96">
+    <strong style="color:#FFB347">Proyecto activo:</strong> Se guarda en sessionStorage y se muestra en el navbar. El usuario puede cambiarlo volviendo al selector desde el navbar (icono de cambio de proyecto).
+  </div>
+
+  <!-- Dashboard branches -->
+  <div style="margin-left:20px;padding-left:12px;border-left:2px solid rgba(255,255,255,0.07)">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+      <div style="background:rgba(124,93,255,0.1);border:1px solid rgba(124,93,255,0.35);border-radius:10px;padding:10px 16px;font-size:12px;color:#7C5DFF;text-align:center">
+        📋 Quiebre del Contrato<br/><span style="font-size:10px;opacity:0.6">quiebre.html</span>
+      </div>
+      <div style="background:rgba(79,126,255,0.04);border:1px dashed rgba(79,126,255,0.2);border-radius:10px;padding:10px 16px;font-size:12px;color:#4A4F66;text-align:center">
+        + App 2<br/><span style="font-size:10px">futura</span>
+      </div>
+    </div>
+
+    <!-- Quiebre sub-screens -->
+    <div style="margin-left:155px;padding-left:12px;border-left:2px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:rgba(124,93,255,0.08);border:1px solid rgba(124,93,255,0.25);border-radius:8px;padding:8px 14px;font-size:12px;color:#9B8AFF">
+          📊 Tabla jerárquica<br/><span style="font-size:10px;opacity:0.6">Area → Subarea → Sistema → Subsistema del proyecto activo</span>
+        </div>
+        <span style="font-size:10px;color:#4A4F66">Todos los roles</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:rgba(124,93,255,0.08);border:1px solid rgba(124,93,255,0.25);border-radius:8px;padding:8px 14px;font-size:12px;color:#9B8AFF">
+          ✏️ Formulario manual<br/><span style="font-size:10px;opacity:0.6">Selects en cascada, solo el proyecto activo</span>
+        </div>
+        <span style="font-size:10px;color:#4A4F66">Admin + SUPERUSER</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:rgba(124,93,255,0.08);border:1px solid rgba(124,93,255,0.25);border-radius:8px;padding:8px 14px;font-size:12px;color:#9B8AFF">
+          📤 Carga Excel<br/><span style="font-size:10px;opacity:0.6">Upload + validación duplicados + confirmación usuario</span>
+        </div>
+        <span style="font-size:10px;color:#4A4F66">Admin + SUPERUSER</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:rgba(124,93,255,0.08);border:1px solid rgba(124,93,255,0.25);border-radius:8px;padding:8px 14px;font-size:12px;color:#9B8AFF">
+          📝 Log de auditoría<br/><span style="font-size:10px;opacity:0.6">Historial de cambios del proyecto activo</span>
+        </div>
+        <span style="font-size:10px;color:#4A4F66">Admin + SUPERUSER</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPERUSER panel -->
+  <div style="background:rgba(255,107,107,0.05);border:1px solid rgba(255,107,107,0.2);border-radius:10px;padding:14px 20px">
+    <div style="font-size:12px;font-weight:600;color:#FF6B6B;margin-bottom:10px">👑 Panel SUPERUSER — superuser.html (acceso directo desde navbar)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <div style="background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#FF6B6B">Crear / editar proyectos</div>
+      <div style="background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#FF6B6B">Crear / editar / eliminar usuarios</div>
+      <div style="background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#FF6B6B">Asignar usuarios a proyectos</div>
+      <div style="background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#FF6B6B">Ver todos los logs</div>
+      <div style="background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:8px;padding:6px 12px;font-size:11px;color:#FF6B6B">Acceso a todos los proyectos sin restricción</div>
+    </div>
+  </div>
+
+</div>

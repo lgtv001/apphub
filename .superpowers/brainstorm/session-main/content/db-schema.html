@@ -1,0 +1,92 @@
+<h2>Esquema de Base de Datos</h2>
+<p class="subtitle">Tablas nuevas en verde · Tabla modificada en azul · Flechas = relaciones</p>
+
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+
+  <!-- usuarios -->
+  <div style="background:rgba(79,126,255,0.08);border:1px solid rgba(79,126,255,0.35);border-radius:12px;padding:16px;font-size:12px">
+    <div style="font-weight:700;font-size:13px;color:#4F7EFF;margin-bottom:10px">📋 usuarios <span style="font-size:10px;opacity:0.6">(modificada)</span></div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;justify-content:space-between"><span style="color:#FFB347">🔑 id</span><span style="opacity:0.5">int PK</span></div>
+      <div style="display:flex;justify-content:space-between"><span>nombre</span><span style="opacity:0.5">varchar</span></div>
+      <div style="display:flex;justify-content:space-between"><span>email</span><span style="opacity:0.5">varchar unique</span></div>
+      <div style="display:flex;justify-content:space-between"><span>password</span><span style="opacity:0.5">varchar</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#4F7EFF">rol</span><span style="opacity:0.5">enum ▼</span></div>
+      <div style="margin-left:12px;color:#7A7F96;font-size:11px">superuser | admin | usuario</div>
+      <div style="display:flex;justify-content:space-between"><span>creado_en</span><span style="opacity:0.5">timestamp</span></div>
+    </div>
+  </div>
+
+  <!-- proyectos -->
+  <div style="background:rgba(46,204,138,0.08);border:1px solid rgba(46,204,138,0.35);border-radius:12px;padding:16px;font-size:12px">
+    <div style="font-weight:700;font-size:13px;color:#2ECC8A;margin-bottom:10px">📁 proyectos <span style="font-size:10px;opacity:0.6">(nueva)</span></div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;justify-content:space-between"><span style="color:#FFB347">🔑 id</span><span style="opacity:0.5">int PK</span></div>
+      <div style="display:flex;justify-content:space-between"><span>codigo</span><span style="opacity:0.5">varchar unique</span></div>
+      <div style="display:flex;justify-content:space-between"><span>nombre</span><span style="opacity:0.5">varchar</span></div>
+      <div style="display:flex;justify-content:space-between"><span>fecha_inicio</span><span style="opacity:0.5">date</span></div>
+      <div style="display:flex;justify-content:space-between"><span>fecha_termino</span><span style="opacity:0.5">date</span></div>
+      <div style="display:flex;justify-content:space-between"><span>descripcion</span><span style="opacity:0.5">text nullable</span></div>
+      <div style="display:flex;justify-content:space-between"><span>creado_en</span><span style="opacity:0.5">timestamp</span></div>
+    </div>
+  </div>
+
+  <!-- usuario_proyecto -->
+  <div style="background:rgba(46,204,138,0.08);border:1px solid rgba(46,204,138,0.35);border-radius:12px;padding:16px;font-size:12px">
+    <div style="font-weight:700;font-size:13px;color:#2ECC8A;margin-bottom:10px">🔗 usuario_proyecto <span style="font-size:10px;opacity:0.6">(nueva)</span></div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;justify-content:space-between"><span style="color:#FFB347">🔑 id</span><span style="opacity:0.5">int PK</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#4F7EFF">→ usuario_id</span><span style="opacity:0.5">FK usuarios</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#4F7EFF">→ proyecto_id</span><span style="opacity:0.5">FK proyectos</span></div>
+      <div style="display:flex;justify-content:space-between"><span>asignado_en</span><span style="opacity:0.5">timestamp</span></div>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);font-size:11px;color:#7A7F96">Un usuario puede tener N proyectos</div>
+  </div>
+
+  <!-- areas -->
+  <div style="background:rgba(46,204,138,0.08);border:1px solid rgba(46,204,138,0.35);border-radius:12px;padding:16px;font-size:12px">
+    <div style="font-weight:700;font-size:13px;color:#2ECC8A;margin-bottom:10px">🗂 areas <span style="font-size:10px;opacity:0.6">(nueva)</span></div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;justify-content:space-between"><span style="color:#FFB347">🔑 id</span><span style="opacity:0.5">int PK</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#4F7EFF">→ proyecto_id</span><span style="opacity:0.5">FK proyectos</span></div>
+      <div style="display:flex;justify-content:space-between"><span>codigo</span><span style="opacity:0.5">varchar</span></div>
+      <div style="display:flex;justify-content:space-between"><span>nombre</span><span style="opacity:0.5">varchar</span></div>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.07);font-size:11px;color:#7A7F96">Código único por proyecto</div>
+  </div>
+
+  <!-- subareas -->
+  <div style="background:rgba(46,204,138,0.08);border:1px solid rgba(46,204,138,0.35);border-radius:12px;padding:16px;font-size:12px">
+    <div style="font-weight:700;font-size:13px;color:#2ECC8A;margin-bottom:10px">🗂 subareas → sistemas → subsistemas</div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="color:#7A7F96;font-size:11px;margin-bottom:4px">Misma estructura para cada nivel:</div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#FFB347">🔑 id</span><span style="opacity:0.5">int PK</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#4F7EFF">→ proyecto_id</span><span style="opacity:0.5">FK proyectos</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#4F7EFF">→ padre_id</span><span style="opacity:0.5">FK nivel anterior</span></div>
+      <div style="display:flex;justify-content:space-between"><span>codigo</span><span style="opacity:0.5">varchar</span></div>
+      <div style="display:flex;justify-content:space-between"><span>nombre</span><span style="opacity:0.5">varchar</span></div>
+    </div>
+  </div>
+
+  <!-- auditoria_log -->
+  <div style="background:rgba(124,93,255,0.08);border:1px solid rgba(124,93,255,0.35);border-radius:12px;padding:16px;font-size:12px">
+    <div style="font-weight:700;font-size:13px;color:#7C5DFF;margin-bottom:10px">📝 auditoria_log <span style="font-size:10px;opacity:0.6">(nueva)</span></div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      <div style="display:flex;justify-content:space-between"><span style="color:#FFB347">🔑 id</span><span style="opacity:0.5">int PK</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:#4F7EFF">→ usuario_id</span><span style="opacity:0.5">FK usuarios</span></div>
+      <div style="display:flex;justify-content:space-between"><span>usuario_rol</span><span style="opacity:0.5">varchar</span></div>
+      <div style="display:flex;justify-content:space-between"><span>accion</span><span style="opacity:0.5">crear|editar|borrar</span></div>
+      <div style="display:flex;justify-content:space-between"><span>tabla</span><span style="opacity:0.5">varchar</span></div>
+      <div style="display:flex;justify-content:space-between"><span>registro_id</span><span style="opacity:0.5">int</span></div>
+      <div style="display:flex;justify-content:space-between"><span>datos_antes</span><span style="opacity:0.5">json nullable</span></div>
+      <div style="display:flex;justify-content:space-between"><span>datos_despues</span><span style="opacity:0.5">json nullable</span></div>
+      <div style="display:flex;justify-content:space-between"><span>ip</span><span style="opacity:0.5">varchar</span></div>
+      <div style="display:flex;justify-content:space-between"><span>fecha</span><span style="opacity:0.5">timestamp</span></div>
+    </div>
+  </div>
+
+</div>
+
+<div style="background:rgba(79,126,255,0.06);border:1px solid rgba(79,126,255,0.2);border-radius:10px;padding:14px;font-size:12px;color:#7A7F96">
+  <strong style="color:#F0F2F8">Jerarquía:</strong> Area → Subarea → Sistema → Subsistema · Todos vinculados al proyecto · Código único por proyecto en cada nivel
+</div>

@@ -25,6 +25,28 @@
       --font-body: 'DM Sans', sans-serif;
       --radius: 14px;
       --radius-sm: 8px;
+      --right-bg: rgba(17,19,24,0.5);
+      --grid-color: rgba(79,126,255,0.04);
+      --orb1-color: rgba(79,126,255,0.22);
+      --orb2-color: rgba(124,93,255,0.18);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #F5F7FF;
+        --surface: #FFFFFF;
+        --surface2: #EDF0FA;
+        --border: rgba(0,0,0,0.08);
+        --border-strong: rgba(0,0,0,0.16);
+        --accent-glow: rgba(79,126,255,0.14);
+        --text: #111320;
+        --muted: #5C6080;
+        --muted2: #9BA0B8;
+        --right-bg: rgba(255,255,255,0.7);
+        --grid-color: rgba(79,126,255,0.06);
+        --orb1-color: rgba(79,126,255,0.14);
+        --orb2-color: rgba(124,93,255,0.11);
+      }
     }
 
     html, body {
@@ -41,8 +63,8 @@
       position: fixed;
       inset: 0;
       background-image:
-        linear-gradient(rgba(79,126,255,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(79,126,255,0.04) 1px, transparent 1px);
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
       background-size: 48px 48px;
       pointer-events: none;
       z-index: 0;
@@ -58,13 +80,13 @@
     }
     .orb-1 {
       width: 420px; height: 420px;
-      background: radial-gradient(circle, rgba(79,126,255,0.22) 0%, transparent 70%);
+      background: radial-gradient(circle, var(--orb1-color) 0%, transparent 70%);
       top: -120px; left: -80px;
       animation: float1 12s ease-in-out infinite;
     }
     .orb-2 {
       width: 340px; height: 340px;
-      background: radial-gradient(circle, rgba(124,93,255,0.18) 0%, transparent 70%);
+      background: radial-gradient(circle, var(--orb2-color) 0%, transparent 70%);
       bottom: 60px; right: -60px;
       animation: float2 16s ease-in-out infinite;
     }
@@ -217,7 +239,7 @@
       justify-content: center;
       padding: 48px 52px;
       border-left: 1px solid var(--border);
-      background: rgba(17,19,24,0.5);
+      background: var(--right-bg);
       backdrop-filter: blur(12px);
     }
 
@@ -549,7 +571,7 @@ async function handleLogin() {
   btn.style.opacity = '0.7';
 
   try {
-    const response = await fetch('https://regretfully-multiengined-anson.ngrok-free.app/apphub/login.php', {
+    const response = await fetch('https://regretfully-multiengined-anson.ngrok-free.dev/apphub/login.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -558,8 +580,8 @@ async function handleLogin() {
     const data = await response.json();
 
     if (data.success) {
-      alert('Bienvenido ' + data.usuario.nombre);
-      // aquí redirigirás al dashboard
+      sessionStorage.setItem('usuario', JSON.stringify(data.usuario));
+      window.location.href = 'dashboard.html';
     } else {
       alert('Error: ' + data.message);
     }

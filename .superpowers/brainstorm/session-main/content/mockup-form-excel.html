@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #08090C; color: #F0F2F8; font-family: system-ui, sans-serif; padding: 24px; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #4A4F66; margin-bottom: 10px; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .screen { background: #0D0E12; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; }
+  .screen-bar { background: #111318; border-bottom: 1px solid rgba(255,255,255,0.07); padding: 8px 16px; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .screen-title { font-size: 11px; color: #4A4F66; margin-left: 6px; }
+  .screen-body { padding: 20px; }
+
+  .form-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .form-sub { font-size: 11px; color: #7A7F96; margin-bottom: 20px; }
+
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 11px; color: #7A7F96; font-weight: 500; margin-bottom: 5px; }
+  .field-row { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+  .input { width: 100%; background: #181B22; border: 1px solid rgba(255,255,255,0.07); border-radius: 7px; padding: 9px 12px; font-size: 12px; color: #F0F2F8; }
+  .input:focus { outline: none; border-color: #4F7EFF; }
+  .select { width: 100%; background: #181B22; border: 1px solid rgba(255,255,255,0.07); border-radius: 7px; padding: 9px 12px; font-size: 12px; color: #F0F2F8; appearance: none; }
+  .select.disabled { opacity: 0.4; }
+  .cascade-arrow { display: flex; align-items: center; justify-content: center; color: #4A4F66; font-size: 10px; margin: 2px 0; }
+  .step-badge { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; font-size: 10px; font-weight: 700; margin-right: 6px; }
+  .btn-primary { width: 100%; background: linear-gradient(135deg,#4F7EFF,#7C5DFF); color: #fff; border: none; border-radius: 7px; padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+  .btn-ghost { width: 100%; background: #111318; border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; padding: 10px; font-size: 12px; color: #7A7F96; cursor: pointer; margin-top: 6px; }
+
+  /* Excel upload */
+  .upload-zone { border: 2px dashed rgba(79,126,255,0.3); border-radius: 10px; padding: 24px; text-align: center; margin-bottom: 16px; background: rgba(79,126,255,0.03); }
+  .upload-icon { font-size: 28px; margin-bottom: 8px; }
+  .upload-text { font-size: 12px; color: #7A7F96; }
+  .upload-btn { display: inline-block; margin-top: 8px; background: rgba(79,126,255,0.1); border: 1px solid rgba(79,126,255,0.3); border-radius: 6px; padding: 6px 14px; font-size: 11px; color: #8AABFF; cursor: pointer; }
+
+  /* Duplicate warning */
+  .warning-box { background: rgba(255,179,71,0.06); border: 1px solid rgba(255,179,71,0.3); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .warning-title { font-size: 12px; font-weight: 700; color: #FFB347; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .dup-row { background: #111318; border: 1px solid rgba(255,255,255,0.07); border-radius: 7px; padding: 10px 12px; margin-bottom: 6px; font-size: 11px; }
+  .dup-codes { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .code-badge { background: rgba(79,126,255,0.08); color: #8AABFF; padding: 2px 7px; border-radius: 4px; font-family: monospace; font-size: 10px; }
+  .code-badge.warn { background: rgba(255,179,71,0.1); color: #FFB347; }
+  .vs { font-size: 10px; color: #4A4F66; }
+  .dup-question { font-size: 11px; color: #7A7F96; margin-bottom: 6px; }
+  .dup-actions { display: flex; gap: 6px; }
+  .btn-keep { background: rgba(46,204,138,0.1); border: 1px solid rgba(46,204,138,0.3); border-radius: 5px; padding: 4px 10px; font-size: 10px; color: #2ECC8A; cursor: pointer; }
+  .btn-reject { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3); border-radius: 5px; padding: 4px 10px; font-size: 10px; color: #FF6B6B; cursor: pointer; }
+  .success-row { background: rgba(46,204,138,0.04); border: 1px solid rgba(46,204,138,0.15); border-radius: 7px; padding: 8px 12px; font-size: 11px; color: #2ECC8A; margin-bottom: 4px; }
+
+  .progress-bar { height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; margin-bottom: 12px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg,#4F7EFF,#7C5DFF); border-radius: 2px; width: 65%; }
+</style>
+</head>
+<body>
+
+<div class="label">Formulario manual &amp; Carga de Excel</div>
+<div class="split">
+
+  <!-- FORMULARIO MANUAL -->
+  <div>
+    <div style="font-size:11px;color:#7A7F96;margin-bottom:8px">3 · Ingreso manual <span style="color:#4F7EFF">(selects en cascada)</span></div>
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="dot" style="background:#FF6B6B"></div>
+        <div class="dot" style="background:#FFB347"></div>
+        <div class="dot" style="background:#2ECC8A"></div>
+        <div class="screen-title">quiebre.html → modal/formulario</div>
+      </div>
+      <div class="screen-body">
+        <div class="form-title">Agregar registro</div>
+        <div class="form-sub">Proyecto activo: <strong style="color:#8AABFF">AUT-002 · Autopista Norte Tramo 2</strong></div>
+
+        <!-- Area -->
+        <div class="field">
+          <label><span class="step-badge" style="background:rgba(79,126,255,0.2);color:#4F7EFF">1</span>Área</label>
+          <div class="field-row">
+            <input class="input" placeholder="Código" value="01"/>
+            <input class="input" placeholder="Nombre" value="Civil"/>
+          </div>
+        </div>
+
+        <div class="cascade-arrow">↓ selecciona área primero</div>
+
+        <!-- Subarea -->
+        <div class="field">
+          <label><span class="step-badge" style="background:rgba(124,93,255,0.2);color:#7C5DFF">2</span>Subárea</label>
+          <div class="field-row">
+            <input class="input" placeholder="Código" value="01.01"/>
+            <input class="input" placeholder="Nombre" value="Estructuras"/>
+          </div>
+        </div>
+
+        <div class="cascade-arrow">↓ selecciona subárea primero</div>
+
+        <!-- Sistema -->
+        <div class="field">
+          <label><span class="step-badge" style="background:rgba(46,204,138,0.2);color:#2ECC8A">3</span>Sistema</label>
+          <div class="field-row">
+            <input class="input" placeholder="Código"/>
+            <input class="input" placeholder="Nombre"/>
+          </div>
+        </div>
+
+        <div class="cascade-arrow">↓ selecciona sistema primero</div>
+
+        <!-- Subsistema -->
+        <div class="field">
+          <label><span class="step-badge" style="background:rgba(255,179,71,0.2);color:#FFB347">4</span>Subsistema</label>
+          <div class="field-row">
+            <input class="input" placeholder="Código" style="opacity:0.4"/>
+            <input class="input" placeholder="Nombre" style="opacity:0.4"/>
+          </div>
+        </div>
+
+        <button class="btn-primary">Guardar registro</button>
+        <button class="btn-ghost">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CARGA EXCEL -->
+  <div>
+    <div style="font-size:11px;color:#7A7F96;margin-bottom:8px">4 · Carga masiva Excel <span style="color:#FFB347">(validación de duplicados)</span></div>
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="dot" style="background:#FF6B6B"></div>
+        <div class="dot" style="background:#FFB347"></div>
+        <div class="dot" style="background:#2ECC8A"></div>
+        <div class="screen-title">quiebre.html → carga excel</div>
+      </div>
+      <div class="screen-body">
+        <div class="form-title">Carga masiva de datos</div>
+        <div class="form-sub">Proyecto: <strong style="color:#8AABFF">AUT-002</strong> · El sistema revisará duplicados antes de guardar</div>
+
+        <div class="upload-zone">
+          <div class="upload-icon">📊</div>
+          <div class="upload-text">Arrastra tu archivo Excel aquí<br/>o haz click para seleccionar</div>
+          <div class="upload-btn">Seleccionar archivo .xlsx</div>
+        </div>
+
+        <div style="font-size:11px;color:#7A7F96;margin-bottom:4px">↓ <strong style="color:#FFB347">2 conflictos detectados</strong> — el sistema no puede decidir por ti</div>
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+
+        <!-- Conflicto 1: código similar -->
+        <div class="warning-box">
+          <div class="warning-title">⚠ Posible código duplicado</div>
+          <div class="dup-row">
+            <div class="dup-codes">
+              <span>Existente:</span>
+              <span class="code-badge">3664d</span>
+              <span class="vs">vs</span>
+              <span>Excel:</span>
+              <span class="code-badge warn">3664-d</span>
+            </div>
+            <div class="dup-question">Nombre: "Pilotes de hormigón" — ¿Son el mismo registro con error de código?</div>
+            <div class="dup-actions">
+              <button class="btn-keep">✓ Son distintos, agregar</button>
+              <button class="btn-reject">✕ Es duplicado, omitir</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Conflicto 2: mismo nombre distinto código -->
+        <div class="warning-box">
+          <div class="warning-title">⚠ Nombre idéntico, código distinto</div>
+          <div class="dup-row">
+            <div class="dup-codes">
+              <span>Existente:</span>
+              <span class="code-badge">01.02.01</span>
+              <span class="vs">vs</span>
+              <span>Excel:</span>
+              <span class="code-badge warn">01.02.02</span>
+            </div>
+            <div class="dup-question">Ambos se llaman "Muros de contención" — ¿Confirmas que son distintos?</div>
+            <div class="dup-actions">
+              <button class="btn-keep">✓ Son distintos, agregar</button>
+              <button class="btn-reject">✕ Es duplicado, omitir</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sin conflicto -->
+        <div class="success-row">✓ 47 registros sin conflictos listos para importar</div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

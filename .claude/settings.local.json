@@ -3,7 +3,8 @@
     "allow": [
       "Bash(bash *)",
       "PowerShell(New-Item *)",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "Bash(netstat -ano)"
     ]
   }
 }

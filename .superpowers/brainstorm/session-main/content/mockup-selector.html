@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #08090C; color: #F0F2F8; font-family: 'DM Sans', system-ui, sans-serif; padding: 24px; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #4A4F66; margin-bottom: 10px; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .screen { background: #0D0E12; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; }
+  .screen-bar { background: #111318; border-bottom: 1px solid rgba(255,255,255,0.07); padding: 8px 16px; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .screen-title { font-size: 11px; color: #4A4F66; margin-left: 6px; }
+  .screen-body { padding: 24px; }
+
+  /* Selector */
+  .sel-header { text-align: center; margin-bottom: 28px; }
+  .sel-logo { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+  .sel-logo-icon { width: 30px; height: 30px; background: linear-gradient(135deg,#4F7EFF,#7C5DFF); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .sel-logo-name { font-size: 16px; font-weight: 700; color: #F0F2F8; }
+  .sel-logo-name span { color: #4F7EFF; }
+  .sel-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .sel-sub { font-size: 12px; color: #7A7F96; }
+  .proj-card { background: #111318; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.2s; display: flex; align-items: center; justify-content: space-between; }
+  .proj-card:hover { border-color: rgba(79,126,255,0.4); }
+  .proj-card.active { border-color: #4F7EFF; background: rgba(79,126,255,0.06); }
+  .proj-name { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+  .proj-code { font-size: 11px; color: #7A7F96; }
+  .proj-arrow { color: #4F7EFF; font-size: 16px; }
+  .btn-enter { width: 100%; background: linear-gradient(135deg,#4F7EFF,#7C5DFF); color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+
+  /* Quiebre main */
+  .nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .nav-left { display: flex; align-items: center; gap: 10px; }
+  .proj-badge { background: rgba(79,126,255,0.1); border: 1px solid rgba(79,126,255,0.3); border-radius: 100px; padding: 4px 12px; font-size: 11px; color: #8AABFF; display: flex; align-items: center; gap: 6px; }
+  .proj-badge-dot { width: 6px; height: 6px; background: #4F7EFF; border-radius: 50%; }
+  .nav-actions { display: flex; gap: 6px; }
+  .btn-sm { font-size: 11px; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: #111318; color: #F0F2F8; cursor: pointer; }
+  .btn-sm.primary { background: #4F7EFF; border-color: #4F7EFF; color: #fff; }
+  .btn-sm.green { background: rgba(46,204,138,0.1); border-color: rgba(46,204,138,0.3); color: #2ECC8A; }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.07); padding-bottom: 0; }
+  .tab { padding: 8px 14px; font-size: 12px; color: #7A7F96; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab.active { color: #4F7EFF; border-bottom-color: #4F7EFF; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th { background: #111318; color: #4A4F66; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #D0D4E8; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .code-badge { background: rgba(79,126,255,0.08); color: #8AABFF; padding: 2px 7px; border-radius: 4px; font-family: monospace; font-size: 10px; }
+  .expand-btn { background: none; border: none; color: #4A4F66; cursor: pointer; font-size: 12px; }
+  .indent-1 { padding-left: 20px; }
+  .indent-2 { padding-left: 36px; }
+  .indent-3 { padding-left: 52px; }
+  .level-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<div class="label">Mockups de pantallas — Selector de Proyecto &amp; Vista Principal</div>
+
+<div class="split">
+
+  <!-- SCREEN 1: Selector de proyecto -->
+  <div>
+    <div style="font-size:11px;color:#7A7F96;margin-bottom:8px">1 · Selector de Proyecto <span style="color:#FFB347">(usuario con 2 proyectos)</span></div>
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="dot" style="background:#FF6B6B"></div>
+        <div class="dot" style="background:#FFB347"></div>
+        <div class="dot" style="background:#2ECC8A"></div>
+        <div class="screen-title">localhost:5500/proyecto-selector.html</div>
+      </div>
+      <div class="screen-body">
+        <div class="sel-header">
+          <div class="sel-logo">
+            <div class="sel-logo-icon">⬛</div>
+            <div class="sel-logo-name">App<span>Hub</span></div>
+          </div>
+          <div class="sel-title">¿A qué proyecto ingresas?</div>
+          <div class="sel-sub">Selecciona el proyecto con el que quieres trabajar hoy</div>
+        </div>
+
+        <div class="proj-card active">
+          <div>
+            <div class="proj-name">Autopista Norte — Tramo 2</div>
+            <div class="proj-code">Código: AUT-002 · 12 Abr 2025 → 30 Nov 2026</div>
+          </div>
+          <div class="proj-arrow">→</div>
+        </div>
+
+        <div class="proj-card">
+          <div>
+            <div class="proj-name">Edificio Corporativo Oriente</div>
+            <div class="proj-code">Código: ECO-001 · 01 Ene 2025 → 31 Dic 2025</div>
+          </div>
+          <div class="proj-arrow" style="color:#4A4F66">→</div>
+        </div>
+
+        <button class="btn-enter">Ingresar al proyecto seleccionado →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: Vista principal Quiebre -->
+  <div>
+    <div style="font-size:11px;color:#7A7F96;margin-bottom:8px">2 · Quiebre del Contrato — Vista principal <span style="color:#2ECC8A">(tabla jerárquica)</span></div>
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="dot" style="background:#FF6B6B"></div>
+        <div class="dot" style="background:#FFB347"></div>
+        <div class="dot" style="background:#2ECC8A"></div>
+        <div class="screen-title">localhost:5500/quiebre.html</div>
+      </div>
+      <div class="screen-body">
+        <div class="nav">
+          <div class="nav-left">
+            <div style="font-size:13px;font-weight:700">Quiebre del Contrato</div>
+            <div class="proj-badge"><span class="proj-badge-dot"></span>AUT-002</div>
+          </div>
+          <div class="nav-actions">
+            <button class="btn-sm green">↓ Plantilla Excel</button>
+            <button class="btn-sm primary">+ Agregar</button>
+            <button class="btn-sm">📤 Cargar Excel</button>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active">Todos</div>
+          <div class="tab">Áreas</div>
+          <div class="tab">Subáreas</div>
+          <div class="tab">Sistemas</div>
+          <div class="tab">Subsistemas</div>
+          <div class="tab" style="margin-left:auto">📝 Log</div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nivel</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="level-dot" style="background:#4F7EFF"></span>Área</td>
+                <td><span class="code-badge">01</span></td>
+                <td>Civil</td>
+                <td><button class="expand-btn">▼</button></td>
+              </tr>
+              <tr>
+                <td class="indent-1"><span class="level-dot" style="background:#7C5DFF"></span>Subárea</td>
+                <td><span class="code-badge">01.01</span></td>
+                <td>Estructuras</td>
+                <td><button class="expand-btn">▼</button></td>
+              </tr>
+              <tr>
+                <td class="indent-2"><span class="level-dot" style="background:#2ECC8A"></span>Sistema</td>
+                <td><span class="code-badge">01.01.01</span></td>
+                <td>Fundaciones</td>
+                <td><button class="expand-btn">▼</button></td>
+              </tr>
+              <tr>
+                <td class="indent-3"><span class="level-dot" style="background:#FFB347"></span>Subsistema</td>
+                <td><span class="code-badge">01.01.01.01</span></td>
+                <td>Pilotes</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td class="indent-3"><span class="level-dot" style="background:#FFB347"></span>Subsistema</td>
+                <td><span class="code-badge">01.01.01.02</span></td>
+                <td>Zapatas</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td><span class="level-dot" style="background:#4F7EFF"></span>Área</td>
+                <td><span class="code-badge">02</span></td>
+                <td>Eléctrico</td>
+                <td><button class="expand-btn">▶</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

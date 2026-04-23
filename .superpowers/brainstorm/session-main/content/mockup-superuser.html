@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #08090C; color: #F0F2F8; font-family: system-ui, sans-serif; padding: 24px; }
+  .label { font-size: 11px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #4A4F66; margin-bottom: 10px; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .screen { background: #0D0E12; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; overflow: hidden; }
+  .screen-bar { background: #111318; border-bottom: 1px solid rgba(255,255,255,0.07); padding: 8px 16px; display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .screen-title { font-size: 11px; color: #4A4F66; margin-left: 6px; }
+  .screen-body { padding: 20px; }
+
+  /* Superuser nav */
+  .su-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .su-badge { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3); border-radius: 100px; padding: 3px 10px; font-size: 10px; color: #FF6B6B; font-weight: 700; }
+  .su-title { font-size: 14px; font-weight: 700; }
+
+  .su-tabs { display: flex; gap: 2px; margin-bottom: 16px; }
+  .su-tab { padding: 6px 12px; font-size: 11px; border-radius: 6px; cursor: pointer; color: #7A7F96; }
+  .su-tab.active { background: rgba(255,107,107,0.1); color: #FF6B6B; }
+
+  /* Proyectos table */
+  table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 12px; }
+  th { background: #111318; color: #4A4F66; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 7px 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); color: #D0D4E8; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .code-badge { background: rgba(79,126,255,0.08); color: #8AABFF; padding: 2px 7px; border-radius: 4px; font-family: monospace; font-size: 10px; }
+  .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; }
+  .btn-icon { background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; color: #7A7F96; font-size: 10px; padding: 3px 7px; cursor: pointer; }
+  .btn-icon.red { border-color: rgba(255,107,107,0.3); color: #FF6B6B; }
+  .btn-sm-add { background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3); border-radius: 6px; padding: 5px 12px; font-size: 11px; color: #FF6B6B; cursor: pointer; float: right; margin-bottom: 10px; }
+
+  /* Usuarios section */
+  .user-row { background: #111318; border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 10px 14px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+  .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg,#4F7EFF,#7C5DFF); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; margin-right: 10px; flex-shrink: 0; }
+  .user-info { flex: 1; }
+  .user-name { font-size: 12px; font-weight: 600; }
+  .user-email { font-size: 10px; color: #7A7F96; }
+  .role-badge { padding: 2px 8px; border-radius: 100px; font-size: 10px; font-weight: 600; }
+  .role-su { background: rgba(255,107,107,0.1); color: #FF6B6B; border: 1px solid rgba(255,107,107,0.25); }
+  .role-admin { background: rgba(79,126,255,0.1); color: #8AABFF; border: 1px solid rgba(79,126,255,0.25); }
+  .role-user { background: rgba(46,204,138,0.08); color: #2ECC8A; border: 1px solid rgba(46,204,138,0.2); }
+  .user-actions { display: flex; gap: 4px; margin-left: 10px; }
+
+  /* Assignments */
+  .assign-row { display: flex; align-items: center; gap: 8px; background: #111318; border: 1px solid rgba(255,255,255,0.06); border-radius: 7px; padding: 8px 12px; margin-bottom: 5px; font-size: 11px; }
+  .assign-user { color: #D0D4E8; font-weight: 600; flex: 1; }
+  .assign-proj { color: #8AABFF; font-family: monospace; font-size: 10px; }
+  .assign-arrow { color: #4A4F66; }
+  .assign-role { font-size: 10px; color: #7A7F96; }
+</style>
+</head>
+<body>
+
+<div class="label">Panel SUPERUSER — Administración global</div>
+<div class="split">
+
+  <!-- SUPERUSER: Proyectos + Usuarios -->
+  <div>
+    <div style="font-size:11px;color:#7A7F96;margin-bottom:8px">5 · Panel SUPERUSER <span style="color:#FF6B6B">(Proyectos &amp; Usuarios)</span></div>
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="dot" style="background:#FF6B6B"></div>
+        <div class="dot" style="background:#FFB347"></div>
+        <div class="dot" style="background:#2ECC8A"></div>
+        <div class="screen-title">superuser.html</div>
+      </div>
+      <div class="screen-body">
+        <div class="su-nav">
+          <div>
+            <div class="su-title">Panel de Administración</div>
+          </div>
+          <div class="su-badge">👑 SUPERUSER</div>
+        </div>
+
+        <div class="su-tabs">
+          <div class="su-tab active">Proyectos</div>
+          <div class="su-tab">Usuarios</div>
+          <div class="su-tab">Asignaciones</div>
+          <div class="su-tab">Logs</div>
+        </div>
+
+        <!-- Tab: Proyectos -->
+        <button class="btn-sm-add">+ Nuevo Proyecto</button>
+        <div style="clear:both"></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="code-badge">AUT-002</span></td>
+              <td>Autopista Norte — Tramo 2</td>
+              <td><span class="status-dot" style="background:#2ECC8A"></span>Activo</td>
+              <td><button class="btn-icon">✏</button></td>
+            </tr>
+            <tr>
+              <td><span class="code-badge">ECO-001</span></td>
+              <td>Edificio Corporativo Oriente</td>
+              <td><span class="status-dot" style="background:#2ECC8A"></span>Activo</td>
+              <td><button class="btn-icon">✏</button></td>
+            </tr>
+            <tr>
+              <td><span class="code-badge">MET-003</span></td>
+              <td>Metro Línea 9 — Etapa 1</td>
+              <td><span class="status-dot" style="background:#4A4F66"></span>Archivado</td>
+              <td><button class="btn-icon">✏</button></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Usuarios -->
+        <div style="font-size:11px;color:#7A7F96;margin:14px 0 8px">Usuarios del sistema</div>
+        <div class="user-row">
+          <div class="user-avatar">LG</div>
+          <div class="user-info">
+            <div class="user-name">Luis Garnica</div>
+            <div class="user-email">luisgarnica@hotmail.cl</div>
+          </div>
+          <span class="role-badge role-su">SUPERUSER</span>
+          <div class="user-actions">
+            <button class="btn-icon">✏</button>
+          </div>
+        </div>
+        <div class="user-row">
+          <div class="user-avatar" style="background:linear-gradient(135deg,#2ECC8A,#4F7EFF)">JP</div>
+          <div class="user-info">
+            <div class="user-name">Juan Pérez</div>
+            <div class="user-email">juan.perez@empresa.cl</div>
+          </div>
+          <span class="role-badge role-admin">Admin</span>
+          <div class="user-actions">
+            <button class="btn-icon">✏</button>
+            <button class="btn-icon red">✕</button>
+          </div>
+        </div>
+        <div class="user-row">
+          <div class="user-avatar" style="background:linear-gradient(135deg,#FFB347,#FF6B6B)">MR</div>
+          <div class="user-info">
+            <div class="user-name">María Rodríguez</div>
+            <div class="user-email">m.rodriguez@empresa.cl</div>
+          </div>
+          <span class="role-badge role-user">Usuario</span>
+          <div class="user-actions">
+            <button class="btn-icon">✏</button>
+            <button class="btn-icon red">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPERUSER: Asignaciones + Log global -->
+  <div>
+    <div style="font-size:11px;color:#7A7F96;margin-bottom:8px">6 · Asignaciones &amp; Log global <span style="color:#4F7EFF">(solo SUPERUSER)</span></div>
+    <div class="screen">
+      <div class="screen-bar">
+        <div class="dot" style="background:#FF6B6B"></div>
+        <div class="dot" style="background:#FFB347"></div>
+        <div class="dot" style="background:#2ECC8A"></div>
+        <div class="screen-title">superuser.html → tab Asignaciones</div>
+      </div>
+      <div class="screen-body">
+        <div class="su-nav">
+          <div class="su-title">Asignaciones usuario → proyecto</div>
+          <div class="su-badge">👑 SUPERUSER</div>
+        </div>
+
+        <div style="font-size:11px;color:#7A7F96;margin-bottom:8px">Usuario → Proyecto (rol en ese proyecto)</div>
+
+        <div class="assign-row">
+          <div class="assign-user">Juan Pérez</div>
+          <div class="assign-arrow">→</div>
+          <div class="assign-proj">AUT-002</div>
+          <div class="assign-role">Admin</div>
+          <button class="btn-icon red" style="margin-left:auto">✕</button>
+        </div>
+        <div class="assign-row">
+          <div class="assign-user">Juan Pérez</div>
+          <div class="assign-arrow">→</div>
+          <div class="assign-proj">ECO-001</div>
+          <div class="assign-role">Admin</div>
+          <button class="btn-icon red" style="margin-left:auto">✕</button>
+        </div>
+        <div class="assign-row">
+          <div class="assign-user">María Rodríguez</div>
+          <div class="assign-arrow">→</div>
+          <div class="assign-proj">AUT-002</div>
+          <div class="assign-role">Usuario</div>
+          <button class="btn-icon red" style="margin-left:auto">✕</button>
+        </div>
+
+        <button style="width:100%;background:rgba(79,126,255,0.08);border:1px dashed rgba(79,126,255,0.3);border-radius:7px;padding:8px;font-size:11px;color:#8AABFF;cursor:pointer;margin-top:6px">+ Agregar asignación</button>
+
+        <!-- Log global -->
+        <div style="font-size:11px;color:#7A7F96;margin:18px 0 8px">Log de auditoría global — todos los proyectos</div>
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Usuario</th>
+              <th>Acción</th>
+              <th>Proyecto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="color:#4A4F66">hoy 14:32</td>
+              <td>Juan P.</td>
+              <td>Área creada <span class="code-badge">01</span></td>
+              <td style="color:#8AABFF;font-family:monospace;font-size:10px">AUT-002</td>
+            </tr>
+            <tr>
+              <td style="color:#4A4F66">hoy 11:05</td>
+              <td>María R.</td>
+              <td>Excel importado (47 registros)</td>
+              <td style="color:#8AABFF;font-family:monospace;font-size:10px">AUT-002</td>
+            </tr>
+            <tr>
+              <td style="color:#4A4F66">ayer 09:18</td>
+              <td>Juan P.</td>
+              <td>Subárea editada <span class="code-badge">01.02</span></td>
+              <td style="color:#8AABFF;font-family:monospace;font-size:10px">ECO-001</td>
+            </tr>
+            <tr>
+              <td style="color:#4A4F66">ayer 08:44</td>
+              <td>Luis G.</td>
+              <td>Usuario creado: María R.</td>
+              <td style="color:#4A4F66">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

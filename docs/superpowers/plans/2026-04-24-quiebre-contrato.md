@@ -1240,3 +1240,188 @@ cd ..
 git add backend/app/Models/ backend/database/factories/
 git commit -m "feat: add 8 Eloquent models and 6 factories"
 ```
+
+---
+
+## Task 4: Middleware (CheckRole + CheckProyectoAccess) + LogService
+
+**Files:**
+- Create: `backend/app/Http/Middleware/CheckRole.php`
+- Create: `backend/app/Http/Middleware/CheckProyectoAccess.php`
+- Create: `backend/app/Services/LogService.php`
+
+- [ ] **Step 4.1: Crear middleware `CheckRole`**
+
+Verifica que el usuario autenticado tenga el rol requerido. Para rutas de proyecto, el SUPERUSER siempre pasa. Para rol `admin`, verifica el rol en la tabla `usuarios_proyectos`.
+
+`backend/app/Http/Middleware/CheckRole.php`:
+```php
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Models\UsuarioProyecto;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class CheckRole
+{
+    public function handle(Request $request, Closure $next, string $role): Response
+    {
+        $usuario = $request->user();
+
+        if (!$usuario) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+
+        // SUPERUSER siempre pasa
+        if ($usuario->rol_global === 'superuser') {
+            return $next($request);
+        }
+
+        if ($role === 'superuser') {
+            return response()->json(['message' => 'Se requiere rol SUPERUSER'], 403);
+        }
+
+        if ($role === 'admin') {
+            $proyectoId = $request->route('proyecto_id') ?? $request->route('id');
+
+            $asignacion = UsuarioProyecto::where('usuario_id', $usuario->id)
+                ->where('proyecto_id', $proyectoId)
+                ->first();
+
+            if (!$asignacion || $asignacion->rol !== 'admin') {
+                return response()->json(['message' => 'Se requiere rol Admin en este proyecto'], 403);
+            }
+        }
+
+        return $next($request);
+    }
+}
+```
+
+- [ ] **Step 4.2: Crear middleware `CheckProyectoAccess`**
+
+Verifica que el usuario tenga asignación activa en el proyecto solicitado. Se aplica a todas las rutas de jerarquía. El SUPERUSER siempre tiene acceso.
+
+`backend/app/Http/Middleware/CheckProyectoAccess.php`:
+```php
+<?php
+
+namespace App\Http\Middleware;
+
+use App\Models\UsuarioProyecto;
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class CheckProyectoAccess
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $usuario = $request->user();
+
+        if (!$usuario) {
+            return response()->json(['message' => 'No autenticado'], 401);
+        }
+
+        // SUPERUSER tiene acceso a todos los proyectos
+        if ($usuario->rol_global === 'superuser') {
+            return $next($request);
+        }
+
+        $proyectoId = $request->route('proyecto_id') ?? $request->route('id');
+
+        if (!$proyectoId) {
+            return $next($request);
+        }
+
+        $tieneAcceso = UsuarioProyecto::where('usuario_id', $usuario->id)
+            ->where('proyecto_id', $proyectoId)
+            ->exists();
+
+        if (!$tieneAcceso) {
+            return response()->json(['message' => 'Sin acceso a este proyecto'], 403);
+        }
+
+        return $next($request);
+    }
+}
+```
+
+- [ ] **Step 4.3: Crear `LogService`**
+
+Helper centralizado para escribir en cualquier tabla `*_log`. Todos los controllers lo usarán para registrar CREATE, UPDATE, DELETE, IMPORT y errores.
+
+`backend/app/Services/LogService.php`:
+```php
+<?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\DB;
+
+class LogService
+{
+    /**
+     * Registra una acción en la tabla de log correspondiente.
+     *
+     * @param string      $tabla         Nombre de la entidad (ej: 'areas', 'usuarios')
+     * @param int|null    $proyectoId    ID del proyecto de contexto
+     * @param int         $usuarioId     ID del usuario que realizó la acción
+     * @param string      $accion        CREATE | UPDATE | DELETE | IMPORT | IMPORT_ERROR_DISMISSED | VALIDATION_ERROR
+     * @param int|null    $entidadId     PK del registro afectado (null si nunca se creó)
+     * @param array|null  $datosAntes    Estado previo (UPDATE / DELETE)
+     * @param array|null  $datosDespues  Estado nuevo (CREATE / UPDATE) o payload intentado (ERROR)
+     * @param array|null  $errorDetalle  {campo, motivo, valor_ingresado, fila_excel?, decision_usuario?}
+     * @param string|null $ip            IP del cliente
+     */
+    public static function log(
+        string $tabla,
+        ?int $proyectoId,
+        int $usuarioId,
+        string $accion,
+        ?int $entidadId,
+        ?array $datosAntes = null,
+        ?array $datosDespues = null,
+        ?array $errorDetalle = null,
+        ?string $ip = null
+    ): void {
+        DB::table("{$tabla}_log")->insert([
+            'proyecto_id'   => $proyectoId,
+            'usuario_id'    => $usuarioId,
+            'accion'        => $accion,
+            'entidad_id'    => $entidadId,
+            'datos_antes'   => $datosAntes   ? json_encode($datosAntes)   : null,
+            'datos_despues' => $datosDespues ? json_encode($datosDespues) : null,
+            'error_detalle' => $errorDetalle ? json_encode($errorDetalle) : null,
+            'ip'            => $ip,
+            'created_at'    => now(),
+        ]);
+    }
+}
+```
+
+- [ ] **Step 4.4: Verificar que los alias están registrados**
+
+Los alias `check.role` y `check.project` ya fueron declarados en `bootstrap/app.php` en Task 1. Verificar que apuntan a las clases correctas:
+
+```bash
+cd backend
+php artisan route:list 2>&1 | head -5
+```
+
+Si da error de clase no encontrada, revisar que los namespaces en `bootstrap/app.php` sean exactamente:
+```
+\App\Http\Middleware\CheckRole::class
+\App\Http\Middleware\CheckProyectoAccess::class
+```
+
+- [ ] **Step 4.5: Commit**
+
+```bash
+cd ..
+git add backend/app/Http/Middleware/ backend/app/Services/
+git commit -m "feat: add CheckRole, CheckProyectoAccess middleware and LogService"
+```

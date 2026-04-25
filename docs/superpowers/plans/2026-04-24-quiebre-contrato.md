@@ -5414,3 +5414,171 @@ cd ..
 git add backend/public/assets/
 git commit -m "feat: add base CSS (dark theme) and api.js fetch wrapper"
 ```
+
+---
+
+## Task 15: login.html
+
+**Files:**
+- Create: `backend/public/app/login.html`
+
+- [ ] **Step 15.1: Crear `login.html`**
+
+`backend/public/app/login.html`:
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AppHub — Iniciar sesión</title>
+  <link rel="stylesheet" href="/assets/css/app.css"/>
+  <style>
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-box {
+      width: 360px;
+    }
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .login-logo h1 {
+      font-size: 24px;
+      letter-spacing: -0.5px;
+    }
+    .login-logo .subtitle {
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-box">
+
+      <div class="login-logo">
+        <h1>AppHub</h1>
+        <p class="subtitle">Plataforma de gestión de proyectos</p>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-bottom:20px">Iniciar sesión</h2>
+
+        <div id="alert-error" class="alert alert-error hidden"></div>
+
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="email">Correo electrónico</label>
+            <input type="email" id="email" name="email"
+                   placeholder="usuario@empresa.cl" autocomplete="email"/>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Contraseña</label>
+            <input type="password" id="password" name="password"
+                   placeholder="••••••••" autocomplete="current-password"/>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px"
+                  id="btn-submit">
+            Ingresar
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { saveSession, getToken } from '/assets/js/api.js';
+
+    // Si ya hay sesión activa, redirigir directamente
+    if (getToken()) {
+      window.location.href = '/app/selector-proyecto.html';
+    }
+
+    const form      = document.getElementById('login-form');
+    const alertEl   = document.getElementById('alert-error');
+    const btnSubmit = document.getElementById('btn-submit');
+
+    function showError(msg) {
+      alertEl.textContent = msg;
+      alertEl.classList.remove('hidden');
+    }
+
+    function clearError() {
+      alertEl.classList.add('hidden');
+      alertEl.textContent = '';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      const email    = form.email.value.trim();
+      const password = form.password.value;
+
+      // Validación frontend mínima
+      if (!email || !password) {
+        showError('Ingresa tu correo y contraseña.');
+        return;
+      }
+
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Ingresando...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body:    JSON.stringify({ email, password }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          // 401 credenciales inválidas / 403 inactivo / 422 validación
+          showError(data.message ?? 'Error al iniciar sesión.');
+          return;
+        }
+
+        saveSession(data.token, data.usuario);
+        window.location.href = '/app/selector-proyecto.html';
+
+      } catch {
+        showError('No se pudo conectar al servidor. Verifica tu conexión.');
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Ingresar';
+      }
+    });
+  </script>
+</body>
+</html>
+```
+
+- [ ] **Step 15.2: Verificar manualmente en el browser**
+
+```bash
+cd backend && php artisan serve
+```
+
+Abrir `http://localhost:8000/app/login.html`
+
+Pruebas manuales:
+1. Enviar formulario vacío → debe mostrar alerta "Ingresa tu correo y contraseña."
+2. Ingresar credenciales incorrectas → debe mostrar "Credenciales inválidas"
+3. Ingresar credenciales del SUPERUSER (del seeder) → debe redirigir a `selector-proyecto.html` (página no existe aún, da 404 — es esperado)
+4. Volver a `login.html` con sesión activa → debe redirigir automáticamente
+
+- [ ] **Step 15.3: Commit**
+
+```bash
+cd ..
+git add backend/public/app/login.html
+git commit -m "feat: add login.html with session management and error handling"
+```

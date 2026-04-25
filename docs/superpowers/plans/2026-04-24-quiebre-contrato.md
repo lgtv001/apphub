@@ -3505,3 +3505,605 @@ git add backend/app/Http/Controllers/SubsistemaController.php \
         backend/tests/Feature/SubsistemaTest.php
 git commit -m "feat: add Subsistemas API — hierarchy CRUD complete with 50 passing tests"
 ```
+
+---
+
+## Task 11: Import Excel — Plantilla + Preview + Confirm + Tests
+
+**Files:**
+- Create: `backend/app/Exports/QuiebreTemplateExport.php`
+- Create: `backend/app/Services/ImportService.php`
+- Create: `backend/app/Http/Controllers/ImportController.php`
+- Create: `backend/tests/Feature/ImportTest.php`
+- Modify: `backend/routes/api.php`
+
+El import es un flujo de dos pasos: **preview** (parsear archivo y devolver análisis por fila) y **confirm** (el usuario envía las decisiones y se insertan los datos).
+
+- [ ] **Step 11.1: Crear la clase Export para la plantilla**
+
+`backend/app/Exports/QuiebreTemplateExport.php`:
+```php
+<?php
+
+namespace App\Exports;
+
+use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithTitle;
+
+class QuiebreTemplateExport implements FromArray, WithHeadings, WithColumnWidths, WithTitle
+{
+    public function title(): string
+    {
+        return 'Quiebre del Contrato';
+    }
+
+    public function headings(): array
+    {
+        return ['codigo', 'nombre', 'nivel', 'codigo_padre_de_quiebre'];
+    }
+
+    public function array(): array
+    {
+        return [
+            ['3600',   'Estructura',       'area',        ''],
+            ['3610',   'Fundaciones',      'subarea',     '3600'],
+            ['3610B',  'Pilotes',          'sistema',     '3610'],
+            ['3610B-1','Pilotes hormigón', 'subsistema',  '3610B'],
+        ];
+    }
+
+    public function columnWidths(): array
+    {
+        return ['A' => 15, 'B' => 45, 'C' => 15, 'D' => 25];
+    }
+}
+```
+
+- [ ] **Step 11.2: Crear `ImportService`**
+
+Contiene la lógica de validación/inserción, separada del controller para facilitar tests.
+
+`backend/app/Services/ImportService.php`:
+```php
+<?php
+
+namespace App\Services;
+
+use App\Models\Area;
+use App\Models\Subarea;
+use App\Models\Sistema;
+use App\Models\Subsistema;
+use Illuminate\Support\Facades\DB;
+
+class ImportService
+{
+    private const NIVELES = ['area', 'subarea', 'sistema', 'subsistema'];
+
+    /**
+     * Analiza un array de filas y devuelve su estado sin insertar nada.
+     * Cada fila retorna: status (valid|duplicate|error), datos originales y detalle.
+     */
+    public function preview(array $rows, int $proyectoId): array
+    {
+        $result    = [];
+        $codigos_en_archivo = array_column($rows, 'codigo');
+
+        foreach ($rows as $index => $fila) {
+            $fila_num = $index + 2; // +2 porque fila 1 es cabecera
+
+            // Validar columnas requeridas
+            if (empty($fila['codigo']) || empty($fila['nombre']) || empty($fila['nivel'])) {
+                $result[] = $this->filaError($fila, $fila_num, 'codigo o nombre o nivel está vacío');
+                continue;
+            }
+
+            // Validar nivel
+            if (!in_array($fila['nivel'], self::NIVELES)) {
+                $result[] = $this->filaError($fila, $fila_num,
+                    "nivel '{$fila['nivel']}' no válido. Valores: area, subarea, sistema, subsistema");
+                continue;
+            }
+
+            // Validar padre para niveles que lo requieren
+            if ($fila['nivel'] !== 'area') {
+                $padre = $fila['codigo_padre_de_quiebre'] ?? null;
+                if (empty($padre)) {
+                    $result[] = $this->filaError($fila, $fila_num,
+                        "codigo_padre_de_quiebre es obligatorio para nivel '{$fila['nivel']}'");
+                    continue;
+                }
+
+                if (!$this->padreExiste($padre, $fila['nivel'], $proyectoId)) {
+                    $result[] = $this->filaError($fila, $fila_num,
+                        "El padre '{$padre}' no existe en el proyecto para el nivel anterior");
+                    continue;
+                }
+            }
+
+            // Verificar duplicado en DB
+            if ($this->codigoExisteEnDB($fila['codigo'], $fila['nivel'], $proyectoId)) {
+                $result[] = array_merge($fila, [
+                    'fila'   => $fila_num,
+                    'status' => 'duplicate',
+                    'motivo' => "El código '{$fila['codigo']}' ya existe en el proyecto",
+                ]);
+                continue;
+            }
+
+            $result[] = array_merge($fila, ['fila' => $fila_num, 'status' => 'valid']);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Inserta las filas confirmadas por el usuario en una transacción.
+     * Cada fila debe tener 'decision': 'import' | 'skip'.
+     * Retorna resumen: importadas, omitidas, errores.
+     */
+    public function confirm(array $filas, int $proyectoId, int $usuarioId, string $ip): array
+    {
+        $importadas = 0;
+        $omitidas   = 0;
+        $errores    = 0;
+
+        DB::transaction(function () use ($filas, $proyectoId, $usuarioId, $ip, &$importadas, &$omitidas, &$errores) {
+            foreach ($filas as $fila) {
+                if (($fila['decision'] ?? 'skip') === 'skip') {
+                    $omitidas++;
+
+                    // Registrar en log si el usuario eligió omitir una fila con error/duplicado
+                    if (in_array($fila['status'] ?? '', ['duplicate', 'error'])) {
+                        LogService::log(
+                            tabla:        $this->tablaDeNivel($fila['nivel']),
+                            proyectoId:   $proyectoId,
+                            usuarioId:    $usuarioId,
+                            accion:       'IMPORT_ERROR_DISMISSED',
+                            entidadId:    null,
+                            errorDetalle: [
+                                'campo'            => 'codigo',
+                                'motivo'           => $fila['motivo'] ?? 'omitido por usuario',
+                                'valor_ingresado'  => $fila['codigo'],
+                                'fila_excel'       => $fila['fila'],
+                                'decision_usuario' => 'omitir',
+                            ],
+                            ip: $ip
+                        );
+                    }
+                    continue;
+                }
+
+                try {
+                    $registro = $this->insertarFila($fila, $proyectoId);
+
+                    LogService::log(
+                        tabla:        $this->tablaDeNivel($fila['nivel']),
+                        proyectoId:   $proyectoId,
+                        usuarioId:    $usuarioId,
+                        accion:       'IMPORT',
+                        entidadId:    $registro->id,
+                        datosDespues: $registro->toArray(),
+                        ip:           $ip
+                    );
+
+                    $importadas++;
+                } catch (\Exception $e) {
+                    $errores++;
+                }
+            }
+        });
+
+        return compact('importadas', 'omitidas', 'errores');
+    }
+
+    private function insertarFila(array $fila, int $proyectoId): object
+    {
+        return match ($fila['nivel']) {
+            'area' => Area::create([
+                'proyecto_id' => $proyectoId,
+                'codigo'      => $fila['codigo'],
+                'nombre'      => $fila['nombre'],
+            ]),
+            'subarea' => Subarea::create([
+                'proyecto_id' => $proyectoId,
+                'area_id'     => Area::where('proyecto_id', $proyectoId)
+                                     ->where('codigo', $fila['codigo_padre_de_quiebre'])->value('id'),
+                'codigo'      => $fila['codigo'],
+                'nombre'      => $fila['nombre'],
+            ]),
+            'sistema' => Sistema::create([
+                'proyecto_id' => $proyectoId,
+                'subarea_id'  => Subarea::where('proyecto_id', $proyectoId)
+                                        ->where('codigo', $fila['codigo_padre_de_quiebre'])->value('id'),
+                'codigo'      => $fila['codigo'],
+                'nombre'      => $fila['nombre'],
+            ]),
+            'subsistema' => Subsistema::create([
+                'proyecto_id' => $proyectoId,
+                'sistema_id'  => Sistema::where('proyecto_id', $proyectoId)
+                                        ->where('codigo', $fila['codigo_padre_de_quiebre'])->value('id'),
+                'codigo'      => $fila['codigo'],
+                'nombre'      => $fila['nombre'],
+            ]),
+        };
+    }
+
+    private function padreExiste(string $codigoPadre, string $nivelHijo, int $proyectoId): bool
+    {
+        $tabla = match ($nivelHijo) {
+            'subarea'     => 'areas',
+            'sistema'     => 'subareas',
+            'subsistema'  => 'sistemas',
+            default       => null,
+        };
+
+        if (!$tabla) return false;
+
+        return DB::table($tabla)
+            ->where('proyecto_id', $proyectoId)
+            ->where('codigo', $codigoPadre)
+            ->exists();
+    }
+
+    private function codigoExisteEnDB(string $codigo, string $nivel, int $proyectoId): bool
+    {
+        return DB::table($this->tablaDeNivel($nivel))
+            ->where('proyecto_id', $proyectoId)
+            ->where('codigo', $codigo)
+            ->exists();
+    }
+
+    private function tablaDeNivel(string $nivel): string
+    {
+        return match ($nivel) {
+            'area'        => 'areas',
+            'subarea'     => 'subareas',
+            'sistema'     => 'sistemas',
+            'subsistema'  => 'subsistemas',
+            default       => throw new \InvalidArgumentException("Nivel inválido: {$nivel}"),
+        };
+    }
+
+    private function filaError(array $fila, int $filaNum, string $motivo): array
+    {
+        return array_merge($fila, [
+            'fila'   => $filaNum,
+            'status' => 'error',
+            'motivo' => $motivo,
+        ]);
+    }
+}
+```
+
+- [ ] **Step 11.3: Crear `ImportController`**
+
+`backend/app/Http/Controllers/ImportController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Exports\QuiebreTemplateExport;
+use App\Services\ImportService;
+use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+
+class ImportController extends Controller
+{
+    public function __construct(private ImportService $service) {}
+
+    public function template(int $proyecto_id)
+    {
+        return Excel::download(new QuiebreTemplateExport(), 'plantilla-quiebre.xlsx');
+    }
+
+    public function preview(Request $request, int $proyecto_id)
+    {
+        $request->validate([
+            'archivo' => 'required|file|mimes:xlsx,xls|max:10240',
+        ]);
+
+        $coleccion = Excel::toCollection(null, $request->file('archivo'))->first();
+
+        if ($coleccion->isEmpty()) {
+            return response()->json(['message' => 'El archivo está vacío'], 422);
+        }
+
+        // Convertir a array asociativo usando la primera fila como cabecera
+        $cabeceras = $coleccion->first()->keys()->toArray();
+        $columnas_requeridas = ['codigo', 'nombre', 'nivel', 'codigo_padre_de_quiebre'];
+        $faltantes = array_diff($columnas_requeridas, $cabeceras);
+
+        if (!empty($faltantes)) {
+            return response()->json([
+                'message'  => 'Columnas faltantes en el archivo',
+                'faltantes' => array_values($faltantes),
+            ], 422);
+        }
+
+        $filas = $coleccion->map(fn($row) => $row->toArray())->toArray();
+        $resultado = $this->service->preview($filas, $proyecto_id);
+
+        return response()->json([
+            'total'      => count($resultado),
+            'validas'    => array_values(array_filter($resultado, fn($r) => $r['status'] === 'valid')),
+            'duplicados' => array_values(array_filter($resultado, fn($r) => $r['status'] === 'duplicate')),
+            'errores'    => array_values(array_filter($resultado, fn($r) => $r['status'] === 'error')),
+        ]);
+    }
+
+    public function confirm(Request $request, int $proyecto_id)
+    {
+        $request->validate([
+            'filas'              => 'required|array|min:1',
+            'filas.*.codigo'     => 'required|string',
+            'filas.*.nombre'     => 'required|string',
+            'filas.*.nivel'      => 'required|in:area,subarea,sistema,subsistema',
+            'filas.*.decision'   => 'required|in:import,skip',
+        ]);
+
+        $resumen = $this->service->confirm(
+            filas:      $request->filas,
+            proyectoId: $proyecto_id,
+            usuarioId:  $request->user()->id,
+            ip:         $request->ip()
+        );
+
+        return response()->json($resumen);
+    }
+}
+```
+
+- [ ] **Step 11.4: Escribir los tests (TDD post-implementación para este task)**
+
+`backend/tests/Feature/ImportTest.php`:
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Area;
+use App\Models\Proyecto;
+use App\Models\Usuario;
+use App\Models\UsuarioProyecto;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Tests\TestCase;
+
+class ImportTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function setup(): array
+    {
+        $proyecto = Proyecto::factory()->create();
+        $admin    = Usuario::factory()->admin()->create();
+        UsuarioProyecto::create([
+            'usuario_id'  => $admin->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'admin',
+        ]);
+        $token = $admin->createToken('test')->plainTextToken;
+        return [$proyecto, $admin, $token];
+    }
+
+    private function crearExcel(array $cabeceras, array $filas): UploadedFile
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet       = $spreadsheet->getActiveSheet();
+        $sheet->fromArray(array_merge([$cabeceras], $filas));
+
+        $tmpPath = tempnam(sys_get_temp_dir(), 'import_test_') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($tmpPath);
+
+        return new UploadedFile(
+            $tmpPath,
+            'import.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true
+        );
+    }
+
+    public function test_descarga_plantilla(): void
+    {
+        [$proyecto, , $token] = $this->setup();
+
+        $response = $this->withToken($token)
+            ->get("/api/proyectos/{$proyecto->id}/import/template");
+
+        $response->assertStatus(200)
+            ->assertHeader('Content-Type',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+    public function test_preview_clasifica_filas_validas_y_duplicadas(): void
+    {
+        [$proyecto, , $token] = $this->setup();
+        Area::factory()->create(['proyecto_id' => $proyecto->id, 'codigo' => '3600']);
+
+        $archivo = $this->crearExcel(
+            ['codigo', 'nombre', 'nivel', 'codigo_padre_de_quiebre'],
+            [
+                ['3600', 'Estructura',  'area', ''],   // duplicado
+                ['3700', 'Arquitectura','area', ''],   // válida
+            ]
+        );
+
+        $response = $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/import/preview", ['archivo' => $archivo]);
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'validas')
+            ->assertJsonCount(1, 'duplicados')
+            ->assertJsonCount(0, 'errores');
+    }
+
+    public function test_preview_detecta_padre_inexistente(): void
+    {
+        [$proyecto, , $token] = $this->setup();
+
+        $archivo = $this->crearExcel(
+            ['codigo', 'nombre', 'nivel', 'codigo_padre_de_quiebre'],
+            [
+                ['3610', 'Fundaciones', 'subarea', '9999'], // padre no existe
+            ]
+        );
+
+        $response = $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/import/preview", ['archivo' => $archivo]);
+
+        $response->assertStatus(200)
+            ->assertJsonCount(1, 'errores')
+            ->assertJsonCount(0, 'validas');
+    }
+
+    public function test_preview_falla_si_faltan_columnas(): void
+    {
+        [$proyecto, , $token] = $this->setup();
+
+        $archivo = $this->crearExcel(
+            ['codigo', 'nombre'],  // faltan nivel y codigo_padre_de_quiebre
+            [['3600', 'Estructura']]
+        );
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/import/preview", ['archivo' => $archivo])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Columnas faltantes en el archivo');
+    }
+
+    public function test_confirm_importa_filas_validas(): void
+    {
+        [$proyecto, , $token] = $this->setup();
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/import/confirm", [
+                'filas' => [
+                    ['codigo' => '3600', 'nombre' => 'Estructura', 'nivel' => 'area',
+                     'codigo_padre_de_quiebre' => null, 'status' => 'valid', 'decision' => 'import'],
+                    ['codigo' => '3700', 'nombre' => 'Arquitectura', 'nivel' => 'area',
+                     'codigo_padre_de_quiebre' => null, 'status' => 'valid', 'decision' => 'import'],
+                ],
+            ])
+            ->assertStatus(200)
+            ->assertJson(['importadas' => 2, 'omitidas' => 0, 'errores' => 0]);
+
+        $this->assertDatabaseHas('areas', ['proyecto_id' => $proyecto->id, 'codigo' => '3600']);
+        $this->assertDatabaseHas('areas', ['proyecto_id' => $proyecto->id, 'codigo' => '3700']);
+    }
+
+    public function test_confirm_registra_log_por_fila_importada(): void
+    {
+        [$proyecto, $admin, $token] = $this->setup();
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/import/confirm", [
+                'filas' => [
+                    ['codigo' => '3600', 'nombre' => 'Estructura', 'nivel' => 'area',
+                     'codigo_padre_de_quiebre' => null, 'status' => 'valid', 'decision' => 'import'],
+                ],
+            ]);
+
+        $this->assertDatabaseHas('areas_log', [
+            'proyecto_id' => $proyecto->id,
+            'usuario_id'  => $admin->id,
+            'accion'      => 'IMPORT',
+        ]);
+    }
+
+    public function test_confirm_registra_log_dismiss_al_omitir_duplicado(): void
+    {
+        [$proyecto, $admin, $token] = $this->setup();
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/import/confirm", [
+                'filas' => [
+                    ['codigo' => '3600', 'nombre' => 'Estructura', 'nivel' => 'area',
+                     'codigo_padre_de_quiebre' => null, 'status' => 'duplicate',
+                     'motivo' => 'duplicado', 'fila' => 2, 'decision' => 'skip'],
+                ],
+            ]);
+
+        $this->assertDatabaseHas('areas_log', [
+            'proyecto_id' => $proyecto->id,
+            'usuario_id'  => $admin->id,
+            'accion'      => 'IMPORT_ERROR_DISMISSED',
+        ]);
+    }
+
+    public function test_usuario_sin_rol_admin_no_puede_importar(): void
+    {
+        [$proyecto] = $this->setup();
+        $usuario = Usuario::factory()->create();
+        UsuarioProyecto::create([
+            'usuario_id'  => $usuario->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'usuario',
+        ]);
+        $token = $usuario->createToken('test')->plainTextToken;
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/import/confirm", ['filas' => []])
+            ->assertStatus(403);
+    }
+}
+```
+
+- [ ] **Step 11.5: Agregar rutas de import en `api.php`**
+
+Agregar dentro del grupo `proyectos/{proyecto_id}` en `backend/routes/api.php`:
+```php
+use App\Http\Controllers\ImportController;
+
+Route::get('/import/template', [ImportController::class, 'template']);
+Route::post('/import/preview', [ImportController::class, 'preview']);
+Route::post('/import/confirm', [ImportController::class, 'confirm'])->middleware('check.role:admin');
+```
+
+- [ ] **Step 11.6: Ejecutar tests**
+
+```bash
+cd backend
+php artisan test tests/Feature/ImportTest.php
+```
+
+Esperado:
+```
+PASS  Tests\Feature\ImportTest
+✓ descarga plantilla
+✓ preview clasifica filas validas y duplicadas
+✓ preview detecta padre inexistente
+✓ preview falla si faltan columnas
+✓ confirm importa filas validas
+✓ confirm registra log por fila importada
+✓ confirm registra log dismiss al omitir duplicado
+✓ usuario sin rol admin no puede importar
+
+Tests: 8 passed
+```
+
+- [ ] **Step 11.7: Suite completa — sin regresiones**
+
+```bash
+php artisan test
+```
+
+Esperado: 58 tests pasan.
+
+- [ ] **Step 11.8: Commit**
+
+```bash
+cd ..
+git add backend/app/Exports/ \
+        backend/app/Services/ImportService.php \
+        backend/app/Http/Controllers/ImportController.php \
+        backend/routes/api.php \
+        backend/tests/Feature/ImportTest.php
+git commit -m "feat: add Excel import (preview + confirm) with template download and audit log"
+```

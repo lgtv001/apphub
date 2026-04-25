@@ -12,7 +12,82 @@
       "Bash(BRAINSTORM_PORT=49561 BRAINSTORM_DIR=\"C:/Users/luisg/Documents/GitHub/apphub/.superpowers/brainstorm/session-main\" node *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(BRAINSTORM_PORT=52100 BRAINSTORM_DIR=\"C:/Users/luisg/Documents/GitHub/apphub/.superpowers/brainstorm/session-main\" node *)"
+      "Bash(BRAINSTORM_PORT=52100 BRAINSTORM_DIR=\"C:/Users/luisg/Documents/GitHub/apphub/.superpowers/brainstorm/session-main\" node *)",
+      "PowerShell(head *)",
+      "PowerShell(git commit *)",
+      "Bash(ls -d .worktrees)",
+      "Bash(ls -d worktrees)",
+      "Bash(grep -i \"worktree.*director\" CLAUDE.md)",
+      "Bash(git worktree *)",
+      "Bash(git -C \"C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\" branch)",
+      "Bash(composer create-project *)",
+      "PowerShell($env:PATH -split ';')",
+      "PowerShell(Test-Path *)",
+      "PowerShell(& \"C:\\\\xampp\\\\php\\\\php.exe\" --version 2>&1; Test-Path \"C:\\\\xampp\\\\php\\\\composer.phar\")",
+      "PowerShell(Invoke-WebRequest -Uri \"https://getcomposer.org/composer-stable.phar\" -OutFile \"C:\\\\xampp\\\\php\\\\composer.phar\" -UseBasicParsing; Write-Host \"Downloaded: $\\(Test-Path 'C:\\\\xampp\\\\php\\\\composer.phar'\\)\")",
+      "PowerShell(& \"C:\\\\xampp\\\\php\\\\php.exe\" \"C:\\\\xampp\\\\php\\\\composer.phar\" --version 2>&1)",
+      "PowerShell($php = \"C:\\\\xampp\\\\php\\\\php.exe\"; $composer = \"C:\\\\xampp\\\\php\\\\composer.phar\"; Set-Location \"C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\"; & $php $composer create-project laravel/laravel backend 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\php\\\\php.exe\" -m 2>&1 | Select-String \"zip\")",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(cmd /c \"rd /s /q `\"C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\\\\backend`\"\"; Write-Host \"Exit: $LASTEXITCODE. Exists: $\\(Test-Path 'C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\\\\backend'\\)\")",
+      "PowerShell($php = \"C:\\\\xampp\\\\php\\\\php.exe\"; $composer = \"C:\\\\xampp\\\\php\\\\composer.phar\"; Set-Location \"C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\\\\backend\"; & $php $composer require laravel/sanctum 2>&1)",
+      "PowerShell($php = \"C:\\\\xampp\\\\php\\\\php.exe\"; $composer = \"C:\\\\xampp\\\\php\\\\composer.phar\"; Set-Location \"C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\\\\backend\"; & $php $composer require maatwebsite/excel 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\php\\\\php.exe\" -m 2>&1 | Select-String \"gd|intl|openssl|zip\")",
+      "PowerShell($php = \"C:\\\\xampp\\\\php\\\\php.exe\"; Set-Location \"C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\\\\backend\"; & $php artisan vendor:publish --provider=\"Maatwebsite\\\\Excel\\\\ExcelServiceProvider\" --tag=config 2>&1)",
+      "PowerShell(& \"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -u root --password=\"\" -e \"CREATE DATABASE IF NOT EXISTS apphub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\" 2>&1; Write-Host \"Exit: $LASTEXITCODE\")",
+      "PowerShell(& \"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -u root -proot -e \"SELECT 1;\" 2>&1; Write-Host \"Exit1: $LASTEXITCODE\"; & \"C:\\\\Program Files\\\\MySQL\\\\MySQL Server 8.0\\\\bin\\\\mysql.exe\" -u root -p\"\" -e \"SELECT 1;\" 2>&1; Write-Host \"Exit2: $LASTEXITCODE\")",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root --password=\"\" -e \"CREATE DATABASE IF NOT EXISTS apphub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; SHOW DATABASES;\" 2>&1; Write-Host \"Exit: $LASTEXITCODE\")",
+      "PowerShell(Select-String *)",
+      "PowerShell(Get-NetTCPConnection *)",
+      "PowerShell(cmd /c \"sc query MySQL80 2>&1\")",
+      "PowerShell(Start-Service *)",
+      "PowerShell(cmd /c \"net start MySQL80 2>&1\")",
+      "PowerShell(whoami; [Security.Principal.WindowsIdentity]::GetCurrent\\(\\).Groups | Where-Object { $_.Value -eq \"S-1-5-32-544\" })",
+      "PowerShell(Stop-Job *)",
+      "PowerShell(Start-Sleep -Seconds 6; try { $r = Invoke-WebRequest -Uri \"http://127.0.0.1:8000/up\" -UseBasicParsing -TimeoutSec 5; Write-Host \"Status: $\\($r.StatusCode\\)\"; Write-Host \"Body: $\\($r.Content\\)\" } catch { Write-Host \"Error: $_\" })",
+      "PowerShell($php = \"C:\\\\xampp\\\\php\\\\php.exe\"; Set-Location \"C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\\\\backend\"; & $php artisan serve --port=8000 --host=127.0.0.1 2>&1 &)",
+      "PowerShell(Receive-Job *)",
+      "PowerShell($php = \"C:\\\\xampp\\\\php\\\\php.exe\"; Set-Location \"C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\\\\backend\"; & $php artisan serve --port=8000 2>&1 | Select-Object -First 30)",
+      "PowerShell($php = \"C:\\\\xampp\\\\php\\\\php.exe\"; Set-Location \"C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\\\\backend\"; & $php artisan serve --port=8000 2>&1 | Select-Object -First 10)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://127.0.0.1:8000/up\" -UseBasicParsing -TimeoutSec 10; Write-Host \"Status: $\\($r.StatusCode\\)\"; Write-Host \"Body: $\\($r.Content\\)\" } catch { Write-Host \"Error: $_\" })",
+      "PowerShell(git *)",
+      "Bash(grep \"^\\\\.env$\\\\|^\\\\.env\\\\b\" \"C:/Users/luisg/Documents/GitHub/apphub/.worktrees/quiebre-contrato/backend/.gitignore\")",
+      "Bash(git *)",
+      "Bash(php artisan *)",
+      "Bash(curl -s http://127.0.0.1:8001/up)",
+      "Bash(/c/xampp/php/php --version)",
+      "Bash(/c/xampp/php/php artisan *)",
+      "Bash(/c/xampp/php/php.exe artisan *)",
+      "Bash(php -l app/Http/Middleware/CheckRole.php)",
+      "Bash(php -l app/Http/Middleware/CheckProyectoAccess.php)",
+      "Bash(php -l app/Services/LogService.php)"
+    ],
+    "defaultMode": "dontAsk"
+  },
+  "hooks": {
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd '/c/Users/luisg/Documents/GitHub/apphub/.worktrees/quiebre-contrato' && git add -A 2>/dev/null; if git diff --cached --quiet 2>/dev/null; then jq -n '{\"systemMessage\": \"Subagente terminado (sin cambios nuevos). ¿Continuar al siguiente task?\", \"continue\": false}'; else STAT=$(git diff --cached --stat --no-color 2>/dev/null | tail -1); git commit -m 'wip: task completado - pendiente renombrar' 2>/dev/null; jq -n --arg s \"$STAT\" '{\"systemMessage\": (\"Checkpoint: \" + $s + \". Sugiere nombre de commit (git commit --amend -m) o escribe continuar.\"), \"continue\": false}'; fi",
+            "timeout": 30,
+            "statusMessage": "Checkpoint: guardando avances del task..."
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd '/c/Users/luisg/Documents/GitHub/apphub/.worktrees/quiebre-contrato' && git add -A 2>/dev/null; if git diff --cached --quiet 2>/dev/null; then echo '{\"systemMessage\": \"PreCompact: no hay cambios pendientes en el worktree.\"}'; else git commit -m 'wip: auto-save antes de compact' 2>/dev/null && echo '{\"systemMessage\": \"Auto-guardado: cambios commiteados en feature/quiebre-contrato antes de compact.\"}' || echo '{\"systemMessage\": \"Error al intentar auto-save en el worktree.\"}'; fi",
+            "statusMessage": "Auto-guardando avances antes de compactar contexto..."
+          }
+        ]
+      }
     ]
-  }
+  },
+  "autoCompactWindow": 160000
 }

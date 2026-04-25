@@ -4702,3 +4702,346 @@ git add backend/app/Http/Controllers/Admin/ \
         backend/tests/Feature/AdminTest.php
 git commit -m "feat: add Admin API (usuarios, tipos, asignaciones) with 71 passing tests"
 ```
+
+---
+
+## Task 13: Admin Logs API + Seeder SUPERUSER
+
+**Files:**
+- Create: `backend/app/Http/Controllers/Admin/LogController.php`
+- Create: `backend/database/seeders/SuperuserSeeder.php`
+- Create: `backend/tests/Feature/LogTest.php`
+- Modify: `backend/routes/api.php`
+- Modify: `backend/database/seeders/DatabaseSeeder.php`
+
+- [ ] **Step 13.1: Escribir los tests primero (TDD)**
+
+`backend/tests/Feature/LogTest.php`:
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Area;
+use App\Models\Proyecto;
+use App\Models\Usuario;
+use App\Models\UsuarioProyecto;
+use App\Services\LogService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class LogTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function superuserToken(): string
+    {
+        $su = Usuario::factory()->superuser()->create();
+        return $su->createToken('test')->plainTextToken;
+    }
+
+    public function test_superuser_puede_ver_log_global(): void
+    {
+        $token    = $this->superuserToken();
+        $proyecto = Proyecto::factory()->create();
+        $su       = Usuario::where('rol_global', 'superuser')->first();
+
+        // Generar entradas en distintas tablas de log
+        LogService::log('areas',     $proyecto->id, $su->id, 'CREATE', 1);
+        LogService::log('subareas',  $proyecto->id, $su->id, 'CREATE', 2);
+        LogService::log('proyectos', $proyecto->id, $su->id, 'UPDATE', $proyecto->id);
+
+        $response = $this->withToken($token)->getJson('/api/admin/logs');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [['origen', 'id', 'proyecto_id', 'usuario_id', 'accion', 'created_at']],
+                'total',
+            ]);
+
+        $this->assertGreaterThanOrEqual(3, count($response->json('data')));
+    }
+
+    public function test_log_se_puede_filtrar_por_proyecto(): void
+    {
+        $token     = $this->superuserToken();
+        $su        = Usuario::where('rol_global', 'superuser')->first();
+        $proyecto1 = Proyecto::factory()->create();
+        $proyecto2 = Proyecto::factory()->create();
+
+        LogService::log('areas', $proyecto1->id, $su->id, 'CREATE', 1);
+        LogService::log('areas', $proyecto1->id, $su->id, 'CREATE', 2);
+        LogService::log('areas', $proyecto2->id, $su->id, 'CREATE', 3);
+
+        $response = $this->withToken($token)
+            ->getJson("/api/admin/logs?proyecto_id={$proyecto1->id}");
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+
+        foreach ($data as $row) {
+            $this->assertEquals($proyecto1->id, $row['proyecto_id']);
+        }
+    }
+
+    public function test_log_ordena_por_fecha_descendente(): void
+    {
+        $token    = $this->superuserToken();
+        $su       = Usuario::where('rol_global', 'superuser')->first();
+        $proyecto = Proyecto::factory()->create();
+
+        LogService::log('proyectos', $proyecto->id, $su->id, 'CREATE', $proyecto->id);
+        LogService::log('areas',     $proyecto->id, $su->id, 'CREATE', 1);
+
+        $response = $this->withToken($token)->getJson('/api/admin/logs');
+        $data     = $response->json('data');
+
+        $this->assertGreaterThanOrEqual(
+            $data[1]['created_at'],
+            $data[0]['created_at']
+        );
+    }
+
+    public function test_usuario_no_puede_ver_log_global(): void
+    {
+        $usuario = Usuario::factory()->create();
+        $token   = $usuario->createToken('test')->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/admin/logs')->assertStatus(403);
+    }
+
+    public function test_log_respeta_limite_de_200_entradas(): void
+    {
+        $token    = $this->superuserToken();
+        $su       = Usuario::where('rol_global', 'superuser')->first();
+        $proyecto = Proyecto::factory()->create();
+
+        // Insertar 250 entradas
+        for ($i = 1; $i <= 250; $i++) {
+            LogService::log('areas', $proyecto->id, $su->id, 'CREATE', $i);
+        }
+
+        $response = $this->withToken($token)->getJson('/api/admin/logs');
+
+        $this->assertLessThanOrEqual(200, count($response->json('data')));
+    }
+}
+```
+
+- [ ] **Step 13.2: Ejecutar tests — deben fallar**
+
+```bash
+cd backend
+php artisan test tests/Feature/LogTest.php
+```
+
+Esperado: todos fallan con error de ruta no encontrada.
+
+- [ ] **Step 13.3: Crear `Admin/LogController`**
+
+`backend/app/Http/Controllers/Admin/LogController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class LogController extends Controller
+{
+    private const TABLAS = [
+        'areas', 'subareas', 'sistemas', 'subsistemas',
+        'proyectos', 'usuarios', 'usuarios_proyectos',
+    ];
+
+    public function index(Request $request)
+    {
+        $proyectoId = $request->query('proyecto_id');
+
+        $queries = array_map(function (string $tabla) use ($proyectoId) {
+            $query = DB::table("{$tabla}_log")
+                ->select(
+                    DB::raw("'{$tabla}' as origen"),
+                    'id',
+                    'proyecto_id',
+                    'usuario_id',
+                    'accion',
+                    'entidad_id',
+                    'created_at'
+                );
+
+            if ($proyectoId) {
+                $query->where('proyecto_id', $proyectoId);
+            }
+
+            return $query;
+        }, self::TABLAS);
+
+        // UNION ALL de las 7 tablas
+        $union = array_shift($queries);
+        foreach ($queries as $q) {
+            $union->unionAll($q);
+        }
+
+        $resultados = DB::query()
+            ->fromSub($union, 'logs_union')
+            ->orderByDesc('created_at')
+            ->limit(200)
+            ->get();
+
+        return response()->json([
+            'data'  => $resultados,
+            'total' => $resultados->count(),
+        ]);
+    }
+}
+```
+
+- [ ] **Step 13.4: Agregar ruta de logs en `api.php`**
+
+Dentro del grupo `admin` existente en `backend/routes/api.php`, agregar:
+```php
+use App\Http\Controllers\Admin\LogController;
+
+Route::get('/logs', [LogController::class, 'index']);
+```
+
+El grupo admin completo queda:
+```php
+Route::prefix('admin')->middleware('check.role:superuser')->group(function () {
+    Route::get('/usuarios',              [AdminUsuarioController::class, 'index']);
+    Route::post('/usuarios',             [AdminUsuarioController::class, 'store']);
+    Route::put('/usuarios/{id}',         [AdminUsuarioController::class, 'update']);
+    Route::delete('/usuarios/{id}',      [AdminUsuarioController::class, 'destroy']);
+
+    Route::get('/tipos-usuario',         [TipoUsuarioController::class, 'index']);
+    Route::post('/tipos-usuario',        [TipoUsuarioController::class, 'store']);
+    Route::put('/tipos-usuario/{id}',    [TipoUsuarioController::class, 'update']);
+    Route::delete('/tipos-usuario/{id}', [TipoUsuarioController::class, 'destroy']);
+
+    Route::get('/asignaciones',          [AsignacionController::class, 'index']);
+    Route::post('/asignaciones',         [AsignacionController::class, 'store']);
+    Route::delete('/asignaciones/{id}',  [AsignacionController::class, 'destroy']);
+
+    Route::get('/logs',                  [LogController::class, 'index']);
+});
+```
+
+- [ ] **Step 13.5: Ejecutar tests — deben pasar**
+
+```bash
+php artisan test tests/Feature/LogTest.php
+```
+
+Esperado:
+```
+PASS  Tests\Feature\LogTest
+✓ superuser puede ver log global
+✓ log se puede filtrar por proyecto
+✓ log ordena por fecha descendente
+✓ usuario no puede ver log global
+✓ log respeta limite de 200 entradas
+
+Tests: 5 passed
+```
+
+- [ ] **Step 13.6: Crear el seeder del SUPERUSER inicial**
+
+`backend/database/seeders/SuperuserSeeder.php`:
+```php
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Usuario;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+
+class SuperuserSeeder extends Seeder
+{
+    public function run(): void
+    {
+        if (Usuario::where('rol_global', 'superuser')->exists()) {
+            $this->command->info('SUPERUSER ya existe, omitiendo.');
+            return;
+        }
+
+        $email    = env('SUPERUSER_EMAIL', 'admin@apphub.cl');
+        $password = env('SUPERUSER_PASSWORD', 'changeme123');
+
+        Usuario::create([
+            'nombre'        => 'Administrador',
+            'email'         => $email,
+            'password_hash' => Hash::make($password),
+            'rol_global'    => 'superuser',
+            'activo'        => true,
+        ]);
+
+        $this->command->info("SUPERUSER creado: {$email}");
+    }
+}
+```
+
+- [ ] **Step 13.7: Registrar seeder en `DatabaseSeeder`**
+
+`backend/database/seeders/DatabaseSeeder.php`:
+```php
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $this->call(SuperuserSeeder::class);
+    }
+}
+```
+
+- [ ] **Step 13.8: Ejecutar seeder y verificar**
+
+Agregar en `backend/.env`:
+```env
+SUPERUSER_EMAIL=luisgarnica@hotmail.cl
+SUPERUSER_PASSWORD=TuPasswordSeguro123
+```
+
+```bash
+cd backend
+php artisan db:seed
+```
+
+Esperado: `SUPERUSER creado: luisgarnica@hotmail.cl`
+
+Verificar login con curl:
+```bash
+curl -s -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"luisgarnica@hotmail.cl","password":"TuPasswordSeguro123"}' | jq .
+```
+
+Esperado: respuesta con `token` y `rol_global: "superuser"`.
+
+- [ ] **Step 13.9: Suite completa — sin regresiones**
+
+```bash
+php artisan test
+```
+
+Esperado: **76 tests pasan** — backend completo.
+
+- [ ] **Step 13.10: Commit**
+
+```bash
+cd ..
+git add backend/app/Http/Controllers/Admin/LogController.php \
+        backend/routes/api.php \
+        backend/database/seeders/ \
+        backend/tests/Feature/LogTest.php
+git commit -m "feat: add Logs API + SuperuserSeeder — backend complete with 76 passing tests"
+```

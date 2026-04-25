@@ -731,3 +731,512 @@ cd ..
 git add backend/database/migrations/
 git commit -m "feat: add 15 database migrations (8 main tables + 7 audit logs)"
 ```
+
+---
+
+## Task 3: Modelos Eloquent + Factories
+
+**Files:**
+- Delete: `backend/app/Models/User.php`
+- Create: `backend/app/Models/Usuario.php`
+- Create: `backend/app/Models/TipoUsuario.php`
+- Create: `backend/app/Models/Proyecto.php`
+- Create: `backend/app/Models/UsuarioProyecto.php`
+- Create: `backend/app/Models/Area.php`
+- Create: `backend/app/Models/Subarea.php`
+- Create: `backend/app/Models/Sistema.php`
+- Create: `backend/app/Models/Subsistema.php`
+- Create: `backend/database/factories/UsuarioFactory.php`
+- Create: `backend/database/factories/ProyectoFactory.php`
+- Create: `backend/database/factories/AreaFactory.php`
+- Create: `backend/database/factories/SubareaFactory.php`
+- Create: `backend/database/factories/SistemaFactory.php`
+- Create: `backend/database/factories/SubsistemaFactory.php`
+
+- [ ] **Step 3.1: Eliminar modelo User.php por defecto**
+
+```bash
+cd backend
+rm app/Models/User.php
+```
+
+- [ ] **Step 3.2: Crear modelo `Usuario`**
+
+`backend/app/Models/Usuario.php`:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Laravel\Sanctum\HasApiTokens;
+
+class Usuario extends Authenticatable
+{
+    use HasApiTokens, HasFactory;
+
+    protected $table = 'usuarios';
+
+    protected $fillable = [
+        'nombre',
+        'email',
+        'password_hash',
+        'rol_global',
+        'activo',
+    ];
+
+    protected $hidden = ['password_hash'];
+
+    protected $casts = [
+        'activo'        => 'boolean',
+        'password_hash' => 'hashed',
+    ];
+
+    public function getAuthPassword(): string
+    {
+        return $this->password_hash;
+    }
+
+    public function proyectos()
+    {
+        return $this->belongsToMany(Proyecto::class, 'usuarios_proyectos', 'usuario_id', 'proyecto_id')
+            ->withPivot('rol', 'tipo_id')
+            ->withTimestamps();
+    }
+
+    public function asignaciones()
+    {
+        return $this->hasMany(UsuarioProyecto::class, 'usuario_id');
+    }
+}
+```
+
+- [ ] **Step 3.3: Crear modelo `TipoUsuario`**
+
+`backend/app/Models/TipoUsuario.php`:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class TipoUsuario extends Model
+{
+    use HasFactory;
+
+    protected $table = 'tipos_usuario';
+
+    protected $fillable = ['nombre', 'descripcion', 'activo'];
+
+    protected $casts = ['activo' => 'boolean'];
+}
+```
+
+- [ ] **Step 3.4: Crear modelo `Proyecto`**
+
+`backend/app/Models/Proyecto.php`:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Proyecto extends Model
+{
+    use HasFactory;
+
+    protected $table = 'proyectos';
+
+    protected $fillable = ['codigo', 'nombre', 'estado'];
+
+    public function usuarios()
+    {
+        return $this->belongsToMany(Usuario::class, 'usuarios_proyectos', 'proyecto_id', 'usuario_id')
+            ->withPivot('rol', 'tipo_id')
+            ->withTimestamps();
+    }
+
+    public function asignaciones()
+    {
+        return $this->hasMany(UsuarioProyecto::class, 'proyecto_id');
+    }
+
+    public function areas()
+    {
+        return $this->hasMany(Area::class, 'proyecto_id')->orderBy('orden');
+    }
+}
+```
+
+- [ ] **Step 3.5: Crear modelo `UsuarioProyecto`**
+
+`backend/app/Models/UsuarioProyecto.php`:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class UsuarioProyecto extends Model
+{
+    protected $table = 'usuarios_proyectos';
+
+    protected $fillable = ['usuario_id', 'proyecto_id', 'rol', 'tipo_id'];
+
+    public function usuario()
+    {
+        return $this->belongsTo(Usuario::class, 'usuario_id');
+    }
+
+    public function proyecto()
+    {
+        return $this->belongsTo(Proyecto::class, 'proyecto_id');
+    }
+
+    public function tipo()
+    {
+        return $this->belongsTo(TipoUsuario::class, 'tipo_id');
+    }
+}
+```
+
+- [ ] **Step 3.6: Crear modelo `Area`**
+
+`backend/app/Models/Area.php`:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Area extends Model
+{
+    use HasFactory;
+
+    protected $table = 'areas';
+
+    protected $fillable = ['proyecto_id', 'codigo', 'nombre', 'orden'];
+
+    public function proyecto()
+    {
+        return $this->belongsTo(Proyecto::class, 'proyecto_id');
+    }
+
+    public function subareas()
+    {
+        return $this->hasMany(Subarea::class, 'area_id')->orderBy('orden');
+    }
+}
+```
+
+- [ ] **Step 3.7: Crear modelo `Subarea`**
+
+`backend/app/Models/Subarea.php`:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Subarea extends Model
+{
+    use HasFactory;
+
+    protected $table = 'subareas';
+
+    protected $fillable = ['proyecto_id', 'area_id', 'codigo', 'nombre', 'orden'];
+
+    public function proyecto()
+    {
+        return $this->belongsTo(Proyecto::class, 'proyecto_id');
+    }
+
+    public function area()
+    {
+        return $this->belongsTo(Area::class, 'area_id');
+    }
+
+    public function sistemas()
+    {
+        return $this->hasMany(Sistema::class, 'subarea_id')->orderBy('orden');
+    }
+}
+```
+
+- [ ] **Step 3.8: Crear modelo `Sistema`**
+
+`backend/app/Models/Sistema.php`:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Sistema extends Model
+{
+    use HasFactory;
+
+    protected $table = 'sistemas';
+
+    protected $fillable = ['proyecto_id', 'subarea_id', 'codigo', 'nombre', 'orden'];
+
+    public function proyecto()
+    {
+        return $this->belongsTo(Proyecto::class, 'proyecto_id');
+    }
+
+    public function subarea()
+    {
+        return $this->belongsTo(Subarea::class, 'subarea_id');
+    }
+
+    public function subsistemas()
+    {
+        return $this->hasMany(Subsistema::class, 'sistema_id')->orderBy('orden');
+    }
+}
+```
+
+- [ ] **Step 3.9: Crear modelo `Subsistema`**
+
+`backend/app/Models/Subsistema.php`:
+```php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Subsistema extends Model
+{
+    use HasFactory;
+
+    protected $table = 'subsistemas';
+
+    protected $fillable = ['proyecto_id', 'sistema_id', 'codigo', 'nombre', 'orden'];
+
+    public function proyecto()
+    {
+        return $this->belongsTo(Proyecto::class, 'proyecto_id');
+    }
+
+    public function sistema()
+    {
+        return $this->belongsTo(Sistema::class, 'sistema_id');
+    }
+}
+```
+
+- [ ] **Step 3.10: Crear factories**
+
+`backend/database/factories/UsuarioFactory.php`:
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Usuario;
+use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
+
+class UsuarioFactory extends Factory
+{
+    protected $model = Usuario::class;
+
+    public function definition(): array
+    {
+        return [
+            'nombre'       => fake()->name(),
+            'email'        => fake()->unique()->safeEmail(),
+            'password_hash'=> Hash::make('password'),
+            'rol_global'   => 'usuario',
+            'activo'       => true,
+        ];
+    }
+
+    public function superuser(): static
+    {
+        return $this->state(['rol_global' => 'superuser']);
+    }
+
+    public function admin(): static
+    {
+        return $this->state(['rol_global' => 'admin']);
+    }
+
+    public function inactivo(): static
+    {
+        return $this->state(['activo' => false]);
+    }
+}
+```
+
+`backend/database/factories/ProyectoFactory.php`:
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Proyecto;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class ProyectoFactory extends Factory
+{
+    protected $model = Proyecto::class;
+
+    public function definition(): array
+    {
+        return [
+            'codigo' => strtoupper(fake()->unique()->lexify('???-###')),
+            'nombre' => fake()->company() . ' — ' . fake()->catchPhrase(),
+            'estado' => 'activo',
+        ];
+    }
+
+    public function archivado(): static
+    {
+        return $this->state(['estado' => 'archivado']);
+    }
+}
+```
+
+`backend/database/factories/AreaFactory.php`:
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Area;
+use App\Models\Proyecto;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class AreaFactory extends Factory
+{
+    protected $model = Area::class;
+
+    public function definition(): array
+    {
+        return [
+            'proyecto_id' => Proyecto::factory(),
+            'codigo'      => fake()->unique()->numerify('####'),
+            'nombre'      => fake()->words(3, true),
+            'orden'       => fake()->numberBetween(0, 100),
+        ];
+    }
+}
+```
+
+`backend/database/factories/SubareaFactory.php`:
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Area;
+use App\Models\Proyecto;
+use App\Models\Subarea;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class SubareaFactory extends Factory
+{
+    protected $model = Subarea::class;
+
+    public function definition(): array
+    {
+        $area = Area::factory()->create();
+        return [
+            'proyecto_id' => $area->proyecto_id,
+            'area_id'     => $area->id,
+            'codigo'      => fake()->unique()->numerify('####'),
+            'nombre'      => fake()->words(3, true),
+            'orden'       => fake()->numberBetween(0, 100),
+        ];
+    }
+}
+```
+
+`backend/database/factories/SistemaFactory.php`:
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Sistema;
+use App\Models\Subarea;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class SistemaFactory extends Factory
+{
+    protected $model = Sistema::class;
+
+    public function definition(): array
+    {
+        $subarea = Subarea::factory()->create();
+        return [
+            'proyecto_id' => $subarea->proyecto_id,
+            'subarea_id'  => $subarea->id,
+            'codigo'      => fake()->unique()->lexify('????'),
+            'nombre'      => fake()->words(3, true),
+            'orden'       => fake()->numberBetween(0, 100),
+        ];
+    }
+}
+```
+
+`backend/database/factories/SubsistemaFactory.php`:
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Subsistema;
+use App\Models\Sistema;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class SubsistemaFactory extends Factory
+{
+    protected $model = Subsistema::class;
+
+    public function definition(): array
+    {
+        $sistema = Sistema::factory()->create();
+        return [
+            'proyecto_id' => $sistema->proyecto_id,
+            'sistema_id'  => $sistema->id,
+            'codigo'      => fake()->unique()->lexify('????-#'),
+            'nombre'      => fake()->words(3, true),
+            'orden'       => fake()->numberBetween(0, 100),
+        ];
+    }
+}
+```
+
+- [ ] **Step 3.11: Verificar que no hay errores de sintaxis**
+
+```bash
+cd backend
+php artisan tinker --execute="App\Models\Usuario::count(); echo 'OK';"
+```
+
+Esperado: `OK` (sin errores de clase o autoload).
+
+- [ ] **Step 3.12: Commit**
+
+```bash
+cd ..
+git add backend/app/Models/ backend/database/factories/
+git commit -m "feat: add 8 Eloquent models and 6 factories"
+```

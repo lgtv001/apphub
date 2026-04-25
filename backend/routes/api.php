@@ -11,7 +11,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me',     [AuthController::class, 'me']);
 
-    // Proyectos (se completa en Task 6)
-    // Jerarquía (se completa en Task 7)
+    Route::get('/proyectos',      [ProyectoController::class, 'index']);
+    Route::get('/proyectos/{id}', [ProyectoController::class, 'show']);
+    Route::post('/proyectos',     [ProyectoController::class, 'store'])->middleware('check.role:superuser');
+    Route::put('/proyectos/{id}', [ProyectoController::class, 'update'])->middleware('check.role:superuser');
+
+    // Jerarquía (Task 7)
 
 });

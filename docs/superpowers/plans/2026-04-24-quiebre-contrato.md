@@ -1425,3 +1425,261 @@ cd ..
 git add backend/app/Http/Middleware/ backend/app/Services/
 git commit -m "feat: add CheckRole, CheckProyectoAccess middleware and LogService"
 ```
+
+---
+
+## Task 5: Auth API + Tests
+
+**Files:**
+- Create: `backend/app/Http/Controllers/AuthController.php`
+- Create: `backend/routes/api.php`
+- Create: `backend/tests/Feature/AuthTest.php`
+
+- [ ] **Step 5.1: Escribir el test primero (TDD)**
+
+`backend/tests/Feature/AuthTest.php`:
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Usuario;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class AuthTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_login_con_credenciales_validas(): void
+    {
+        $usuario = Usuario::factory()->create([
+            'email'         => 'test@example.com',
+            'password_hash' => bcrypt('secret123'),
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email'    => 'test@example.com',
+            'password' => 'secret123',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'token',
+                'usuario' => ['id', 'nombre', 'email', 'rol_global'],
+            ]);
+    }
+
+    public function test_login_con_password_incorrecto(): void
+    {
+        Usuario::factory()->create(['email' => 'test@example.com']);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email'    => 'test@example.com',
+            'password' => 'wrong',
+        ]);
+
+        $response->assertStatus(401)
+            ->assertJson(['message' => 'Credenciales inválidas']);
+    }
+
+    public function test_login_con_email_inexistente(): void
+    {
+        $response = $this->postJson('/api/auth/login', [
+            'email'    => 'noexiste@example.com',
+            'password' => 'secret123',
+        ]);
+
+        $response->assertStatus(401);
+    }
+
+    public function test_login_con_usuario_inactivo(): void
+    {
+        Usuario::factory()->inactivo()->create([
+            'email'         => 'inactivo@example.com',
+            'password_hash' => bcrypt('secret123'),
+        ]);
+
+        $response = $this->postJson('/api/auth/login', [
+            'email'    => 'inactivo@example.com',
+            'password' => 'secret123',
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJson(['message' => 'Usuario inactivo']);
+    }
+
+    public function test_login_sin_campos_requeridos(): void
+    {
+        $response = $this->postJson('/api/auth/login', []);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['email', 'password']);
+    }
+
+    public function test_me_retorna_usuario_autenticado(): void
+    {
+        $usuario = Usuario::factory()->create();
+        $token   = $usuario->createToken('test')->plainTextToken;
+
+        $response = $this->withToken($token)->getJson('/api/auth/me');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'id'        => $usuario->id,
+                'email'     => $usuario->email,
+                'rol_global'=> $usuario->rol_global,
+            ]);
+    }
+
+    public function test_me_sin_token_retorna_401(): void
+    {
+        $response = $this->getJson('/api/auth/me');
+
+        $response->assertStatus(401);
+    }
+
+    public function test_logout_revoca_token(): void
+    {
+        $usuario = Usuario::factory()->create();
+        $token   = $usuario->createToken('test')->plainTextToken;
+
+        $this->withToken($token)->postJson('/api/auth/logout')
+            ->assertStatus(204);
+
+        // El token ya no funciona
+        $this->withToken($token)->getJson('/api/auth/me')
+            ->assertStatus(401);
+    }
+}
+```
+
+- [ ] **Step 5.2: Ejecutar tests — deben fallar**
+
+```bash
+cd backend
+php artisan test tests/Feature/AuthTest.php
+```
+
+Esperado: todos fallan con `RouteNotFoundException` o similar (rutas y controller no existen aún).
+
+- [ ] **Step 5.3: Crear `AuthController`**
+
+`backend/app/Http/Controllers/AuthController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Usuario;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+
+class AuthController extends Controller
+{
+    public function login(Request $request)
+    {
+        $data = $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $usuario = Usuario::where('email', $data['email'])->first();
+
+        if (!$usuario || !Hash::check($data['password'], $usuario->password_hash)) {
+            return response()->json(['message' => 'Credenciales inválidas'], 401);
+        }
+
+        if (!$usuario->activo) {
+            return response()->json(['message' => 'Usuario inactivo'], 403);
+        }
+
+        $token = $usuario->createToken('auth-token')->plainTextToken;
+
+        return response()->json([
+            'token'   => $token,
+            'usuario' => $usuario->only(['id', 'nombre', 'email', 'rol_global']),
+        ]);
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json(
+            $request->user()->only(['id', 'nombre', 'email', 'rol_global'])
+        );
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->noContent();
+    }
+}
+```
+
+- [ ] **Step 5.4: Crear `routes/api.php` con rutas de auth**
+
+`backend/routes/api.php`:
+```php
+<?php
+
+use App\Http\Controllers\AuthController;
+use Illuminate\Support\Facades\Route;
+
+// Auth (rate limit login: 10/min por IP — configurado en bootstrap/app.php)
+Route::post('/auth/login', [AuthController::class, 'login'])
+    ->middleware('throttle:login');
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me',     [AuthController::class, 'me']);
+
+    // El resto de rutas se agregan en tasks posteriores
+
+});
+```
+
+- [ ] **Step 5.5: Ejecutar tests — deben pasar**
+
+```bash
+php artisan test tests/Feature/AuthTest.php
+```
+
+Esperado:
+```
+PASS  Tests\Feature\AuthTest
+✓ login con credenciales validas
+✓ login con password incorrecto
+✓ login con email inexistente
+✓ login con usuario inactivo
+✓ login sin campos requeridos
+✓ me retorna usuario autenticado
+✓ me sin token retorna 401
+✓ logout revoca token
+
+Tests: 8 passed
+```
+
+- [ ] **Step 5.6: Verificar manualmente con curl**
+
+```bash
+php artisan serve &
+
+curl -s -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"noexiste@test.com","password":"x"}' | jq .
+```
+
+Esperado: `{"message":"Credenciales inválidas"}`
+
+- [ ] **Step 5.7: Commit**
+
+```bash
+cd ..
+git add backend/app/Http/Controllers/AuthController.php \
+        backend/routes/api.php \
+        backend/tests/Feature/AuthTest.php
+git commit -m "feat: add Auth API (login/logout/me) with passing tests"
+```

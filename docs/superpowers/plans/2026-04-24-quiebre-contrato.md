@@ -5045,3 +5045,372 @@ git add backend/app/Http/Controllers/Admin/LogController.php \
         backend/tests/Feature/LogTest.php
 git commit -m "feat: add Logs API + SuperuserSeeder — backend complete with 76 passing tests"
 ```
+
+---
+
+## Task 14: Frontend base — app.css + api.js
+
+**Files:**
+- Create: `backend/public/assets/css/app.css`
+- Create: `backend/public/assets/js/api.js`
+
+Estos dos archivos son compartidos por todas las páginas HTML. `api.js` gestiona el token y abstrae todos los llamados al API. `app.css` define el tema visual oscuro consistente con los mockups aprobados.
+
+- [ ] **Step 14.1: Crear `app.css`**
+
+`backend/public/assets/css/app.css`:
+```css
+/* ── Reset y base ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #08090C;
+  --bg-card:   #0D0E12;
+  --bg-row:    #111318;
+  --border:    rgba(255,255,255,0.08);
+  --border-lo: rgba(255,255,255,0.04);
+  --text:      #F0F2F8;
+  --text-muted:#7A7F96;
+  --text-dim:  #4A4F66;
+  --blue:      #4F7EFF;
+  --blue-soft: #8AABFF;
+  --red:       #FF6B6B;
+  --green:     #2ECC8A;
+  --orange:    #FFB347;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ── Tipografía ────────────────────────────────────────── */
+h1 { font-size: 20px; font-weight: 700; }
+h2 { font-size: 16px; font-weight: 700; }
+h3 { font-size: 13px; font-weight: 600; }
+.label {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--text-dim);
+}
+.subtitle { font-size: 12px; color: var(--text-muted); }
+
+/* ── Layout ────────────────────────────────────────────── */
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.page-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+/* ── Navbar ────────────────────────────────────────────── */
+.navbar {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.navbar-brand { font-size: 15px; font-weight: 700; color: var(--text); text-decoration: none; }
+.navbar-user  { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 12px; }
+
+/* ── Cards ─────────────────────────────────────────────── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.card-selectable {
+  cursor: pointer; transition: border-color 0.15s, transform 0.1s;
+}
+.card-selectable:hover {
+  border-color: var(--blue);
+  transform: translateY(-2px);
+}
+
+/* ── Badges ─────────────────────────────────────────────── */
+.badge {
+  display: inline-block; padding: 2px 8px;
+  border-radius: 100px; font-size: 10px; font-weight: 600;
+}
+.badge-su      { background: rgba(255,107,107,0.1); color: var(--red);   border: 1px solid rgba(255,107,107,0.25); }
+.badge-admin   { background: rgba(79,126,255,0.1);  color: var(--blue-soft); border: 1px solid rgba(79,126,255,0.25); }
+.badge-usuario { background: rgba(46,204,138,0.08); color: var(--green); border: 1px solid rgba(46,204,138,0.2); }
+.badge-activo  { background: rgba(46,204,138,0.08); color: var(--green); }
+.badge-archivado { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+
+/* ── Tabla ──────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  background: var(--bg-row);
+  color: var(--text-dim);
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 8px 12px; text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border-lo);
+  color: var(--text);
+}
+tr:hover td { background: rgba(255,255,255,0.02); }
+.code { font-family: monospace; font-size: 12px; color: var(--blue-soft); }
+
+/* ── Árbol jerárquico ────────────────────────────────────── */
+.tree-row { cursor: pointer; }
+.tree-indent-1 td:first-child { padding-left: 28px; }
+.tree-indent-2 td:first-child { padding-left: 52px; }
+.tree-indent-3 td:first-child { padding-left: 76px; }
+.tree-toggle { color: var(--text-dim); margin-right: 6px; display: inline-block; width: 12px; }
+
+/* ── Formularios ─────────────────────────────────────────── */
+.form-group { margin-bottom: 16px; }
+label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+input[type="text"], input[type="email"], input[type="password"],
+select, textarea {
+  width: 100%;
+  background: var(--bg-row);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 8px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+.field-error { font-size: 11px; color: var(--red); margin-top: 4px; }
+input.is-error { border-color: var(--red); }
+
+/* ── Botones ─────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 7px;
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  border: none; transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary  { background: var(--blue); color: #fff; }
+.btn-danger   { background: rgba(255,107,107,0.15); color: var(--red); border: 1px solid rgba(255,107,107,0.3); }
+.btn-ghost    { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+.btn-sm       { padding: 4px 10px; font-size: 11px; border-radius: 5px; }
+
+/* ── Modal ──────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+}
+.modal-overlay.hidden { display: none; }
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  width: 480px; max-width: 95vw;
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.modal-close {
+  background: none; border: none; color: var(--text-muted);
+  font-size: 18px; cursor: pointer;
+}
+
+/* ── Tabs ───────────────────────────────────────────────── */
+.tabs { display: flex; gap: 2px; margin-bottom: 20px; }
+.tab {
+  padding: 7px 14px; font-size: 12px; border-radius: 6px;
+  cursor: pointer; color: var(--text-muted); border: none; background: none;
+}
+.tab.active { background: rgba(79,126,255,0.1); color: var(--blue-soft); }
+
+/* ── Alerts ─────────────────────────────────────────────── */
+.alert { padding: 10px 14px; border-radius: 7px; font-size: 12px; margin-bottom: 14px; }
+.alert-error   { background: rgba(255,107,107,0.1); color: var(--red);   border: 1px solid rgba(255,107,107,0.25); }
+.alert-success { background: rgba(46,204,138,0.08); color: var(--green); border: 1px solid rgba(46,204,138,0.2); }
+.alert.hidden  { display: none; }
+
+/* ── Utilidades ──────────────────────────────────────────── */
+.hidden    { display: none !important; }
+.text-muted{ color: var(--text-muted); }
+.text-red  { color: var(--red); }
+.text-green{ color: var(--green); }
+.text-blue { color: var(--blue-soft); }
+.mt-8  { margin-top: 8px;  }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.flex  { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8 { gap: 8px; }
+```
+
+- [ ] **Step 14.2: Crear `api.js`**
+
+`backend/public/assets/js/api.js`:
+```javascript
+const API_BASE = '/api';
+const TOKEN_KEY = 'apphub_token';
+const USER_KEY  = 'apphub_user';
+
+// ── Token y sesión ──────────────────────────────────────────
+
+export function getToken() {
+    return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getUser() {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+}
+
+export function saveSession(token, usuario) {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(usuario));
+}
+
+export function clearSession() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+}
+
+export function isSuperuser() {
+    return getUser()?.rol_global === 'superuser';
+}
+
+export function requireAuth() {
+    if (!getToken()) {
+        window.location.href = '/app/login.html';
+    }
+}
+
+// ── Fetch wrapper ───────────────────────────────────────────
+
+export async function apiFetch(path, options = {}) {
+    const token = getToken();
+
+    const headers = {
+        'Accept': 'application/json',
+        ...(options.body && !(options.body instanceof FormData)
+            ? { 'Content-Type': 'application/json' }
+            : {}),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+    };
+
+    const res = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        headers,
+        body: options.body instanceof FormData
+            ? options.body
+            : options.body ? JSON.stringify(options.body) : undefined,
+    });
+
+    if (res.status === 401) {
+        clearSession();
+        window.location.href = '/app/login.html';
+        return;
+    }
+
+    return res;
+}
+
+// ── Helpers JSON ────────────────────────────────────────────
+
+export async function apiGet(path) {
+    const res = await apiFetch(path);
+    if (!res.ok) throw await res.json();
+    return res.json();
+}
+
+export async function apiPost(path, body) {
+    const res = await apiFetch(path, { method: 'POST', body });
+    if (!res.ok) throw await res.json();
+    return res.json();
+}
+
+export async function apiPut(path, body) {
+    const res = await apiFetch(path, { method: 'PUT', body });
+    if (!res.ok) throw await res.json();
+    return res.json();
+}
+
+export async function apiDelete(path) {
+    const res = await apiFetch(path, { method: 'DELETE' });
+    if (!res.ok) throw await res.json();
+    return res;
+}
+
+// ── Manejo de errores de validación ────────────────────────
+
+export function showValidationErrors(errorsObj, formEl) {
+    // Limpiar errores previos
+    formEl.querySelectorAll('.field-error').forEach(el => el.remove());
+    formEl.querySelectorAll('.is-error').forEach(el => el.classList.remove('is-error'));
+
+    if (!errorsObj?.errors) return;
+
+    for (const [field, messages] of Object.entries(errorsObj.errors)) {
+        const input = formEl.querySelector(`[name="${field}"]`);
+        if (input) {
+            input.classList.add('is-error');
+            const span = document.createElement('span');
+            span.className = 'field-error';
+            span.textContent = messages[0];
+            input.parentElement.appendChild(span);
+        }
+    }
+}
+```
+
+- [ ] **Step 14.3: Crear directorio `app/` en `public/`**
+
+```bash
+cd backend
+mkdir -p public/app
+mkdir -p public/assets/css
+mkdir -p public/assets/js
+```
+
+Verificar que los archivos estén en sus rutas:
+```
+backend/public/assets/css/app.css   ✓
+backend/public/assets/js/api.js     ✓
+backend/public/app/                 ✓ (vacío por ahora)
+```
+
+- [ ] **Step 14.4: Verificar que el servidor sirve los assets**
+
+```bash
+php artisan serve &
+curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/assets/css/app.css
+```
+
+Esperado: `200`
+
+```bash
+curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/assets/js/api.js
+```
+
+Esperado: `200`
+
+- [ ] **Step 14.5: Commit**
+
+```bash
+cd ..
+git add backend/public/assets/
+git commit -m "feat: add base CSS (dark theme) and api.js fetch wrapper"
+```

@@ -5582,3 +5582,271 @@ cd ..
 git add backend/public/app/login.html
 git commit -m "feat: add login.html with session management and error handling"
 ```
+
+---
+
+## Task 16: selector-proyecto.html + selector-app.html
+
+**Files:**
+- Create: `backend/public/app/selector-proyecto.html`
+- Create: `backend/public/app/selector-app.html`
+
+- [ ] **Step 16.1: Crear `selector-proyecto.html`**
+
+`backend/public/app/selector-proyecto.html`:
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AppHub — Proyectos</title>
+  <link rel="stylesheet" href="/assets/css/app.css"/>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="navbar-brand" href="/app/selector-proyecto.html">AppHub</a>
+    <div class="navbar-user">
+      <span id="user-name" class="text-muted"></span>
+      <button class="btn btn-ghost btn-sm" id="btn-logout">Cerrar sesión</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Proyectos</h1>
+        <p class="subtitle mt-8">Selecciona el proyecto en el que deseas trabajar</p>
+      </div>
+      <button id="btn-admin" class="btn btn-danger hidden">Panel SUPERUSER</button>
+    </div>
+
+    <div id="alert-error" class="alert alert-error hidden"></div>
+    <div id="loading" class="text-muted">Cargando proyectos...</div>
+
+    <div id="projects-grid" class="cards-grid hidden"></div>
+    <div id="empty-msg" class="text-muted hidden">
+      No tienes proyectos asignados. Contacta al administrador.
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getUser, clearSession, apiGet, isSuperuser } from '/assets/js/api.js';
+
+    requireAuth();
+
+    const user      = getUser();
+    const loadingEl = document.getElementById('loading');
+    const gridEl    = document.getElementById('projects-grid');
+    const emptyEl   = document.getElementById('empty-msg');
+    const alertEl   = document.getElementById('alert-error');
+    const btnAdmin  = document.getElementById('btn-admin');
+
+    document.getElementById('user-name').textContent = user?.nombre ?? '';
+
+    // Mostrar botón admin si es SUPERUSER
+    if (isSuperuser()) {
+      btnAdmin.classList.remove('hidden');
+      btnAdmin.addEventListener('click', () => {
+        window.location.href = '/app/superuser.html';
+      });
+    }
+
+    // Logout
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      try {
+        await fetch('/api/auth/logout', {
+          method:  'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('apphub_token')}`,
+            'Accept': 'application/json',
+          },
+        });
+      } finally {
+        clearSession();
+        window.location.href = '/app/login.html';
+      }
+    });
+
+    // Cargar proyectos
+    function estadoBadge(estado) {
+      return estado === 'activo'
+        ? '<span class="badge badge-activo">Activo</span>'
+        : '<span class="badge badge-archivado">Archivado</span>';
+    }
+
+    function renderProyecto(p) {
+      const card = document.createElement('div');
+      card.className = 'card card-selectable';
+      card.innerHTML = `
+        <div class="flex-between" style="margin-bottom:10px">
+          <span class="code">${p.codigo}</span>
+          ${estadoBadge(p.estado)}
+        </div>
+        <h3>${p.nombre}</h3>
+      `;
+      card.addEventListener('click', () => {
+        sessionStorage.setItem('proyecto_id',     p.id);
+        sessionStorage.setItem('proyecto_codigo', p.codigo);
+        sessionStorage.setItem('proyecto_nombre', p.nombre);
+        window.location.href = '/app/selector-app.html';
+      });
+      return card;
+    }
+
+    try {
+      const { data } = await apiGet('/proyectos');
+
+      loadingEl.classList.add('hidden');
+
+      if (!data.length) {
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      gridEl.classList.remove('hidden');
+      data.forEach(p => gridEl.appendChild(renderProyecto(p)));
+
+    } catch {
+      loadingEl.classList.add('hidden');
+      alertEl.textContent = 'Error al cargar los proyectos.';
+      alertEl.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
+```
+
+- [ ] **Step 16.2: Crear `selector-app.html`**
+
+`backend/public/app/selector-app.html`:
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AppHub — Aplicaciones</title>
+  <link rel="stylesheet" href="/assets/css/app.css"/>
+  <style>
+    .app-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      cursor: pointer;
+    }
+    .app-icon {
+      width: 48px; height: 48px; border-radius: 10px;
+      background: rgba(79,126,255,0.1);
+      border: 1px solid rgba(79,126,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .app-info h3 { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <a class="navbar-brand" href="/app/selector-proyecto.html">AppHub</a>
+      <span class="text-muted" style="font-size:12px">›</span>
+      <span id="proyecto-nombre" style="font-size:13px;color:var(--text-muted)"></span>
+    </div>
+    <div class="navbar-user">
+      <span id="user-name" class="text-muted"></span>
+      <a href="/app/selector-proyecto.html" class="btn btn-ghost btn-sm">Cambiar proyecto</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Aplicaciones</h1>
+        <p class="subtitle mt-8">Elige la app con la que deseas trabajar</p>
+      </div>
+    </div>
+
+    <div class="cards-grid" style="max-width:700px">
+
+      <!-- Quiebre del Contrato -->
+      <div class="card card-selectable app-card" id="app-quiebre">
+        <div class="app-icon">📋</div>
+        <div class="app-info">
+          <h3>Quiebre del Contrato</h3>
+          <p class="subtitle">Gestión de la jerarquía de ítems del contrato: áreas, subáreas, sistemas y subsistemas.</p>
+        </div>
+      </div>
+
+      <!-- Placeholder para apps futuras -->
+      <div class="card" style="opacity:0.35;cursor:not-allowed">
+        <div class="app-card">
+          <div class="app-icon" style="background:rgba(255,255,255,0.04);border-color:var(--border)">🔜</div>
+          <div class="app-info">
+            <h3>Próximamente</h3>
+            <p class="subtitle">Nuevos módulos en desarrollo.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getUser } from '/assets/js/api.js';
+
+    requireAuth();
+
+    const proyectoId     = sessionStorage.getItem('proyecto_id');
+    const proyectoNombre = sessionStorage.getItem('proyecto_nombre');
+
+    // Si no hay proyecto seleccionado, volver al selector
+    if (!proyectoId) {
+      window.location.href = '/app/selector-proyecto.html';
+    }
+
+    document.getElementById('proyecto-nombre').textContent = proyectoNombre ?? '';
+    document.getElementById('user-name').textContent       = getUser()?.nombre ?? '';
+
+    document.getElementById('app-quiebre').addEventListener('click', () => {
+      window.location.href = '/app/quiebre.html';
+    });
+  </script>
+</body>
+</html>
+```
+
+- [ ] **Step 16.3: Verificar flujo completo en el browser**
+
+```bash
+cd backend && php artisan serve
+```
+
+Flujo a verificar:
+1. `http://localhost:8000/app/login.html` → login con SUPERUSER
+2. Redirige a `selector-proyecto.html` → muestra proyectos (vacío si no hay ninguno) + botón "Panel SUPERUSER" visible
+3. Si no hay proyectos, crear uno desde el panel SUPERUSER (o via curl):
+```bash
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"luisgarnica@hotmail.cl","password":"TuPasswordSeguro123"}' | jq -r .token)
+
+curl -s -X POST http://localhost:8000/api/proyectos \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"codigo":"AUT-001","nombre":"Autopista Norte Tramo 1","estado":"activo"}'
+```
+4. Recargar `selector-proyecto.html` → aparece la card del proyecto
+5. Click en proyecto → va a `selector-app.html` con el nombre del proyecto en el navbar
+6. Click en "Quiebre del Contrato" → va a `quiebre.html` (404 por ahora — esperado)
+7. Click "Cambiar proyecto" → vuelve al selector de proyectos
+
+- [ ] **Step 16.4: Commit**
+
+```bash
+cd ..
+git add backend/public/app/selector-proyecto.html \
+        backend/public/app/selector-app.html
+git commit -m "feat: add selector-proyecto and selector-app pages"
+```

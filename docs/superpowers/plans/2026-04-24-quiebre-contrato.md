@@ -2394,3 +2394,352 @@ git add backend/app/Http/Controllers/AreaController.php \
         backend/tests/Feature/AreaTest.php
 git commit -m "feat: add Areas API with CRUD, project isolation and audit log"
 ```
+
+---
+
+## Task 8: Jerarquía API — Subareas + Tests
+
+**Files:**
+- Create: `backend/app/Http/Controllers/SubareaController.php`
+- Create: `backend/tests/Feature/SubareaTest.php`
+- Modify: `backend/routes/api.php`
+
+- [ ] **Step 8.1: Escribir los tests primero (TDD)**
+
+`backend/tests/Feature/SubareaTest.php`:
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Area;
+use App\Models\Proyecto;
+use App\Models\Subarea;
+use App\Models\Usuario;
+use App\Models\UsuarioProyecto;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class SubareaTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function setup(): array
+    {
+        $proyecto = Proyecto::factory()->create();
+        $area     = Area::factory()->create(['proyecto_id' => $proyecto->id]);
+        $admin    = Usuario::factory()->admin()->create();
+        UsuarioProyecto::create([
+            'usuario_id'  => $admin->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'admin',
+        ]);
+        $token = $admin->createToken('test')->plainTextToken;
+        return [$proyecto, $area, $admin, $token];
+    }
+
+    public function test_puede_listar_subareas_de_proyecto(): void
+    {
+        [$proyecto, $area, , $token] = $this->setup();
+        Subarea::factory()->count(2)->create([
+            'proyecto_id' => $proyecto->id,
+            'area_id'     => $area->id,
+        ]);
+
+        $this->withToken($token)
+            ->getJson("/api/proyectos/{$proyecto->id}/subareas")
+            ->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+    }
+
+    public function test_puede_filtrar_subareas_por_area(): void
+    {
+        [$proyecto, $area, , $token] = $this->setup();
+        $otra_area = Area::factory()->create(['proyecto_id' => $proyecto->id]);
+
+        Subarea::factory()->count(2)->create(['proyecto_id' => $proyecto->id, 'area_id' => $area->id]);
+        Subarea::factory()->create(['proyecto_id' => $proyecto->id, 'area_id' => $otra_area->id]);
+
+        $this->withToken($token)
+            ->getJson("/api/proyectos/{$proyecto->id}/subareas?area_id={$area->id}")
+            ->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+    }
+
+    public function test_admin_puede_crear_subarea(): void
+    {
+        [$proyecto, $area, , $token] = $this->setup();
+
+        $response = $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/subareas", [
+                'area_id' => $area->id,
+                'codigo'  => '3610',
+                'nombre'  => 'Fundaciones',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('codigo', '3610')
+            ->assertJsonPath('area_id', $area->id);
+
+        $this->assertDatabaseHas('subareas', [
+            'proyecto_id' => $proyecto->id,
+            'codigo'      => '3610',
+        ]);
+    }
+
+    public function test_area_padre_debe_pertenecer_al_proyecto(): void
+    {
+        [$proyecto, , , $token] = $this->setup();
+        $area_ajena = Area::factory()->create(); // area de otro proyecto
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/subareas", [
+                'area_id' => $area_ajena->id,
+                'codigo'  => '3610',
+                'nombre'  => 'Fundaciones',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['area_id']);
+    }
+
+    public function test_usuario_no_puede_crear_subarea(): void
+    {
+        [$proyecto, $area] = $this->setup();
+        $usuario = Usuario::factory()->create();
+        UsuarioProyecto::create([
+            'usuario_id'  => $usuario->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'usuario',
+        ]);
+        $token = $usuario->createToken('test')->plainTextToken;
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/subareas", [
+                'area_id' => $area->id,
+                'codigo'  => '3610',
+                'nombre'  => 'Fundaciones',
+            ])
+            ->assertStatus(403);
+    }
+
+    public function test_codigo_duplicado_en_mismo_proyecto_falla(): void
+    {
+        [$proyecto, $area, , $token] = $this->setup();
+        Subarea::factory()->create(['proyecto_id' => $proyecto->id, 'codigo' => '3610']);
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/subareas", [
+                'area_id' => $area->id,
+                'codigo'  => '3610',
+                'nombre'  => 'Duplicado',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['codigo']);
+    }
+
+    public function test_admin_puede_editar_subarea(): void
+    {
+        [$proyecto, $area, , $token] = $this->setup();
+        $subarea = Subarea::factory()->create([
+            'proyecto_id' => $proyecto->id,
+            'area_id'     => $area->id,
+        ]);
+
+        $this->withToken($token)
+            ->putJson("/api/proyectos/{$proyecto->id}/subareas/{$subarea->id}", [
+                'nombre' => 'Nombre editado',
+            ])
+            ->assertStatus(200)
+            ->assertJsonPath('nombre', 'Nombre editado');
+    }
+
+    public function test_admin_puede_eliminar_subarea(): void
+    {
+        [$proyecto, $area, , $token] = $this->setup();
+        $subarea = Subarea::factory()->create([
+            'proyecto_id' => $proyecto->id,
+            'area_id'     => $area->id,
+        ]);
+
+        $this->withToken($token)
+            ->deleteJson("/api/proyectos/{$proyecto->id}/subareas/{$subarea->id}")
+            ->assertStatus(204);
+
+        $this->assertDatabaseMissing('subareas', ['id' => $subarea->id]);
+    }
+}
+```
+
+- [ ] **Step 8.2: Ejecutar tests — deben fallar**
+
+```bash
+cd backend
+php artisan test tests/Feature/SubareaTest.php
+```
+
+Esperado: todos fallan con error de ruta no encontrada.
+
+- [ ] **Step 8.3: Crear `SubareaController`**
+
+`backend/app/Http/Controllers/SubareaController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Subarea;
+use App\Services\LogService;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+class SubareaController extends Controller
+{
+    public function index(Request $request, int $proyecto_id)
+    {
+        $query = Subarea::where('proyecto_id', $proyecto_id)
+            ->orderBy('orden')
+            ->orderBy('codigo');
+
+        if ($request->has('area_id')) {
+            $query->where('area_id', $request->area_id);
+        }
+
+        return response()->json(['data' => $query->get()]);
+    }
+
+    public function store(Request $request, int $proyecto_id)
+    {
+        $data = $request->validate([
+            'area_id' => [
+                'required', 'integer',
+                Rule::exists('areas', 'id')->where('proyecto_id', $proyecto_id),
+            ],
+            'codigo'  => [
+                'required', 'string', 'max:50',
+                Rule::unique('subareas')->where('proyecto_id', $proyecto_id),
+            ],
+            'nombre'  => 'required|string|max:255',
+            'orden'   => 'integer|min:0',
+        ]);
+
+        $subarea = Subarea::create(array_merge($data, ['proyecto_id' => $proyecto_id]));
+
+        LogService::log(
+            tabla:        'subareas',
+            proyectoId:   $proyecto_id,
+            usuarioId:    $request->user()->id,
+            accion:       'CREATE',
+            entidadId:    $subarea->id,
+            datosDespues: $subarea->toArray(),
+            ip:           $request->ip()
+        );
+
+        return response()->json($subarea, 201);
+    }
+
+    public function update(Request $request, int $proyecto_id, int $id)
+    {
+        $subarea = Subarea::where('proyecto_id', $proyecto_id)->findOrFail($id);
+
+        $data = $request->validate([
+            'area_id' => [
+                'integer',
+                Rule::exists('areas', 'id')->where('proyecto_id', $proyecto_id),
+            ],
+            'codigo'  => [
+                'string', 'max:50',
+                Rule::unique('subareas')->where('proyecto_id', $proyecto_id)->ignore($id),
+            ],
+            'nombre'  => 'string|max:255',
+            'orden'   => 'integer|min:0',
+        ]);
+
+        $antes = $subarea->toArray();
+        $subarea->update($data);
+
+        LogService::log(
+            tabla:        'subareas',
+            proyectoId:   $proyecto_id,
+            usuarioId:    $request->user()->id,
+            accion:       'UPDATE',
+            entidadId:    $subarea->id,
+            datosAntes:   $antes,
+            datosDespues: $subarea->fresh()->toArray(),
+            ip:           $request->ip()
+        );
+
+        return response()->json($subarea->fresh());
+    }
+
+    public function destroy(Request $request, int $proyecto_id, int $id)
+    {
+        $subarea = Subarea::where('proyecto_id', $proyecto_id)->findOrFail($id);
+
+        LogService::log(
+            tabla:      'subareas',
+            proyectoId: $proyecto_id,
+            usuarioId:  $request->user()->id,
+            accion:     'DELETE',
+            entidadId:  $subarea->id,
+            datosAntes: $subarea->toArray(),
+            ip:         $request->ip()
+        );
+
+        $subarea->delete();
+
+        return response()->noContent();
+    }
+}
+```
+
+- [ ] **Step 8.4: Agregar rutas de subareas en `api.php`**
+
+Agregar dentro del grupo `proyectos/{proyecto_id}` en `backend/routes/api.php`:
+```php
+use App\Http\Controllers\SubareaController;
+
+// Dentro del grupo prefix('proyectos/{proyecto_id}'):
+Route::get('/subareas',           [SubareaController::class, 'index']);
+Route::post('/subareas',          [SubareaController::class, 'store'])->middleware('check.role:admin');
+Route::put('/subareas/{id}',      [SubareaController::class, 'update'])->middleware('check.role:admin');
+Route::delete('/subareas/{id}',   [SubareaController::class, 'destroy'])->middleware('check.role:admin');
+```
+
+- [ ] **Step 8.5: Ejecutar tests — deben pasar**
+
+```bash
+php artisan test tests/Feature/SubareaTest.php
+```
+
+Esperado:
+```
+PASS  Tests\Feature\SubareaTest
+✓ puede listar subareas de proyecto
+✓ puede filtrar subareas por area
+✓ admin puede crear subarea
+✓ area padre debe pertenecer al proyecto
+✓ usuario no puede crear subarea
+✓ codigo duplicado en mismo proyecto falla
+✓ admin puede editar subarea
+✓ admin puede eliminar subarea
+
+Tests: 8 passed
+```
+
+- [ ] **Step 8.6: Suite completa — sin regresiones**
+
+```bash
+php artisan test
+```
+
+Esperado: 33 tests pasan.
+
+- [ ] **Step 8.7: Commit**
+
+```bash
+cd ..
+git add backend/app/Http/Controllers/SubareaController.php \
+        backend/routes/api.php \
+        backend/tests/Feature/SubareaTest.php
+git commit -m "feat: add Subareas API with parent validation and audit log"
+```

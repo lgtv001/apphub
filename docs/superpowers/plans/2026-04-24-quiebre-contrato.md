@@ -7511,3 +7511,257 @@ Flujo a verificar como SUPERUSER:
 git add backend/public/app/superuser.html
 git commit -m "feat: add superuser.html - admin panel with projects, users, types, assignments, logs"
 ```
+
+---
+
+### Task 19: Smoke test end-to-end y puesta en marcha
+
+**Files:**
+- Modify: `backend/.env.example` — documentar variables obligatorias
+- Run: `php artisan db:seed --class=SuperuserSeeder` — crear primer usuario SUPERUSER
+
+Esta task no produce archivos nuevos. Valida que todo el sistema funciona integrado desde cero.
+
+- [ ] **Step 19.1: Configurar `.env` y base de datos**
+
+En `backend/.env`, verificar que estas variables estén completas:
+
+```ini
+APP_NAME=AppHub
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=apphub
+DB_USERNAME=root
+DB_PASSWORD=tu_password_aqui
+
+SANCTUM_STATELESS_DOMAINS=localhost:8000
+
+# SUPERUSER inicial — usado por SuperuserSeeder
+SUPERUSER_NOMBRE="Luis Garnica"
+SUPERUSER_EMAIL=luisgarnica@hotmail.cl
+SUPERUSER_PASSWORD=TuPasswordSeguro123
+```
+
+Crear la base de datos si no existe:
+
+```sql
+CREATE DATABASE IF NOT EXISTS apphub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+- [ ] **Step 19.2: Documentar variables en `.env.example`**
+
+Abrir `backend/.env.example` y agregar al final:
+
+```ini
+# ── AppHub ──────────────────────────────────────────────────────────
+# SUPERUSER inicial — ejecutar: php artisan db:seed --class=SuperuserSeeder
+SUPERUSER_NOMBRE="Nombre Apellido"
+SUPERUSER_EMAIL=admin@empresa.cl
+SUPERUSER_PASSWORD=CambiarEstaPassword123
+```
+
+- [ ] **Step 19.3: Ejecutar migraciones y seeder**
+
+```bash
+cd backend
+
+# Crear tablas
+php artisan migrate
+
+# Crear SUPERUSER (idempotente — no duplica si ya existe)
+php artisan db:seed --class=SuperuserSeeder
+```
+
+Salida esperada de migrate:
+```
+INFO  Running migrations.
+  2024_01_01_000001_create_usuarios_table .............. 12ms DONE
+  2024_01_01_000002_create_tipos_usuario_table ......... 8ms DONE
+  ... (15 migraciones en total)
+```
+
+Salida esperada del seeder:
+```
+SUPERUSER creado: luisgarnica@hotmail.cl
+```
+O si ya existe:
+```
+SUPERUSER ya existe: luisgarnica@hotmail.cl
+```
+
+- [ ] **Step 19.4: Smoke test completo del sistema**
+
+Con el servidor corriendo (`php artisan serve`):
+
+**A. Auth**
+```bash
+# Login
+TOKEN=$(curl -s -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"luisgarnica@hotmail.cl","password":"TuPasswordSeguro123"}' | jq -r .token)
+
+echo "Token: $TOKEN"
+
+# Verificar /me
+curl -s http://localhost:8000/api/auth/me \
+  -H "Authorization: Bearer $TOKEN" | jq .
+```
+Salida esperada: `{"id":1,"nombre":"Luis Garnica","email":"...","rol_global":"superuser"}`
+
+**B. Crear proyecto y jerarquía completa**
+```bash
+# Proyecto
+curl -s -X POST http://localhost:8000/api/proyectos \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"codigo":"AUT-001","nombre":"Autopista Norte Tramo 1","estado":"activo"}' | jq .
+
+PID=1  # ajustar al id devuelto
+
+# Área
+curl -s -X POST http://localhost:8000/api/proyectos/$PID/areas \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"codigo":"3600","nombre":"Estructura"}' | jq .
+
+AID=1  # ajustar al id devuelto
+
+# Subárea
+curl -s -X POST http://localhost:8000/api/proyectos/$PID/subareas \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"codigo":"3610","nombre":"Fundaciones","area_id":'$AID'}' | jq .
+
+SAID=1  # ajustar
+
+# Sistema
+curl -s -X POST http://localhost:8000/api/proyectos/$PID/sistemas \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"codigo":"3610B","nombre":"Pilotes","subarea_id":'$SAID'}' | jq .
+
+SIID=1  # ajustar
+
+# Subsistema
+curl -s -X POST http://localhost:8000/api/proyectos/$PID/subsistemas \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"codigo":"3610B-1","nombre":"Pilotes hormigón","sistema_id":'$SIID'}' | jq .
+```
+
+**C. Verificar jerarquía**
+```bash
+curl -s http://localhost:8000/api/proyectos/$PID/areas       -H "Authorization: Bearer $TOKEN" | jq '.[].codigo'
+curl -s http://localhost:8000/api/proyectos/$PID/subareas    -H "Authorization: Bearer $TOKEN" | jq '.[].codigo'
+curl -s http://localhost:8000/api/proyectos/$PID/sistemas    -H "Authorization: Bearer $TOKEN" | jq '.[].codigo'
+curl -s http://localhost:8000/api/proyectos/$PID/subsistemas -H "Authorization: Bearer $TOKEN" | jq '.[].codigo'
+```
+Salida esperada: `"3600"` / `"3610"` / `"3610B"` / `"3610B-1"`
+
+**D. Descargar plantilla Excel**
+```bash
+curl -s -o template.xlsx \
+  http://localhost:8000/api/proyectos/$PID/import/template \
+  -H "Authorization: Bearer $TOKEN"
+
+file template.xlsx
+# Esperado: template.xlsx: Microsoft Excel 2007+
+```
+
+**E. Test de aislamiento (debe fallar con 403)**
+```bash
+# Crear segundo usuario sin asignación al proyecto
+USER2_TOKEN=$(curl -s -X POST http://localhost:8000/api/admin/usuarios \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"nombre":"Test User","email":"test@test.cl","password":"Password123","rol_global":"usuario","activo":true}' | jq -r .token)
+
+# Sin token de autenticación propio, simular con un token inválido
+curl -s http://localhost:8000/api/proyectos/$PID/areas \
+  -H "Authorization: Bearer token_invalido" | jq .status
+# Esperado: 401
+```
+
+**F. Validación duplicado (debe fallar con 422)**
+```bash
+curl -s -X POST http://localhost:8000/api/proyectos/$PID/areas \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"codigo":"3600","nombre":"Duplicado"}' | jq .errors
+# Esperado: {"codigo": ["El código ya existe en este proyecto."]}
+```
+
+**G. Suite de tests PHPUnit (76 tests)**
+```bash
+cd backend
+php artisan test
+```
+Salida esperada:
+```
+   PASS  Tests\Feature\AuthTest (8 tests)
+   PASS  Tests\Feature\ProyectoTest (8 tests)
+   PASS  Tests\Feature\AreaTest (9 tests)
+   PASS  Tests\Feature\SubareaTest (8 tests)
+   PASS  Tests\Feature\SistemaTest (8 tests)
+   PASS  Tests\Feature\SubsistemaTest (9 tests)
+   PASS  Tests\Feature\ImportTest (8 tests)
+   PASS  Tests\Feature\Admin\UsuarioTest (...)
+   PASS  Tests\Feature\Admin\TipoUsuarioTest (...)
+   PASS  Tests\Feature\Admin\AsignacionTest (...)
+   PASS  Tests\Feature\Admin\LogTest (5 tests)
+
+  Tests:    76 passed
+  Duration: ~8s
+```
+
+**H. Flujo UI completo en browser**
+
+Abrir `http://localhost:8000/app/login.html` y verificar:
+
+1. Login con SUPERUSER → redirige a `selector-proyecto.html`
+2. Botón "Panel SUPERUSER" visible → lleva a `superuser.html`
+3. En `superuser.html`: crear proyecto → crear usuario → asignar usuario al proyecto como Admin
+4. Logout → login con el usuario Admin
+5. Seleccionar el proyecto → selector de app → Quiebre del Contrato
+6. Árbol vacío → "+ Agregar" → crear área, subárea, sistema, subsistema
+7. Árbol muestra los 4 niveles con toggles funcionales
+8. Botón "Cargar Excel" → descargar formato → abrir en Excel → completar datos → subir
+9. Preview muestra filas → confirmar → árbol se actualiza
+
+- [ ] **Step 19.5: Commit final**
+
+```bash
+git add backend/.env.example
+git commit -m "chore: document env variables for superuser seeder"
+```
+
+---
+
+## Resumen del sistema
+
+| # | Task | Archivos clave | Tests |
+|---|------|----------------|-------|
+| 1 | Laravel setup | `bootstrap/app.php`, `.env`, `phpunit.xml` | — |
+| 2 | Migraciones | 15 archivos en `database/migrations/` | — |
+| 3 | Modelos + Factories | 8 modelos, 6 factories | — |
+| 4 | Middleware + LogService | `CheckRole`, `CheckProyectoAccess`, `LogService` | — |
+| 5 | Auth API | `AuthController`, `routes/api.php` | 8 |
+| 6 | Proyectos API | `ProyectoController` | 8 (acum. 16) |
+| 7 | Áreas API | `AreaController` | 9 (acum. 25) |
+| 8 | Subáreas API | `SubareaController` | 8 (acum. 33) |
+| 9 | Sistemas API | `SistemaController` | 8 (acum. 41) |
+| 10 | Subsistemas API | `SubsistemaController` | 9 (acum. 50) |
+| 11 | Import Excel | `ImportService`, `ImportController` | 8 (acum. 58) |
+| 12 | Admin CRUD | `UsuarioController`, `TipoUsuarioController`, `AsignacionController` | 13 (acum. 71) |
+| 13 | Admin Logs + Seeder | `LogController`, `SuperuserSeeder` | 5 (acum. **76**) |
+| 14 | CSS + api.js | `app.css`, `api.js` | — |
+| 15 | login.html | `login.html` | — |
+| 16 | Selectores | `selector-proyecto.html`, `selector-app.html` | — |
+| 17 | quiebre.html | `quiebre.html` | — |
+| 18 | superuser.html | `superuser.html` | — |
+| 19 | Smoke test | `.env.example`, verificación manual | — |
+
+**Total: 76 tests PHPUnit + verificación manual UI completa**

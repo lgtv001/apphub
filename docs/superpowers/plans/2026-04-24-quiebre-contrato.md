@@ -2743,3 +2743,360 @@ git add backend/app/Http/Controllers/SubareaController.php \
         backend/tests/Feature/SubareaTest.php
 git commit -m "feat: add Subareas API with parent validation and audit log"
 ```
+
+---
+
+## Task 9: Jerarquía API — Sistemas + Tests
+
+**Files:**
+- Create: `backend/app/Http/Controllers/SistemaController.php`
+- Create: `backend/tests/Feature/SistemaTest.php`
+- Modify: `backend/routes/api.php`
+
+- [ ] **Step 9.1: Escribir los tests primero (TDD)**
+
+`backend/tests/Feature/SistemaTest.php`:
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Area;
+use App\Models\Proyecto;
+use App\Models\Sistema;
+use App\Models\Subarea;
+use App\Models\Usuario;
+use App\Models\UsuarioProyecto;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class SistemaTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function setup(): array
+    {
+        $proyecto = Proyecto::factory()->create();
+        $area     = Area::factory()->create(['proyecto_id' => $proyecto->id]);
+        $subarea  = Subarea::factory()->create([
+            'proyecto_id' => $proyecto->id,
+            'area_id'     => $area->id,
+        ]);
+        $admin = Usuario::factory()->admin()->create();
+        UsuarioProyecto::create([
+            'usuario_id'  => $admin->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'admin',
+        ]);
+        $token = $admin->createToken('test')->plainTextToken;
+        return [$proyecto, $subarea, $admin, $token];
+    }
+
+    public function test_puede_listar_sistemas_de_proyecto(): void
+    {
+        [$proyecto, $subarea, , $token] = $this->setup();
+        Sistema::factory()->count(2)->create([
+            'proyecto_id' => $proyecto->id,
+            'subarea_id'  => $subarea->id,
+        ]);
+
+        $this->withToken($token)
+            ->getJson("/api/proyectos/{$proyecto->id}/sistemas")
+            ->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+    }
+
+    public function test_puede_filtrar_sistemas_por_subarea(): void
+    {
+        [$proyecto, $subarea, , $token] = $this->setup();
+        $area2    = Area::factory()->create(['proyecto_id' => $proyecto->id]);
+        $subarea2 = Subarea::factory()->create([
+            'proyecto_id' => $proyecto->id,
+            'area_id'     => $area2->id,
+        ]);
+
+        Sistema::factory()->count(3)->create(['proyecto_id' => $proyecto->id, 'subarea_id' => $subarea->id]);
+        Sistema::factory()->create(['proyecto_id' => $proyecto->id, 'subarea_id' => $subarea2->id]);
+
+        $this->withToken($token)
+            ->getJson("/api/proyectos/{$proyecto->id}/sistemas?subarea_id={$subarea->id}")
+            ->assertStatus(200)
+            ->assertJsonCount(3, 'data');
+    }
+
+    public function test_admin_puede_crear_sistema(): void
+    {
+        [$proyecto, $subarea, , $token] = $this->setup();
+
+        $response = $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/sistemas", [
+                'subarea_id' => $subarea->id,
+                'codigo'     => '3610B',
+                'nombre'     => 'Pilotes',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('codigo', '3610B')
+            ->assertJsonPath('subarea_id', $subarea->id);
+
+        $this->assertDatabaseHas('sistemas', [
+            'proyecto_id' => $proyecto->id,
+            'codigo'      => '3610B',
+        ]);
+    }
+
+    public function test_subarea_padre_debe_pertenecer_al_proyecto(): void
+    {
+        [$proyecto, , , $token] = $this->setup();
+        $subarea_ajena = Subarea::factory()->create(); // subarea de otro proyecto
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/sistemas", [
+                'subarea_id' => $subarea_ajena->id,
+                'codigo'     => '3610B',
+                'nombre'     => 'Pilotes',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['subarea_id']);
+    }
+
+    public function test_usuario_no_puede_crear_sistema(): void
+    {
+        [$proyecto, $subarea] = $this->setup();
+        $usuario = Usuario::factory()->create();
+        UsuarioProyecto::create([
+            'usuario_id'  => $usuario->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'usuario',
+        ]);
+        $token = $usuario->createToken('test')->plainTextToken;
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/sistemas", [
+                'subarea_id' => $subarea->id,
+                'codigo'     => '3610B',
+                'nombre'     => 'Pilotes',
+            ])
+            ->assertStatus(403);
+    }
+
+    public function test_codigo_duplicado_en_mismo_proyecto_falla(): void
+    {
+        [$proyecto, $subarea, , $token] = $this->setup();
+        Sistema::factory()->create(['proyecto_id' => $proyecto->id, 'codigo' => '3610B']);
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/sistemas", [
+                'subarea_id' => $subarea->id,
+                'codigo'     => '3610B',
+                'nombre'     => 'Duplicado',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['codigo']);
+    }
+
+    public function test_admin_puede_editar_sistema(): void
+    {
+        [$proyecto, $subarea, , $token] = $this->setup();
+        $sistema = Sistema::factory()->create([
+            'proyecto_id' => $proyecto->id,
+            'subarea_id'  => $subarea->id,
+        ]);
+
+        $this->withToken($token)
+            ->putJson("/api/proyectos/{$proyecto->id}/sistemas/{$sistema->id}", [
+                'nombre' => 'Nombre editado',
+            ])
+            ->assertStatus(200)
+            ->assertJsonPath('nombre', 'Nombre editado');
+    }
+
+    public function test_admin_puede_eliminar_sistema(): void
+    {
+        [$proyecto, $subarea, , $token] = $this->setup();
+        $sistema = Sistema::factory()->create([
+            'proyecto_id' => $proyecto->id,
+            'subarea_id'  => $subarea->id,
+        ]);
+
+        $this->withToken($token)
+            ->deleteJson("/api/proyectos/{$proyecto->id}/sistemas/{$sistema->id}")
+            ->assertStatus(204);
+
+        $this->assertDatabaseMissing('sistemas', ['id' => $sistema->id]);
+    }
+}
+```
+
+- [ ] **Step 9.2: Ejecutar tests — deben fallar**
+
+```bash
+cd backend
+php artisan test tests/Feature/SistemaTest.php
+```
+
+Esperado: todos fallan con error de ruta no encontrada.
+
+- [ ] **Step 9.3: Crear `SistemaController`**
+
+`backend/app/Http/Controllers/SistemaController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Sistema;
+use App\Services\LogService;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+class SistemaController extends Controller
+{
+    public function index(Request $request, int $proyecto_id)
+    {
+        $query = Sistema::where('proyecto_id', $proyecto_id)
+            ->orderBy('orden')
+            ->orderBy('codigo');
+
+        if ($request->has('subarea_id')) {
+            $query->where('subarea_id', $request->subarea_id);
+        }
+
+        return response()->json(['data' => $query->get()]);
+    }
+
+    public function store(Request $request, int $proyecto_id)
+    {
+        $data = $request->validate([
+            'subarea_id' => [
+                'required', 'integer',
+                Rule::exists('subareas', 'id')->where('proyecto_id', $proyecto_id),
+            ],
+            'codigo' => [
+                'required', 'string', 'max:50',
+                Rule::unique('sistemas')->where('proyecto_id', $proyecto_id),
+            ],
+            'nombre' => 'required|string|max:255',
+            'orden'  => 'integer|min:0',
+        ]);
+
+        $sistema = Sistema::create(array_merge($data, ['proyecto_id' => $proyecto_id]));
+
+        LogService::log(
+            tabla:        'sistemas',
+            proyectoId:   $proyecto_id,
+            usuarioId:    $request->user()->id,
+            accion:       'CREATE',
+            entidadId:    $sistema->id,
+            datosDespues: $sistema->toArray(),
+            ip:           $request->ip()
+        );
+
+        return response()->json($sistema, 201);
+    }
+
+    public function update(Request $request, int $proyecto_id, int $id)
+    {
+        $sistema = Sistema::where('proyecto_id', $proyecto_id)->findOrFail($id);
+
+        $data = $request->validate([
+            'subarea_id' => [
+                'integer',
+                Rule::exists('subareas', 'id')->where('proyecto_id', $proyecto_id),
+            ],
+            'codigo' => [
+                'string', 'max:50',
+                Rule::unique('sistemas')->where('proyecto_id', $proyecto_id)->ignore($id),
+            ],
+            'nombre' => 'string|max:255',
+            'orden'  => 'integer|min:0',
+        ]);
+
+        $antes = $sistema->toArray();
+        $sistema->update($data);
+
+        LogService::log(
+            tabla:        'sistemas',
+            proyectoId:   $proyecto_id,
+            usuarioId:    $request->user()->id,
+            accion:       'UPDATE',
+            entidadId:    $sistema->id,
+            datosAntes:   $antes,
+            datosDespues: $sistema->fresh()->toArray(),
+            ip:           $request->ip()
+        );
+
+        return response()->json($sistema->fresh());
+    }
+
+    public function destroy(Request $request, int $proyecto_id, int $id)
+    {
+        $sistema = Sistema::where('proyecto_id', $proyecto_id)->findOrFail($id);
+
+        LogService::log(
+            tabla:      'sistemas',
+            proyectoId: $proyecto_id,
+            usuarioId:  $request->user()->id,
+            accion:     'DELETE',
+            entidadId:  $sistema->id,
+            datosAntes: $sistema->toArray(),
+            ip:         $request->ip()
+        );
+
+        $sistema->delete();
+
+        return response()->noContent();
+    }
+}
+```
+
+- [ ] **Step 9.4: Agregar rutas de sistemas en `api.php`**
+
+Agregar dentro del grupo `proyectos/{proyecto_id}` en `backend/routes/api.php`:
+```php
+use App\Http\Controllers\SistemaController;
+
+Route::get('/sistemas',          [SistemaController::class, 'index']);
+Route::post('/sistemas',         [SistemaController::class, 'store'])->middleware('check.role:admin');
+Route::put('/sistemas/{id}',     [SistemaController::class, 'update'])->middleware('check.role:admin');
+Route::delete('/sistemas/{id}',  [SistemaController::class, 'destroy'])->middleware('check.role:admin');
+```
+
+- [ ] **Step 9.5: Ejecutar tests — deben pasar**
+
+```bash
+php artisan test tests/Feature/SistemaTest.php
+```
+
+Esperado:
+```
+PASS  Tests\Feature\SistemaTest
+✓ puede listar sistemas de proyecto
+✓ puede filtrar sistemas por subarea
+✓ admin puede crear sistema
+✓ subarea padre debe pertenecer al proyecto
+✓ usuario no puede crear sistema
+✓ codigo duplicado en mismo proyecto falla
+✓ admin puede editar sistema
+✓ admin puede eliminar sistema
+
+Tests: 8 passed
+```
+
+- [ ] **Step 9.6: Suite completa — sin regresiones**
+
+```bash
+php artisan test
+```
+
+Esperado: 41 tests pasan.
+
+- [ ] **Step 9.7: Commit**
+
+```bash
+cd ..
+git add backend/app/Http/Controllers/SistemaController.php \
+        backend/routes/api.php \
+        backend/tests/Feature/SistemaTest.php
+git commit -m "feat: add Sistemas API with subarea parent validation and audit log"
+```

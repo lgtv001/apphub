@@ -2006,3 +2006,391 @@ git add backend/app/Http/Controllers/ProyectoController.php \
         backend/tests/Feature/ProyectoTest.php
 git commit -m "feat: add Proyectos API with role-based access and audit log"
 ```
+
+---
+
+## Task 7: Jerarquía API — Areas + Tests
+
+**Files:**
+- Create: `backend/app/Http/Controllers/AreaController.php`
+- Create: `backend/tests/Feature/AreaTest.php`
+- Modify: `backend/routes/api.php`
+
+- [ ] **Step 7.1: Escribir los tests primero (TDD)**
+
+`backend/tests/Feature/AreaTest.php`:
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Area;
+use App\Models\Proyecto;
+use App\Models\Usuario;
+use App\Models\UsuarioProyecto;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class AreaTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function proyectoConAdmin(): array
+    {
+        $proyecto = Proyecto::factory()->create();
+        $admin    = Usuario::factory()->admin()->create();
+        UsuarioProyecto::create([
+            'usuario_id'  => $admin->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'admin',
+        ]);
+        $token = $admin->createToken('test')->plainTextToken;
+        return [$proyecto, $admin, $token];
+    }
+
+    private function proyectoConUsuario(): array
+    {
+        $proyecto = Proyecto::factory()->create();
+        $usuario  = Usuario::factory()->create();
+        UsuarioProyecto::create([
+            'usuario_id'  => $usuario->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'usuario',
+        ]);
+        $token = $usuario->createToken('test')->plainTextToken;
+        return [$proyecto, $usuario, $token];
+    }
+
+    public function test_usuario_puede_listar_areas_de_su_proyecto(): void
+    {
+        [$proyecto, , $token] = $this->proyectoConUsuario();
+        Area::factory()->count(3)->create(['proyecto_id' => $proyecto->id]);
+
+        $response = $this->withToken($token)
+            ->getJson("/api/proyectos/{$proyecto->id}/areas");
+
+        $response->assertStatus(200)
+            ->assertJsonCount(3, 'data');
+    }
+
+    public function test_usuario_no_puede_listar_areas_de_proyecto_ajeno(): void
+    {
+        [, , $token] = $this->proyectoConUsuario();
+        $otro         = Proyecto::factory()->create();
+
+        $this->withToken($token)
+            ->getJson("/api/proyectos/{$otro->id}/areas")
+            ->assertStatus(403);
+    }
+
+    public function test_admin_puede_crear_area(): void
+    {
+        [$proyecto, , $token] = $this->proyectoConAdmin();
+
+        $response = $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/areas", [
+                'codigo' => '3600',
+                'nombre' => 'Estructura',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('codigo', '3600');
+
+        $this->assertDatabaseHas('areas', [
+            'proyecto_id' => $proyecto->id,
+            'codigo'      => '3600',
+        ]);
+    }
+
+    public function test_usuario_no_puede_crear_area(): void
+    {
+        [$proyecto, , $token] = $this->proyectoConUsuario();
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/areas", [
+                'codigo' => '3600',
+                'nombre' => 'Estructura',
+            ])
+            ->assertStatus(403);
+    }
+
+    public function test_codigo_duplicado_en_mismo_proyecto_falla(): void
+    {
+        [$proyecto, , $token] = $this->proyectoConAdmin();
+        Area::factory()->create(['proyecto_id' => $proyecto->id, 'codigo' => '3600']);
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/areas", [
+                'codigo' => '3600',
+                'nombre' => 'Duplicado',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['codigo']);
+    }
+
+    public function test_mismo_codigo_en_distinto_proyecto_es_valido(): void
+    {
+        [$proyecto, , $token] = $this->proyectoConAdmin();
+        $otro = Proyecto::factory()->create();
+        Area::factory()->create(['proyecto_id' => $otro->id, 'codigo' => '3600']);
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/areas", [
+                'codigo' => '3600',
+                'nombre' => 'Estructura',
+            ])
+            ->assertStatus(201);
+    }
+
+    public function test_admin_puede_editar_area(): void
+    {
+        [$proyecto, , $token] = $this->proyectoConAdmin();
+        $area = Area::factory()->create(['proyecto_id' => $proyecto->id]);
+
+        $this->withToken($token)
+            ->putJson("/api/proyectos/{$proyecto->id}/areas/{$area->id}", [
+                'nombre' => 'Nombre editado',
+            ])
+            ->assertStatus(200)
+            ->assertJsonPath('nombre', 'Nombre editado');
+    }
+
+    public function test_admin_puede_eliminar_area(): void
+    {
+        [$proyecto, , $token] = $this->proyectoConAdmin();
+        $area = Area::factory()->create(['proyecto_id' => $proyecto->id]);
+
+        $this->withToken($token)
+            ->deleteJson("/api/proyectos/{$proyecto->id}/areas/{$area->id}")
+            ->assertStatus(204);
+
+        $this->assertDatabaseMissing('areas', ['id' => $area->id]);
+    }
+
+    public function test_log_se_registra_al_crear_area(): void
+    {
+        [$proyecto, $admin, $token] = $this->proyectoConAdmin();
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/areas", [
+                'codigo' => '3600',
+                'nombre' => 'Estructura',
+            ]);
+
+        $this->assertDatabaseHas('areas_log', [
+            'proyecto_id' => $proyecto->id,
+            'usuario_id'  => $admin->id,
+            'accion'      => 'CREATE',
+        ]);
+    }
+}
+```
+
+- [ ] **Step 7.2: Ejecutar tests — deben fallar**
+
+```bash
+cd backend
+php artisan test tests/Feature/AreaTest.php
+```
+
+Esperado: todos fallan con error de ruta no encontrada.
+
+- [ ] **Step 7.3: Crear `AreaController`**
+
+`backend/app/Http/Controllers/AreaController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Area;
+use App\Services\LogService;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+class AreaController extends Controller
+{
+    public function index(Request $request, int $proyecto_id)
+    {
+        $areas = Area::where('proyecto_id', $proyecto_id)
+            ->orderBy('orden')
+            ->orderBy('codigo')
+            ->get();
+
+        return response()->json(['data' => $areas]);
+    }
+
+    public function store(Request $request, int $proyecto_id)
+    {
+        $data = $request->validate([
+            'codigo' => [
+                'required', 'string', 'max:50',
+                Rule::unique('areas')->where('proyecto_id', $proyecto_id),
+            ],
+            'nombre' => 'required|string|max:255',
+            'orden'  => 'integer|min:0',
+        ]);
+
+        $area = Area::create(array_merge($data, ['proyecto_id' => $proyecto_id]));
+
+        LogService::log(
+            tabla:        'areas',
+            proyectoId:   $proyecto_id,
+            usuarioId:    $request->user()->id,
+            accion:       'CREATE',
+            entidadId:    $area->id,
+            datosDespues: $area->toArray(),
+            ip:           $request->ip()
+        );
+
+        return response()->json($area, 201);
+    }
+
+    public function update(Request $request, int $proyecto_id, int $id)
+    {
+        $area = Area::where('proyecto_id', $proyecto_id)->findOrFail($id);
+
+        $data = $request->validate([
+            'codigo' => [
+                'string', 'max:50',
+                Rule::unique('areas')->where('proyecto_id', $proyecto_id)->ignore($id),
+            ],
+            'nombre' => 'string|max:255',
+            'orden'  => 'integer|min:0',
+        ]);
+
+        $antes = $area->toArray();
+        $area->update($data);
+
+        LogService::log(
+            tabla:        'areas',
+            proyectoId:   $proyecto_id,
+            usuarioId:    $request->user()->id,
+            accion:       'UPDATE',
+            entidadId:    $area->id,
+            datosAntes:   $antes,
+            datosDespues: $area->fresh()->toArray(),
+            ip:           $request->ip()
+        );
+
+        return response()->json($area->fresh());
+    }
+
+    public function destroy(Request $request, int $proyecto_id, int $id)
+    {
+        $area = Area::where('proyecto_id', $proyecto_id)->findOrFail($id);
+
+        LogService::log(
+            tabla:      'areas',
+            proyectoId: $proyecto_id,
+            usuarioId:  $request->user()->id,
+            accion:     'DELETE',
+            entidadId:  $area->id,
+            datosAntes: $area->toArray(),
+            ip:         $request->ip()
+        );
+
+        $area->delete();
+
+        return response()->noContent();
+    }
+}
+```
+
+- [ ] **Step 7.4: Agregar rutas de áreas en `api.php`**
+
+Agregar dentro del grupo `auth:sanctum` en `backend/routes/api.php`:
+```php
+use App\Http\Controllers\AreaController;
+
+// Dentro del grupo auth:sanctum, después de las rutas de proyectos:
+
+// Jerarquía — Areas
+Route::prefix('proyectos/{proyecto_id}')->middleware('check.project')->group(function () {
+
+    Route::get('/areas',              [AreaController::class, 'index']);
+    Route::post('/areas',             [AreaController::class, 'store'])
+        ->middleware('check.role:admin');
+    Route::put('/areas/{id}',         [AreaController::class, 'update'])
+        ->middleware('check.role:admin');
+    Route::delete('/areas/{id}',      [AreaController::class, 'destroy'])
+        ->middleware('check.role:admin');
+
+    // Subareas, Sistemas, Subsistemas se agregan en tasks siguientes
+
+});
+```
+
+El archivo `api.php` completo hasta este punto:
+```php
+<?php
+
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProyectoController;
+use App\Http\Controllers\AreaController;
+use Illuminate\Support\Facades\Route;
+
+Route::post('/auth/login', [AuthController::class, 'login'])
+    ->middleware('throttle:login');
+
+Route::middleware('auth:sanctum')->group(function () {
+
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me',     [AuthController::class, 'me']);
+
+    Route::get('/proyectos',       [ProyectoController::class, 'index']);
+    Route::get('/proyectos/{id}',  [ProyectoController::class, 'show']);
+    Route::post('/proyectos',      [ProyectoController::class, 'store'])
+        ->middleware('check.role:superuser');
+    Route::put('/proyectos/{id}',  [ProyectoController::class, 'update'])
+        ->middleware('check.role:superuser');
+
+    Route::prefix('proyectos/{proyecto_id}')->middleware('check.project')->group(function () {
+        Route::get('/areas',         [AreaController::class, 'index']);
+        Route::post('/areas',        [AreaController::class, 'store'])->middleware('check.role:admin');
+        Route::put('/areas/{id}',    [AreaController::class, 'update'])->middleware('check.role:admin');
+        Route::delete('/areas/{id}', [AreaController::class, 'destroy'])->middleware('check.role:admin');
+    });
+
+});
+```
+
+- [ ] **Step 7.5: Ejecutar tests — deben pasar**
+
+```bash
+php artisan test tests/Feature/AreaTest.php
+```
+
+Esperado:
+```
+PASS  Tests\Feature\AreaTest
+✓ usuario puede listar areas de su proyecto
+✓ usuario no puede listar areas de proyecto ajeno
+✓ admin puede crear area
+✓ usuario no puede crear area
+✓ codigo duplicado en mismo proyecto falla
+✓ mismo codigo en distinto proyecto es valido
+✓ admin puede editar area
+✓ admin puede eliminar area
+✓ log se registra al crear area
+
+Tests: 9 passed
+```
+
+- [ ] **Step 7.6: Ejecutar suite completa — sin regresiones**
+
+```bash
+php artisan test
+```
+
+Esperado: 25 tests pasan (16 anteriores + 9 nuevos).
+
+- [ ] **Step 7.7: Commit**
+
+```bash
+cd ..
+git add backend/app/Http/Controllers/AreaController.php \
+        backend/routes/api.php \
+        backend/tests/Feature/AreaTest.php
+git commit -m "feat: add Areas API with CRUD, project isolation and audit log"
+```

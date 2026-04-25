@@ -5850,3 +5850,835 @@ git add backend/public/app/selector-proyecto.html \
         backend/public/app/selector-app.html
 git commit -m "feat: add selector-proyecto and selector-app pages"
 ```
+
+---
+
+### Task 17: quiebre.html — tabla jerárquica, formulario cascada y carga Excel
+
+**Files:**
+- Create: `backend/public/app/quiebre.html`
+
+Esta es la pantalla principal del módulo: árbol colapsable 4 niveles, modal formulario manual con dropdowns en cascada, y modal de carga Excel con preview/confirm.
+
+- [ ] **Step 17.1: Crear `backend/public/app/quiebre.html`**
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiebre del Contrato</title>
+  <link rel="stylesheet" href="/assets/css/app.css"/>
+  <style>
+    /* ── Árbol jerárquico ── */
+    .tree { width: 100%; border-collapse: collapse; }
+    .tree th {
+      background: var(--surface);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .tree td { padding: 7px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .tree tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* niveles de indentación */
+    .node-toggle { cursor: pointer; user-select: none; margin-right: 6px; color: var(--text-muted); font-size: 10px; }
+    .node-code   { font-family: monospace; font-size: 11px; background: rgba(79,126,255,0.08); color: #8AABFF; padding: 2px 7px; border-radius: 4px; }
+    .node-name   { font-size: 13px; }
+    .level-0 .node-name { font-weight: 700; color: var(--text); }
+    .level-1 .node-name { color: var(--text); padding-left: 20px; }
+    .level-2 .node-name { color: var(--text-secondary); padding-left: 40px; }
+    .level-3 .node-name { color: var(--text-muted); padding-left: 60px; }
+
+    .hidden { display: none; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      width: 480px;
+      max-width: 95vw;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+    .modal-close {
+      float: right; background: none; border: none;
+      color: var(--text-muted); font-size: 18px; cursor: pointer; margin-top: -4px;
+    }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; }
+    .form-group select,
+    .form-group input[type="text"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+    .form-group select:focus,
+    .form-group input[type="text"]:focus {
+      outline: none; border-color: var(--primary);
+    }
+    .form-group select:disabled { opacity: 0.4; }
+    .field-error { color: #FF6B6B; font-size: 11px; margin-top: 4px; display: none; }
+    .field-error.visible { display: block; }
+    input.has-error, select.has-error { border-color: #FF6B6B !important; }
+
+    /* ── Tabla preview Excel ── */
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 12px; }
+    .preview-table th { background: var(--bg); color: var(--text-muted); padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+    .preview-table td { padding: 5px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .row-valid   td { color: var(--text); }
+    .row-dup     td { color: #FFB347; }
+    .row-error   td { color: #FF6B6B; }
+    .row-status  { font-size: 13px; }
+
+    /* ── Drag & drop zone ── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 32px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .drop-zone.over { border-color: var(--primary); color: var(--primary); }
+    .drop-zone input[type="file"] { display: none; }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-left">
+      <span class="nav-brand">AppHub</span>
+      <span class="nav-sep">/</span>
+      <span id="proyecto-codigo" class="nav-project-code"></span>
+      <span id="proyecto-nombre" class="nav-project-name"></span>
+      <span class="nav-sep">/</span>
+      <span class="nav-current">Quiebre del Contrato</span>
+    </div>
+    <div class="nav-right">
+      <span id="user-name" class="nav-user"></span>
+      <a href="/app/selector-proyecto.html" class="btn btn-ghost btn-sm">Cambiar proyecto</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Encabezado + acciones -->
+    <div class="page-header">
+      <div>
+        <h1>Quiebre del Contrato</h1>
+        <p id="total-count" class="subtitle mt-8"></p>
+      </div>
+      <div class="flex gap-8">
+        <input id="search-input" type="text" placeholder="Buscar código o nombre…" class="input-search"/>
+        <button id="btn-excel" class="btn btn-secondary">Cargar Excel</button>
+        <button id="btn-add"   class="btn btn-primary" style="display:none">+ Agregar</button>
+      </div>
+    </div>
+
+    <!-- Tabla del árbol -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="tree" id="tree-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th id="th-acciones" style="display:none;width:80px">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tree-body">
+          <tr><td colspan="3" style="padding:24px;text-align:center;color:var(--text-muted)">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       Modal: Formulario manual
+  ══════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-form">
+    <div class="modal">
+      <button class="modal-close" id="close-modal-form">✕</button>
+      <h2 class="modal-title" id="form-title">Agregar ítem</h2>
+
+      <form id="item-form" novalidate>
+        <!-- Nivel -->
+        <div class="form-group">
+          <label>Nivel *</label>
+          <select id="f-nivel">
+            <option value="">— Seleccionar nivel —</option>
+            <option value="area">Área</option>
+            <option value="subarea">Subárea</option>
+            <option value="sistema">Sistema</option>
+            <option value="subsistema">Subsistema</option>
+          </select>
+          <div class="field-error" id="err-nivel">Selecciona un nivel.</div>
+        </div>
+
+        <!-- Área padre (visible para subarea/sistema/subsistema) -->
+        <div class="form-group" id="group-area" style="display:none">
+          <label>Área *</label>
+          <select id="f-area">
+            <option value="">— Seleccionar área —</option>
+          </select>
+          <div class="field-error" id="err-area">Selecciona un área.</div>
+        </div>
+
+        <!-- Subárea padre (visible para sistema/subsistema) -->
+        <div class="form-group" id="group-subarea" style="display:none">
+          <label>Subárea *</label>
+          <select id="f-subarea" disabled>
+            <option value="">— Seleccionar subárea —</option>
+          </select>
+          <div class="field-error" id="err-subarea">Selecciona una subárea.</div>
+        </div>
+
+        <!-- Sistema padre (visible para subsistema) -->
+        <div class="form-group" id="group-sistema" style="display:none">
+          <label>Sistema *</label>
+          <select id="f-sistema" disabled>
+            <option value="">— Seleccionar sistema —</option>
+          </select>
+          <div class="field-error" id="err-sistema">Selecciona un sistema.</div>
+        </div>
+
+        <!-- Código -->
+        <div class="form-group">
+          <label>Código *</label>
+          <input type="text" id="f-codigo" placeholder="Ej: 3610B"/>
+          <div class="field-error" id="err-codigo">El código es obligatorio.</div>
+        </div>
+
+        <!-- Nombre -->
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" id="f-nombre" placeholder="Ej: Pilotes de hormigón"/>
+          <div class="field-error" id="err-nombre">El nombre es obligatorio.</div>
+        </div>
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="btn btn-ghost" id="cancel-form">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="submit-form">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       Modal: Carga Excel
+  ══════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal-excel">
+    <div class="modal" style="width:700px">
+      <button class="modal-close" id="close-modal-excel">✕</button>
+      <h2 class="modal-title">Cargar Excel</h2>
+
+      <!-- Paso 1: subir archivo -->
+      <div id="excel-step-upload">
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept=".xlsx"/>
+          <div>📂 Arrastra tu archivo <strong>.xlsx</strong> aquí<br/>
+            <span style="font-size:11px;color:var(--text-muted)">o haz clic para elegir</span>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:12px">
+          <a id="btn-template" href="#" class="btn btn-ghost btn-sm">⬇ Descargar formato</a>
+        </div>
+        <p id="upload-error" style="color:#FF6B6B;font-size:12px;margin-top:8px;display:none"></p>
+      </div>
+
+      <!-- Paso 2: preview -->
+      <div id="excel-step-preview" style="display:none">
+        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">
+          Revisa los resultados antes de confirmar. Puedes omitir o sobreescribir filas con conflictos.
+        </p>
+        <div style="overflow-x:auto">
+          <table class="preview-table" id="preview-table">
+            <thead>
+              <tr>
+                <th>Fila</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Nivel</th>
+                <th>Estado</th>
+                <th>Decisión</th>
+              </tr>
+            </thead>
+            <tbody id="preview-body"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+          <button class="btn btn-ghost" id="back-to-upload">← Otro archivo</button>
+          <button class="btn btn-primary" id="confirm-import">Confirmar importación</button>
+        </div>
+      </div>
+
+      <!-- Paso 3: resultado -->
+      <div id="excel-step-result" style="display:none">
+        <div id="import-summary" style="font-size:13px;line-height:1.8"></div>
+        <div style="text-align:right;margin-top:16px">
+          <button class="btn btn-primary" id="close-result">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getUser, apiGet, apiPost, apiPut, apiDelete, apiFetch, showValidationErrors } from '/assets/js/api.js';
+
+    requireAuth();
+
+    // ── Contexto ──────────────────────────────────────────────────────
+    const proyectoId = sessionStorage.getItem('proyecto_id');
+    if (!proyectoId) { window.location.href = '/app/selector-proyecto.html'; }
+
+    const user = getUser();
+    document.getElementById('proyecto-codigo').textContent = sessionStorage.getItem('proyecto_codigo') ?? '';
+    document.getElementById('proyecto-nombre').textContent = sessionStorage.getItem('proyecto_nombre') ?? '';
+    document.getElementById('user-name').textContent       = user?.nombre ?? '';
+
+    const isAdmin = user?.rol_global === 'superuser' || false;
+    // rol en el proyecto viene del token — si no está en el token, la API lo enforcea
+
+    // ── Árbol de datos (estado local) ─────────────────────────────────
+    let areasData    = [];
+    let subAreasData = [];
+    let sistemasData = [];
+    let subsistemasData = [];
+
+    // Nodos colapsados: Set de keys "level:id"
+    const collapsed = new Set();
+
+    // ── Carga inicial ─────────────────────────────────────────────────
+    async function loadAll() {
+      const [areas, subareas, sistemas, subsistemas] = await Promise.all([
+        apiGet(`/proyectos/${proyectoId}/areas`),
+        apiGet(`/proyectos/${proyectoId}/subareas`),
+        apiGet(`/proyectos/${proyectoId}/sistemas`),
+        apiGet(`/proyectos/${proyectoId}/subsistemas`),
+      ]);
+      areasData        = areas        ?? [];
+      subAreasData     = subareas     ?? [];
+      sistemasData     = sistemas     ?? [];
+      subsistemasData  = subsistemas  ?? [];
+      renderTree();
+    }
+
+    // ── Render árbol ──────────────────────────────────────────────────
+    function renderTree() {
+      const search   = document.getElementById('search-input').value.toLowerCase().trim();
+      const tbody    = document.getElementById('tree-body');
+      const totalEl  = document.getElementById('total-count');
+      tbody.innerHTML = '';
+
+      let count = 0;
+
+      for (const area of areasData) {
+        if (!matches(area, search)) continue;
+        count++;
+        const areaKey = `area:${area.id}`;
+        const areaOpen = !collapsed.has(areaKey);
+
+        // Hijos del área
+        const saOfArea = subAreasData.filter(sa => sa.area_id === area.id);
+
+        const toggleIcon = saOfArea.length ? (areaOpen ? '▾' : '▸') : '·';
+        const tr = makeRow(0, toggleIcon, areaKey, area.codigo, area.nombre, area, 'area');
+        tbody.appendChild(tr);
+
+        if (!areaOpen) continue;
+
+        for (const sa of saOfArea) {
+          const saKey  = `subarea:${sa.id}`;
+          const saOpen = !collapsed.has(saKey);
+          const siOfSa = sistemasData.filter(s => s.subarea_id === sa.id);
+          const saToggle = siOfSa.length ? (saOpen ? '▾' : '▸') : '·';
+          tbody.appendChild(makeRow(1, saToggle, saKey, sa.codigo, sa.nombre, sa, 'subarea'));
+          if (!saOpen) continue;
+
+          for (const si of siOfSa) {
+            const siKey  = `sistema:${si.id}`;
+            const siOpen = !collapsed.has(siKey);
+            const ssOfSi = subsistemasData.filter(ss => ss.sistema_id === si.id);
+            const siToggle = ssOfSi.length ? (siOpen ? '▾' : '▸') : '·';
+            tbody.appendChild(makeRow(2, siToggle, siKey, si.codigo, si.nombre, si, 'sistema'));
+            if (!siOpen) continue;
+
+            for (const ss of ssOfSi) {
+              tbody.appendChild(makeRow(3, '·', null, ss.codigo, ss.nombre, ss, 'subsistema'));
+              count++;
+            }
+          }
+        }
+      }
+
+      totalEl.textContent = `${areasData.length} área(s) · ${subAreasData.length} subárea(s) · ${sistemasData.length} sistema(s) · ${subsistemasData.length} subsistema(s)`;
+
+      if (tbody.innerHTML === '') {
+        tbody.innerHTML = `<tr><td colspan="3" style="padding:24px;text-align:center;color:var(--text-muted)">Sin resultados.</td></tr>`;
+      }
+    }
+
+    function matches(item, search) {
+      if (!search) return true;
+      return item.codigo.toLowerCase().includes(search) || item.nombre.toLowerCase().includes(search);
+    }
+
+    function makeRow(level, toggleIcon, toggleKey, codigo, nombre, item, tipo) {
+      const tr = document.createElement('tr');
+      tr.className = `level-${level}`;
+      tr.dataset.tipo = tipo;
+      tr.dataset.id   = item.id;
+
+      const tdCodigo = document.createElement('td');
+      tdCodigo.innerHTML = `<span class="node-code">${escHtml(codigo)}</span>`;
+
+      const tdNombre = document.createElement('td');
+      const toggleSpan = document.createElement('span');
+      toggleSpan.className = 'node-toggle';
+      toggleSpan.textContent = toggleIcon;
+      if (toggleKey) {
+        toggleSpan.addEventListener('click', () => {
+          if (collapsed.has(toggleKey)) collapsed.delete(toggleKey);
+          else collapsed.add(toggleKey);
+          renderTree();
+        });
+      }
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'node-name';
+      nameSpan.textContent = nombre;
+      tdNombre.appendChild(toggleSpan);
+      tdNombre.appendChild(nameSpan);
+
+      tr.appendChild(tdCodigo);
+      tr.appendChild(tdNombre);
+
+      // Columna acciones (Admin)
+      if (canEdit) {
+        const tdActions = document.createElement('td');
+        const btnEdit = document.createElement('button');
+        btnEdit.className = 'btn-icon-sm';
+        btnEdit.textContent = '✏';
+        btnEdit.title = 'Editar';
+        btnEdit.addEventListener('click', () => openEditModal(tipo, item));
+
+        const btnDel = document.createElement('button');
+        btnDel.className = 'btn-icon-sm danger';
+        btnDel.textContent = '✕';
+        btnDel.title = 'Eliminar';
+        btnDel.addEventListener('click', () => deleteItem(tipo, item));
+
+        tdActions.appendChild(btnEdit);
+        tdActions.appendChild(btnDel);
+        tr.appendChild(tdActions);
+      }
+
+      return tr;
+    }
+
+    function escHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // ── Permisos de UI ────────────────────────────────────────────────
+    // La API enforcea el rol; aquí solo mostramos/ocultamos botones
+    let canEdit = false;
+
+    async function checkRoleUI() {
+      // El token tiene rol_global; para saber rol en proyecto consultamos /api/proyectos/:id
+      const proyecto = await apiGet(`/proyectos/${proyectoId}`);
+      // El endpoint devuelve el proyecto; si el usuario es admin o superuser, mostramos controles
+      canEdit = proyecto?.user_rol === 'admin' || user?.rol_global === 'superuser';
+      if (canEdit) {
+        document.getElementById('btn-add').style.display = '';
+        document.getElementById('th-acciones').style.display = '';
+      }
+    }
+
+    // ── Búsqueda ──────────────────────────────────────────────────────
+    document.getElementById('search-input').addEventListener('input', renderTree);
+
+    // ── Modal Formulario ──────────────────────────────────────────────
+    const modalForm = document.getElementById('modal-form');
+
+    document.getElementById('btn-add').addEventListener('click', () => openAddModal());
+    document.getElementById('close-modal-form').addEventListener('click', closeFormModal);
+    document.getElementById('cancel-form').addEventListener('click', closeFormModal);
+
+    let editMode = false;
+    let editTipo = null;
+    let editId   = null;
+
+    function openAddModal() {
+      editMode = false; editTipo = null; editId = null;
+      document.getElementById('form-title').textContent = 'Agregar ítem';
+      document.getElementById('item-form').reset();
+      clearFormErrors();
+      resetCascades();
+      modalForm.classList.add('open');
+    }
+
+    function openEditModal(tipo, item) {
+      editMode = true; editTipo = tipo; editId = item.id;
+      document.getElementById('form-title').textContent = 'Editar ítem';
+      clearFormErrors();
+
+      // Pre-llenar nivel
+      const nivelMap = { area: 'area', subarea: 'subarea', sistema: 'sistema', subsistema: 'subsistema' };
+      document.getElementById('f-nivel').value = nivelMap[tipo];
+      handleNivelChange(nivelMap[tipo]);
+
+      // Pre-llenar código y nombre
+      document.getElementById('f-codigo').value = item.codigo;
+      document.getElementById('f-nombre').value = item.nombre;
+
+      // Pre-llenar parents
+      if (tipo === 'subarea' || tipo === 'sistema' || tipo === 'subsistema') {
+        if (tipo === 'subarea') {
+          document.getElementById('f-area').value = item.area_id;
+        } else if (tipo === 'sistema') {
+          document.getElementById('f-area').value = item.area_id;
+          loadSubareasByArea(item.area_id).then(() => { document.getElementById('f-subarea').value = item.subarea_id; });
+        } else {
+          document.getElementById('f-area').value = item.area_id;
+          loadSubareasByArea(item.area_id).then(() => {
+            document.getElementById('f-subarea').value = item.subarea_id;
+            loadSistemasBySubarea(item.subarea_id).then(() => {
+              document.getElementById('f-sistema').value = item.sistema_id;
+            });
+          });
+        }
+      }
+
+      modalForm.classList.add('open');
+    }
+
+    function closeFormModal() {
+      modalForm.classList.remove('open');
+    }
+
+    // ── Cascadas ──────────────────────────────────────────────────────
+    document.getElementById('f-nivel').addEventListener('change', e => handleNivelChange(e.target.value));
+
+    function handleNivelChange(nivel) {
+      resetCascades();
+      document.getElementById('group-area').style.display    = ['subarea','sistema','subsistema'].includes(nivel) ? '' : 'none';
+      document.getElementById('group-subarea').style.display = ['sistema','subsistema'].includes(nivel) ? '' : 'none';
+      document.getElementById('group-sistema').style.display = nivel === 'subsistema' ? '' : 'none';
+
+      if (['subarea','sistema','subsistema'].includes(nivel)) {
+        populateSelect('f-area', areasData, 'id', 'nombre', true);
+      }
+    }
+
+    function resetCascades() {
+      ['group-area','group-subarea','group-sistema'].forEach(id => {
+        document.getElementById(id).style.display = 'none';
+      });
+      populateSelect('f-area',    [], 'id', 'nombre', true);
+      populateSelect('f-subarea', [], 'id', 'nombre', true);
+      populateSelect('f-sistema', [], 'id', 'nombre', true);
+      document.getElementById('f-subarea').disabled = true;
+      document.getElementById('f-sistema').disabled  = true;
+    }
+
+    document.getElementById('f-area').addEventListener('change', e => {
+      const areaId = e.target.value;
+      document.getElementById('f-subarea').disabled = !areaId;
+      document.getElementById('f-sistema').disabled  = true;
+      populateSelect('f-subarea', [], 'id', 'nombre', true);
+      populateSelect('f-sistema',  [], 'id', 'nombre', true);
+      if (areaId) loadSubareasByArea(areaId);
+    });
+
+    document.getElementById('f-subarea').addEventListener('change', e => {
+      const saId = e.target.value;
+      document.getElementById('f-sistema').disabled = !saId;
+      populateSelect('f-sistema', [], 'id', 'nombre', true);
+      if (saId) loadSistemasBySubarea(saId);
+    });
+
+    async function loadSubareasByArea(areaId) {
+      const data = await apiGet(`/proyectos/${proyectoId}/subareas?area_id=${areaId}`);
+      populateSelect('f-subarea', data ?? [], 'id', 'nombre');
+      document.getElementById('f-subarea').disabled = false;
+    }
+
+    async function loadSistemasBySubarea(subareaId) {
+      const data = await apiGet(`/proyectos/${proyectoId}/sistemas?subarea_id=${subareaId}`);
+      populateSelect('f-sistema', data ?? [], 'id', 'nombre');
+      document.getElementById('f-sistema').disabled = false;
+    }
+
+    function populateSelect(selectId, items, valKey, labelKey, reset = false) {
+      const sel = document.getElementById(selectId);
+      const prev = sel.value;
+      sel.innerHTML = `<option value="">— Seleccionar —</option>`;
+      items.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value       = item[valKey];
+        opt.textContent = `${item.codigo} — ${item[labelKey]}`;
+        sel.appendChild(opt);
+      });
+      if (!reset) sel.value = prev; // restaurar selección si aún existe
+    }
+
+    // ── Submit formulario ─────────────────────────────────────────────
+    document.getElementById('item-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      clearFormErrors();
+
+      const nivel = document.getElementById('f-nivel').value;
+      const codigo = document.getElementById('f-codigo').value.trim();
+      const nombre = document.getElementById('f-nombre').value.trim();
+      const areaId    = document.getElementById('f-area').value    || null;
+      const subareaId = document.getElementById('f-subarea').value || null;
+      const sistemaId = document.getElementById('f-sistema').value || null;
+
+      // Validación frontend
+      let valid = true;
+      if (!nivel)   { showFieldError('err-nivel',  'f-nivel');  valid = false; }
+      if (!codigo)  { showFieldError('err-codigo', 'f-codigo'); valid = false; }
+      if (!nombre)  { showFieldError('err-nombre', 'f-nombre'); valid = false; }
+      if (['subarea','sistema','subsistema'].includes(nivel) && !areaId)    { showFieldError('err-area',    'f-area');    valid = false; }
+      if (['sistema','subsistema'].includes(nivel) && !subareaId)           { showFieldError('err-subarea', 'f-subarea'); valid = false; }
+      if (nivel === 'subsistema' && !sistemaId)                             { showFieldError('err-sistema', 'f-sistema'); valid = false; }
+
+      if (!valid) return;
+
+      const body = buildBody(nivel, codigo, nombre, areaId, subareaId, sistemaId);
+      const endpoint = endpointForNivel(nivel);
+
+      const btn = document.getElementById('submit-form');
+      btn.disabled = true;
+
+      try {
+        if (editMode) {
+          await apiPut(`/proyectos/${proyectoId}/${endpoint}/${editId}`, body);
+        } else {
+          await apiPost(`/proyectos/${proyectoId}/${endpoint}`, body);
+        }
+        closeFormModal();
+        await loadAll();
+      } catch (err) {
+        if (err.status === 422) {
+          showValidationErrors(err.errors, {
+            codigo: 'f-codigo',
+            nombre: 'f-nombre',
+          });
+        } else {
+          alert(err.message ?? 'Error al guardar.');
+        }
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    function buildBody(nivel, codigo, nombre, areaId, subareaId, sistemaId) {
+      const b = { codigo, nombre };
+      if (nivel === 'subarea')    b.area_id    = areaId;
+      if (nivel === 'sistema')    { b.area_id = areaId; b.subarea_id = subareaId; }
+      if (nivel === 'subsistema') { b.area_id = areaId; b.subarea_id = subareaId; b.sistema_id = sistemaId; }
+      return b;
+    }
+
+    function endpointForNivel(nivel) {
+      return { area: 'areas', subarea: 'subareas', sistema: 'sistemas', subsistema: 'subsistemas' }[nivel];
+    }
+
+    function showFieldError(errId, fieldId) {
+      document.getElementById(errId).classList.add('visible');
+      document.getElementById(fieldId).classList.add('has-error');
+    }
+
+    function clearFormErrors() {
+      document.querySelectorAll('.field-error').forEach(el => el.classList.remove('visible'));
+      document.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+    }
+
+    // ── Eliminar ítem ─────────────────────────────────────────────────
+    async function deleteItem(tipo, item) {
+      if (!confirm(`¿Eliminar "${item.nombre}" (${item.codigo})? Esta acción no se puede deshacer.`)) return;
+      const endpoint = endpointForNivel(tipo);
+      try {
+        await apiDelete(`/proyectos/${proyectoId}/${endpoint}/${item.id}`);
+        await loadAll();
+      } catch (err) {
+        alert(err.message ?? 'Error al eliminar.');
+      }
+    }
+
+    // ── Modal Excel ───────────────────────────────────────────────────
+    const modalExcel = document.getElementById('modal-excel');
+    document.getElementById('btn-excel').addEventListener('click', () => { resetExcelModal(); modalExcel.classList.add('open'); });
+    document.getElementById('close-modal-excel').addEventListener('click', () => modalExcel.classList.remove('open'));
+    document.getElementById('close-result').addEventListener('click', () => { modalExcel.classList.remove('open'); loadAll(); });
+    document.getElementById('back-to-upload').addEventListener('click', resetExcelModal);
+
+    // Template download
+    document.getElementById('btn-template').href = `/api/proyectos/${proyectoId}/import/template`;
+
+    // Drag & drop
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('over');
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) handleFile(fileInput.files[0]);
+    });
+
+    let previewRows = [];
+
+    async function handleFile(file) {
+      if (!file.name.endsWith('.xlsx')) {
+        showUploadError('Solo se aceptan archivos .xlsx');
+        return;
+      }
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const data = await apiFetch(`/api/proyectos/${proyectoId}/import/preview`, {
+          method: 'POST',
+          body: formData,
+        });
+        previewRows = data.rows ?? [];
+        renderPreview(previewRows);
+        document.getElementById('excel-step-upload').style.display  = 'none';
+        document.getElementById('excel-step-preview').style.display = '';
+      } catch (err) {
+        showUploadError(err.message ?? 'Error al procesar el archivo.');
+      }
+    }
+
+    function renderPreview(rows) {
+      const tbody = document.getElementById('preview-body');
+      tbody.innerHTML = '';
+      rows.forEach((row, i) => {
+        const tr = document.createElement('tr');
+        tr.className = row.estado === 'valido' ? 'row-valid' : row.estado === 'duplicado' ? 'row-dup' : 'row-error';
+        tr.innerHTML = `
+          <td>${row.fila}</td>
+          <td>${escHtml(row.codigo ?? '')}</td>
+          <td>${escHtml(row.nombre ?? '')}</td>
+          <td>${escHtml(row.nivel ?? '')}</td>
+          <td class="row-status">${statusIcon(row.estado)} ${escHtml(row.motivo ?? '')}</td>
+          <td>${decisionSelect(i, row.estado)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function statusIcon(estado) {
+      return { valido: '✓', duplicado: '⚠', error: '✕' }[estado] ?? '?';
+    }
+
+    function decisionSelect(idx, estado) {
+      if (estado === 'valido') return '<span style="color:var(--text-muted)">—</span>';
+      return `<select data-idx="${idx}" class="decision-sel" style="font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:2px 6px">
+        <option value="omitir">Omitir</option>
+        ${estado === 'duplicado' ? '<option value="sobreescribir">Sobreescribir</option>' : ''}
+      </select>`;
+    }
+
+    document.getElementById('confirm-import').addEventListener('click', async () => {
+      // Leer decisiones del usuario
+      const decisiones = [];
+      document.querySelectorAll('.decision-sel').forEach(sel => {
+        decisiones[parseInt(sel.dataset.idx)] = sel.value;
+      });
+
+      const payload = previewRows.map((row, i) => ({
+        ...row,
+        decision: row.estado === 'valido' ? 'importar' : (decisiones[i] ?? 'omitir'),
+      }));
+
+      try {
+        const result = await apiPost(`/proyectos/${proyectoId}/import/confirm`, { rows: payload });
+        document.getElementById('excel-step-preview').style.display = 'none';
+        document.getElementById('excel-step-result').style.display  = '';
+        document.getElementById('import-summary').innerHTML = `
+          <p>✓ Importados: <strong>${result.importados}</strong></p>
+          <p>⚠ Omitidos: <strong>${result.omitidos}</strong></p>
+          <p>✕ Errores: <strong>${result.errores}</strong></p>
+        `;
+      } catch (err) {
+        alert(err.message ?? 'Error al confirmar importación.');
+      }
+    });
+
+    function showUploadError(msg) {
+      const el = document.getElementById('upload-error');
+      el.textContent = msg;
+      el.style.display = '';
+    }
+
+    function resetExcelModal() {
+      previewRows = [];
+      document.getElementById('excel-step-upload').style.display  = '';
+      document.getElementById('excel-step-preview').style.display = 'none';
+      document.getElementById('excel-step-result').style.display  = 'none';
+      document.getElementById('upload-error').style.display = 'none';
+      document.getElementById('file-input').value = '';
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────
+    await checkRoleUI();
+    await loadAll();
+  </script>
+</body>
+</html>
+```
+
+- [ ] **Step 17.2: Verificar en browser**
+
+```bash
+cd backend && php artisan serve
+```
+
+Flujo a verificar:
+1. Login → seleccionar proyecto → seleccionar app → llega a `quiebre.html`
+2. Con un proyecto vacío: muestra "0 área(s) · 0 subárea(s)…"
+3. Como Admin: aparece botón "+ Agregar" y columna "Acciones"
+4. Formulario → Nivel: Área → código "3600" + nombre "Estructura" → Guardar → aparece en árbol
+5. Formulario → Nivel: Subárea → selecciona Área → código "3610" + nombre "Fundaciones" → Guardar → aparece bajo el área
+6. Click en toggle ▾/▸ del área → colapsa/expande subáreas
+7. Buscar "3610" → filtra solo las filas que coinciden
+8. Botón "Cargar Excel" → modal drag-drop → Descargar formato → descarga el .xlsx
+9. Subir archivo .xlsx con datos → preview muestra filas → confirmar → resultado con conteo
+
+- [ ] **Step 17.3: Commit**
+
+```bash
+git add backend/public/app/quiebre.html
+git commit -m "feat: add quiebre.html - hierarchy table with cascading form and Excel import"
+```

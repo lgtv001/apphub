@@ -16,6 +16,8 @@ return new class extends Migration {
             $table->json('datos_despues')->nullable();
             $table->json('error_detalle')->nullable();
             $table->string('ip', 45)->nullable();
+            $table->index('usuario_id');
+            $table->index('created_at');
             $table->timestamp('created_at')->useCurrent();
         });
     }

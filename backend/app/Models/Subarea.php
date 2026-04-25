@@ -22,4 +22,9 @@ class Subarea extends Model
     {
         return $this->hasMany(Sistema::class, 'subarea_id')->orderBy('orden');
     }
+
+    public function proyecto()
+    {
+        return $this->belongsTo(Proyecto::class, 'proyecto_id');
+    }
 }

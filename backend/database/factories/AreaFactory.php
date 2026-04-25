@@ -14,7 +14,7 @@ class AreaFactory extends Factory
     {
         return [
             'proyecto_id' => Proyecto::factory(),
-            'codigo'      => fake()->unique()->numerify('##00'),
+            'codigo'      => fake()->unique()->numerify('####'),
             'nombre'      => fake()->words(2, true),
             'orden'       => 0,
         ];

@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class UsuarioFactory extends Factory
@@ -15,7 +16,7 @@ class UsuarioFactory extends Factory
         return [
             'nombre'       => fake()->name(),
             'email'        => fake()->unique()->safeEmail(),
-            'password_hash'=> bcrypt('password'),
+            'password_hash'=> Hash::make('password'),
             'rol_global'   => 'usuario',
             'activo'       => true,
         ];

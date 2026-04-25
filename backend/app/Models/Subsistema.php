@@ -17,4 +17,9 @@ class Subsistema extends Model
     {
         return $this->belongsTo(Sistema::class, 'sistema_id');
     }
+
+    public function proyecto()
+    {
+        return $this->belongsTo(Proyecto::class, 'proyecto_id');
+    }
 }

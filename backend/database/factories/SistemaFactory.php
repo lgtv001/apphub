@@ -16,7 +16,7 @@ class SistemaFactory extends Factory
         return [
             'proyecto_id' => $subarea->proyecto_id,
             'subarea_id'  => $subarea->id,
-            'codigo'      => fake()->unique()->lexify('##??'),
+            'codigo'      => fake()->unique()->bothify('??##'),
             'nombre'      => fake()->words(2, true),
             'orden'       => 0,
         ];

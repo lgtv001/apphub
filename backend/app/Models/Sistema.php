@@ -22,4 +22,9 @@ class Sistema extends Model
     {
         return $this->hasMany(Subsistema::class, 'sistema_id')->orderBy('orden');
     }
+
+    public function proyecto()
+    {
+        return $this->belongsTo(Proyecto::class, 'proyecto_id');
+    }
 }

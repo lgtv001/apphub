@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\TipoUsuario;
 
 class UsuarioProyecto extends Model
 {
@@ -18,5 +19,10 @@ class UsuarioProyecto extends Model
     public function proyecto()
     {
         return $this->belongsTo(Proyecto::class, 'proyecto_id');
+    }
+
+    public function tipo()
+    {
+        return $this->belongsTo(TipoUsuario::class, 'tipo_id');
     }
 }

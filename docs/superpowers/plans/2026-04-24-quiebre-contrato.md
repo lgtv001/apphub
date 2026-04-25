@@ -4107,3 +4107,598 @@ git add backend/app/Exports/ \
         backend/tests/Feature/ImportTest.php
 git commit -m "feat: add Excel import (preview + confirm) with template download and audit log"
 ```
+
+---
+
+## Task 12: Admin API — Usuarios, TiposUsuario, Asignaciones + Tests
+
+**Files:**
+- Create: `backend/app/Http/Controllers/Admin/UsuarioController.php`
+- Create: `backend/app/Http/Controllers/Admin/TipoUsuarioController.php`
+- Create: `backend/app/Http/Controllers/Admin/AsignacionController.php`
+- Create: `backend/tests/Feature/AdminTest.php`
+- Modify: `backend/routes/api.php`
+
+- [ ] **Step 12.1: Escribir los tests primero (TDD)**
+
+`backend/tests/Feature/AdminTest.php`:
+```php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Proyecto;
+use App\Models\TipoUsuario;
+use App\Models\Usuario;
+use App\Models\UsuarioProyecto;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
+
+class AdminTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function superuserToken(): array
+    {
+        $su    = Usuario::factory()->superuser()->create();
+        $token = $su->createToken('test')->plainTextToken;
+        return [$su, $token];
+    }
+
+    private function usuarioToken(): string
+    {
+        $u = Usuario::factory()->create();
+        return $u->createToken('test')->plainTextToken;
+    }
+
+    // ─── Usuarios ────────────────────────────────────────────────
+
+    public function test_superuser_puede_listar_usuarios(): void
+    {
+        [, $token] = $this->superuserToken();
+        Usuario::factory()->count(3)->create();
+
+        $this->withToken($token)->getJson('/api/admin/usuarios')
+            ->assertStatus(200)
+            ->assertJsonStructure(['data' => [['id','nombre','email','rol_global','activo']]]);
+    }
+
+    public function test_usuario_no_puede_acceder_a_admin(): void
+    {
+        $token = $this->usuarioToken();
+
+        $this->withToken($token)->getJson('/api/admin/usuarios')->assertStatus(403);
+    }
+
+    public function test_superuser_puede_crear_usuario(): void
+    {
+        [, $token] = $this->superuserToken();
+
+        $response = $this->withToken($token)->postJson('/api/admin/usuarios', [
+            'nombre'    => 'Nuevo Usuario',
+            'email'     => 'nuevo@test.com',
+            'password'  => 'secret1234',
+            'rol_global'=> 'usuario',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('email', 'nuevo@test.com');
+
+        $this->assertDatabaseHas('usuarios', ['email' => 'nuevo@test.com']);
+    }
+
+    public function test_email_duplicado_falla_al_crear_usuario(): void
+    {
+        [, $token] = $this->superuserToken();
+        Usuario::factory()->create(['email' => 'existe@test.com']);
+
+        $this->withToken($token)->postJson('/api/admin/usuarios', [
+            'nombre'   => 'Otro',
+            'email'    => 'existe@test.com',
+            'password' => 'secret1234',
+        ])->assertStatus(422)->assertJsonValidationErrors(['email']);
+    }
+
+    public function test_superuser_puede_editar_usuario(): void
+    {
+        [, $token] = $this->superuserToken();
+        $usuario = Usuario::factory()->create();
+
+        $this->withToken($token)->putJson("/api/admin/usuarios/{$usuario->id}", [
+            'nombre' => 'Nombre cambiado',
+            'activo' => false,
+        ])->assertStatus(200)->assertJsonPath('nombre', 'Nombre cambiado');
+    }
+
+    public function test_superuser_puede_eliminar_usuario(): void
+    {
+        [, $token] = $this->superuserToken();
+        $usuario = Usuario::factory()->create();
+
+        $this->withToken($token)->deleteJson("/api/admin/usuarios/{$usuario->id}")
+            ->assertStatus(204);
+
+        $this->assertDatabaseMissing('usuarios', ['id' => $usuario->id]);
+    }
+
+    // ─── Tipos de usuario ────────────────────────────────────────
+
+    public function test_superuser_puede_crear_tipo_usuario(): void
+    {
+        [, $token] = $this->superuserToken();
+
+        $this->withToken($token)->postJson('/api/admin/tipos-usuario', [
+            'nombre'      => 'Calidad',
+            'descripcion' => 'Inspector de calidad',
+        ])->assertStatus(201)->assertJsonPath('nombre', 'Calidad');
+
+        $this->assertDatabaseHas('tipos_usuario', ['nombre' => 'Calidad']);
+    }
+
+    public function test_superuser_puede_listar_tipos_usuario(): void
+    {
+        [, $token] = $this->superuserToken();
+        TipoUsuario::factory()->count(2)->create();
+
+        $this->withToken($token)->getJson('/api/admin/tipos-usuario')
+            ->assertStatus(200)
+            ->assertJsonCount(2, 'data');
+    }
+
+    public function test_superuser_puede_editar_tipo_usuario(): void
+    {
+        [, $token] = $this->superuserToken();
+        $tipo = TipoUsuario::factory()->create(['nombre' => 'Original']);
+
+        $this->withToken($token)->putJson("/api/admin/tipos-usuario/{$tipo->id}", [
+            'nombre' => 'Actualizado',
+        ])->assertStatus(200)->assertJsonPath('nombre', 'Actualizado');
+    }
+
+    // ─── Asignaciones ────────────────────────────────────────────
+
+    public function test_superuser_puede_asignar_usuario_a_proyecto(): void
+    {
+        [, $token] = $this->superuserToken();
+        $usuario  = Usuario::factory()->create();
+        $proyecto = Proyecto::factory()->create();
+
+        $this->withToken($token)->postJson('/api/admin/asignaciones', [
+            'usuario_id'  => $usuario->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'admin',
+        ])->assertStatus(201);
+
+        $this->assertDatabaseHas('usuarios_proyectos', [
+            'usuario_id'  => $usuario->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'admin',
+        ]);
+    }
+
+    public function test_asignacion_duplicada_falla(): void
+    {
+        [, $token] = $this->superuserToken();
+        $usuario  = Usuario::factory()->create();
+        $proyecto = Proyecto::factory()->create();
+
+        UsuarioProyecto::create([
+            'usuario_id'  => $usuario->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'usuario',
+        ]);
+
+        $this->withToken($token)->postJson('/api/admin/asignaciones', [
+            'usuario_id'  => $usuario->id,
+            'proyecto_id' => $proyecto->id,
+            'rol'         => 'admin',
+        ])->assertStatus(422);
+    }
+
+    public function test_superuser_puede_revocar_asignacion(): void
+    {
+        [, $token] = $this->superuserToken();
+        $asignacion = UsuarioProyecto::factory()->create();
+
+        $this->withToken($token)->deleteJson("/api/admin/asignaciones/{$asignacion->id}")
+            ->assertStatus(204);
+
+        $this->assertDatabaseMissing('usuarios_proyectos', ['id' => $asignacion->id]);
+    }
+
+    public function test_superuser_puede_listar_asignaciones(): void
+    {
+        [, $token] = $this->superuserToken();
+        UsuarioProyecto::factory()->count(3)->create();
+
+        $this->withToken($token)->getJson('/api/admin/asignaciones')
+            ->assertStatus(200)
+            ->assertJsonCount(3, 'data');
+    }
+}
+```
+
+- [ ] **Step 12.2: Agregar factory de `TipoUsuario` y `UsuarioProyecto`**
+
+`backend/database/factories/TipoUsuarioFactory.php`:
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\TipoUsuario;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class TipoUsuarioFactory extends Factory
+{
+    protected $model = TipoUsuario::class;
+
+    public function definition(): array
+    {
+        return [
+            'nombre'      => fake()->unique()->word(),
+            'descripcion' => fake()->sentence(),
+            'activo'      => true,
+        ];
+    }
+}
+```
+
+`backend/database/factories/UsuarioProyectoFactory.php`:
+```php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Proyecto;
+use App\Models\Usuario;
+use App\Models\UsuarioProyecto;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class UsuarioProyectoFactory extends Factory
+{
+    protected $model = UsuarioProyecto::class;
+
+    public function definition(): array
+    {
+        return [
+            'usuario_id'  => Usuario::factory(),
+            'proyecto_id' => Proyecto::factory(),
+            'rol'         => 'usuario',
+            'tipo_id'     => null,
+        ];
+    }
+}
+```
+
+- [ ] **Step 12.3: Ejecutar tests — deben fallar**
+
+```bash
+cd backend
+php artisan test tests/Feature/AdminTest.php
+```
+
+Esperado: todos fallan con error de ruta no encontrada.
+
+- [ ] **Step 12.4: Crear `Admin/UsuarioController`**
+
+`backend/app/Http/Controllers/Admin/UsuarioController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Usuario;
+use App\Services\LogService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+
+class UsuarioController extends Controller
+{
+    public function index()
+    {
+        return response()->json([
+            'data' => Usuario::orderBy('nombre')
+                ->get(['id','nombre','email','rol_global','activo','created_at']),
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'nombre'     => 'required|string|max:255',
+            'email'      => 'required|email|unique:usuarios,email',
+            'password'   => 'required|string|min:8',
+            'rol_global' => 'in:admin,usuario',
+        ]);
+
+        $usuario = Usuario::create([
+            'nombre'        => $data['nombre'],
+            'email'         => $data['email'],
+            'password_hash' => Hash::make($data['password']),
+            'rol_global'    => $data['rol_global'] ?? 'usuario',
+        ]);
+
+        LogService::log(
+            tabla:        'usuarios',
+            proyectoId:   null,
+            usuarioId:    $request->user()->id,
+            accion:       'CREATE',
+            entidadId:    $usuario->id,
+            datosDespues: $usuario->only(['id','nombre','email','rol_global']),
+            ip:           $request->ip()
+        );
+
+        return response()->json(
+            $usuario->only(['id','nombre','email','rol_global','activo']), 201
+        );
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $usuario = Usuario::findOrFail($id);
+
+        $data = $request->validate([
+            'nombre'     => 'string|max:255',
+            'email'      => "email|unique:usuarios,email,{$id}",
+            'password'   => 'string|min:8',
+            'rol_global' => 'in:admin,usuario',
+            'activo'     => 'boolean',
+        ]);
+
+        $antes = $usuario->only(['id','nombre','email','rol_global','activo']);
+
+        if (isset($data['password'])) {
+            $data['password_hash'] = Hash::make($data['password']);
+            unset($data['password']);
+        }
+
+        $usuario->update($data);
+
+        LogService::log(
+            tabla:        'usuarios',
+            proyectoId:   null,
+            usuarioId:    $request->user()->id,
+            accion:       'UPDATE',
+            entidadId:    $usuario->id,
+            datosAntes:   $antes,
+            datosDespues: $usuario->fresh()->only(['id','nombre','email','rol_global','activo']),
+            ip:           $request->ip()
+        );
+
+        return response()->json(
+            $usuario->fresh()->only(['id','nombre','email','rol_global','activo'])
+        );
+    }
+
+    public function destroy(Request $request, int $id)
+    {
+        $usuario = Usuario::findOrFail($id);
+
+        LogService::log(
+            tabla:      'usuarios',
+            proyectoId: null,
+            usuarioId:  $request->user()->id,
+            accion:     'DELETE',
+            entidadId:  $usuario->id,
+            datosAntes: $usuario->only(['id','nombre','email','rol_global']),
+            ip:         $request->ip()
+        );
+
+        $usuario->delete();
+
+        return response()->noContent();
+    }
+}
+```
+
+- [ ] **Step 12.5: Crear `Admin/TipoUsuarioController`**
+
+`backend/app/Http/Controllers/Admin/TipoUsuarioController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\TipoUsuario;
+use Illuminate\Http\Request;
+
+class TipoUsuarioController extends Controller
+{
+    public function index()
+    {
+        return response()->json(['data' => TipoUsuario::orderBy('nombre')->get()]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'nombre'      => 'required|string|max:100|unique:tipos_usuario,nombre',
+            'descripcion' => 'nullable|string|max:255',
+        ]);
+
+        $tipo = TipoUsuario::create($data);
+
+        return response()->json($tipo, 201);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $tipo = TipoUsuario::findOrFail($id);
+
+        $data = $request->validate([
+            'nombre'      => "string|max:100|unique:tipos_usuario,nombre,{$id}",
+            'descripcion' => 'nullable|string|max:255',
+            'activo'      => 'boolean',
+        ]);
+
+        $tipo->update($data);
+
+        return response()->json($tipo->fresh());
+    }
+
+    public function destroy(int $id)
+    {
+        TipoUsuario::findOrFail($id)->delete();
+
+        return response()->noContent();
+    }
+}
+```
+
+- [ ] **Step 12.6: Crear `Admin/AsignacionController`**
+
+`backend/app/Http/Controllers/Admin/AsignacionController.php`:
+```php
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\UsuarioProyecto;
+use App\Services\LogService;
+use Illuminate\Http\Request;
+
+class AsignacionController extends Controller
+{
+    public function index()
+    {
+        $asignaciones = UsuarioProyecto::with(['usuario:id,nombre,email', 'proyecto:id,codigo,nombre'])
+            ->orderBy('proyecto_id')
+            ->get();
+
+        return response()->json(['data' => $asignaciones]);
+    }
+
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'usuario_id'  => 'required|exists:usuarios,id',
+            'proyecto_id' => 'required|exists:proyectos,id',
+            'rol'         => 'required|in:admin,usuario',
+            'tipo_id'     => 'nullable|exists:tipos_usuario,id',
+        ]);
+
+        // Verificar que no exista ya la asignación
+        $existe = UsuarioProyecto::where('usuario_id', $data['usuario_id'])
+            ->where('proyecto_id', $data['proyecto_id'])
+            ->exists();
+
+        if ($existe) {
+            return response()->json([
+                'message' => 'El usuario ya tiene asignación en este proyecto',
+                'errors'  => ['usuario_id' => ['Ya existe una asignación para este usuario y proyecto']],
+            ], 422);
+        }
+
+        $asignacion = UsuarioProyecto::create($data);
+
+        LogService::log(
+            tabla:        'usuarios_proyectos',
+            proyectoId:   $data['proyecto_id'],
+            usuarioId:    $request->user()->id,
+            accion:       'CREATE',
+            entidadId:    $asignacion->id,
+            datosDespues: $asignacion->toArray(),
+            ip:           $request->ip()
+        );
+
+        return response()->json($asignacion, 201);
+    }
+
+    public function destroy(Request $request, int $id)
+    {
+        $asignacion = UsuarioProyecto::findOrFail($id);
+
+        LogService::log(
+            tabla:      'usuarios_proyectos',
+            proyectoId: $asignacion->proyecto_id,
+            usuarioId:  $request->user()->id,
+            accion:     'DELETE',
+            entidadId:  $asignacion->id,
+            datosAntes: $asignacion->toArray(),
+            ip:         $request->ip()
+        );
+
+        $asignacion->delete();
+
+        return response()->noContent();
+    }
+}
+```
+
+- [ ] **Step 12.7: Agregar rutas admin en `api.php`**
+
+Agregar dentro del grupo `auth:sanctum` en `backend/routes/api.php`:
+```php
+use App\Http\Controllers\Admin\AsignacionController;
+use App\Http\Controllers\Admin\TipoUsuarioController;
+use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
+
+Route::prefix('admin')->middleware('check.role:superuser')->group(function () {
+
+    Route::get('/usuarios',              [AdminUsuarioController::class, 'index']);
+    Route::post('/usuarios',             [AdminUsuarioController::class, 'store']);
+    Route::put('/usuarios/{id}',         [AdminUsuarioController::class, 'update']);
+    Route::delete('/usuarios/{id}',      [AdminUsuarioController::class, 'destroy']);
+
+    Route::get('/tipos-usuario',         [TipoUsuarioController::class, 'index']);
+    Route::post('/tipos-usuario',        [TipoUsuarioController::class, 'store']);
+    Route::put('/tipos-usuario/{id}',    [TipoUsuarioController::class, 'update']);
+    Route::delete('/tipos-usuario/{id}', [TipoUsuarioController::class, 'destroy']);
+
+    Route::get('/asignaciones',          [AsignacionController::class, 'index']);
+    Route::post('/asignaciones',         [AsignacionController::class, 'store']);
+    Route::delete('/asignaciones/{id}',  [AsignacionController::class, 'destroy']);
+
+});
+```
+
+- [ ] **Step 12.8: Ejecutar tests — deben pasar**
+
+```bash
+php artisan test tests/Feature/AdminTest.php
+```
+
+Esperado:
+```
+PASS  Tests\Feature\AdminTest
+✓ superuser puede listar usuarios
+✓ usuario no puede acceder a admin
+✓ superuser puede crear usuario
+✓ email duplicado falla al crear usuario
+✓ superuser puede editar usuario
+✓ superuser puede eliminar usuario
+✓ superuser puede crear tipo usuario
+✓ superuser puede listar tipos usuario
+✓ superuser puede editar tipo usuario
+✓ superuser puede asignar usuario a proyecto
+✓ asignacion duplicada falla
+✓ superuser puede revocar asignacion
+✓ superuser puede listar asignaciones
+
+Tests: 13 passed
+```
+
+- [ ] **Step 12.9: Suite completa — sin regresiones**
+
+```bash
+php artisan test
+```
+
+Esperado: 71 tests pasan.
+
+- [ ] **Step 12.10: Commit**
+
+```bash
+cd ..
+git add backend/app/Http/Controllers/Admin/ \
+        backend/database/factories/TipoUsuarioFactory.php \
+        backend/database/factories/UsuarioProyectoFactory.php \
+        backend/routes/api.php \
+        backend/tests/Feature/AdminTest.php
+git commit -m "feat: add Admin API (usuarios, tipos, asignaciones) with 71 passing tests"
+```

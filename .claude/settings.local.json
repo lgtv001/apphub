@@ -4,7 +4,15 @@
       "Bash(bash *)",
       "PowerShell(New-Item *)",
       "Skill(update-config)",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "Bash(node *)",
+      "Bash(taskkill /F /IM node.exe)",
+      "PowerShell(Stop-Process *)",
+      "Bash(BRAINSTORM_PORT=49561 BRAINSTORM_DIR=\"C:/Users/luisg/Documents/GitHub/apphub/.superpowers/brainstorm/session-main/state\" node *)",
+      "Bash(BRAINSTORM_PORT=49561 BRAINSTORM_DIR=\"C:/Users/luisg/Documents/GitHub/apphub/.superpowers/brainstorm/session-main\" node *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(BRAINSTORM_PORT=52100 BRAINSTORM_DIR=\"C:/Users/luisg/Documents/GitHub/apphub/.superpowers/brainstorm/session-main\" node *)"
     ]
   }
 }

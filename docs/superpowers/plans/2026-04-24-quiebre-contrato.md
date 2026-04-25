@@ -213,3 +213,521 @@ cd ..
 git add backend/
 git commit -m "feat: install Laravel 11 with Sanctum and Excel packages"
 ```
+
+---
+
+## Task 2: Migraciones de base de datos (15 tablas)
+
+**Files:**
+- Create: `backend/database/migrations/2026_04_24_000001_create_usuarios_table.php`
+- Create: `backend/database/migrations/2026_04_24_000002_create_tipos_usuario_table.php`
+- Create: `backend/database/migrations/2026_04_24_000003_create_proyectos_table.php`
+- Create: `backend/database/migrations/2026_04_24_000004_create_usuarios_proyectos_table.php`
+- Create: `backend/database/migrations/2026_04_24_000005_create_areas_table.php`
+- Create: `backend/database/migrations/2026_04_24_000006_create_subareas_table.php`
+- Create: `backend/database/migrations/2026_04_24_000007_create_sistemas_table.php`
+- Create: `backend/database/migrations/2026_04_24_000008_create_subsistemas_table.php`
+- Create: `backend/database/migrations/2026_04_24_000009_create_areas_log_table.php`
+- Create: `backend/database/migrations/2026_04_24_000010_create_subareas_log_table.php`
+- Create: `backend/database/migrations/2026_04_24_000011_create_sistemas_log_table.php`
+- Create: `backend/database/migrations/2026_04_24_000012_create_subsistemas_log_table.php`
+- Create: `backend/database/migrations/2026_04_24_000013_create_proyectos_log_table.php`
+- Create: `backend/database/migrations/2026_04_24_000014_create_usuarios_log_table.php`
+- Create: `backend/database/migrations/2026_04_24_000015_create_usuarios_proyectos_log_table.php`
+
+- [ ] **Step 2.1: Crear migración `usuarios`**
+
+`backend/database/migrations/2026_04_24_000001_create_usuarios_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('usuarios', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre');
+            $table->string('email')->unique();
+            $table->string('password_hash');
+            $table->enum('rol_global', ['superuser', 'admin', 'usuario'])->default('usuario');
+            $table->boolean('activo')->default(true);
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('usuarios');
+    }
+};
+```
+
+- [ ] **Step 2.2: Crear migración `tipos_usuario`**
+
+`backend/database/migrations/2026_04_24_000002_create_tipos_usuario_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('tipos_usuario', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre');
+            $table->string('descripcion')->nullable();
+            $table->boolean('activo')->default(true);
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('tipos_usuario');
+    }
+};
+```
+
+- [ ] **Step 2.3: Crear migración `proyectos`**
+
+`backend/database/migrations/2026_04_24_000003_create_proyectos_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('proyectos', function (Blueprint $table) {
+            $table->id();
+            $table->string('codigo', 20)->unique();
+            $table->string('nombre');
+            $table->enum('estado', ['activo', 'archivado'])->default('activo');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('proyectos');
+    }
+};
+```
+
+- [ ] **Step 2.4: Crear migración `usuarios_proyectos`**
+
+`backend/database/migrations/2026_04_24_000004_create_usuarios_proyectos_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('usuarios_proyectos', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('usuario_id')->constrained('usuarios')->onDelete('cascade');
+            $table->foreignId('proyecto_id')->constrained('proyectos')->onDelete('cascade');
+            $table->enum('rol', ['admin', 'usuario'])->default('usuario');
+            $table->foreignId('tipo_id')->nullable()->constrained('tipos_usuario')->nullOnDelete();
+            $table->timestamps();
+            $table->unique(['usuario_id', 'proyecto_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('usuarios_proyectos');
+    }
+};
+```
+
+- [ ] **Step 2.5: Crear migración `areas`**
+
+`backend/database/migrations/2026_04_24_000005_create_areas_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('areas', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('proyecto_id')->constrained('proyectos')->onDelete('cascade');
+            $table->string('codigo', 50);
+            $table->string('nombre');
+            $table->integer('orden')->default(0);
+            $table->timestamps();
+            $table->unique(['proyecto_id', 'codigo']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('areas');
+    }
+};
+```
+
+- [ ] **Step 2.6: Crear migración `subareas`**
+
+`backend/database/migrations/2026_04_24_000006_create_subareas_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('subareas', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('proyecto_id')->constrained('proyectos')->onDelete('cascade');
+            $table->foreignId('area_id')->constrained('areas')->onDelete('cascade');
+            $table->string('codigo', 50);
+            $table->string('nombre');
+            $table->integer('orden')->default(0);
+            $table->timestamps();
+            $table->unique(['proyecto_id', 'codigo']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('subareas');
+    }
+};
+```
+
+- [ ] **Step 2.7: Crear migración `sistemas`**
+
+`backend/database/migrations/2026_04_24_000007_create_sistemas_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('sistemas', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('proyecto_id')->constrained('proyectos')->onDelete('cascade');
+            $table->foreignId('subarea_id')->constrained('subareas')->onDelete('cascade');
+            $table->string('codigo', 50);
+            $table->string('nombre');
+            $table->integer('orden')->default(0);
+            $table->timestamps();
+            $table->unique(['proyecto_id', 'codigo']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('sistemas');
+    }
+};
+```
+
+- [ ] **Step 2.8: Crear migración `subsistemas`**
+
+`backend/database/migrations/2026_04_24_000008_create_subsistemas_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('subsistemas', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('proyecto_id')->constrained('proyectos')->onDelete('cascade');
+            $table->foreignId('sistema_id')->constrained('sistemas')->onDelete('cascade');
+            $table->string('codigo', 50);
+            $table->string('nombre');
+            $table->integer('orden')->default(0);
+            $table->timestamps();
+            $table->unique(['proyecto_id', 'codigo']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('subsistemas');
+    }
+};
+```
+
+- [ ] **Step 2.9: Crear las 7 tablas de log**
+
+Las tablas de log no tienen FK constraints (no queremos que borrar un registro borre su historial de auditoría).
+
+`backend/database/migrations/2026_04_24_000009_create_areas_log_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('areas_log', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('proyecto_id')->nullable();
+            $table->unsignedBigInteger('usuario_id');
+            $table->enum('accion', ['CREATE','UPDATE','DELETE','IMPORT','IMPORT_ERROR_DISMISSED','VALIDATION_ERROR']);
+            $table->unsignedBigInteger('entidad_id')->nullable();
+            $table->json('datos_antes')->nullable();
+            $table->json('datos_despues')->nullable();
+            $table->json('error_detalle')->nullable();
+            $table->string('ip', 45)->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('areas_log');
+    }
+};
+```
+
+`backend/database/migrations/2026_04_24_000010_create_subareas_log_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('subareas_log', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('proyecto_id')->nullable();
+            $table->unsignedBigInteger('usuario_id');
+            $table->enum('accion', ['CREATE','UPDATE','DELETE','IMPORT','IMPORT_ERROR_DISMISSED','VALIDATION_ERROR']);
+            $table->unsignedBigInteger('entidad_id')->nullable();
+            $table->json('datos_antes')->nullable();
+            $table->json('datos_despues')->nullable();
+            $table->json('error_detalle')->nullable();
+            $table->string('ip', 45)->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('subareas_log');
+    }
+};
+```
+
+`backend/database/migrations/2026_04_24_000011_create_sistemas_log_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('sistemas_log', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('proyecto_id')->nullable();
+            $table->unsignedBigInteger('usuario_id');
+            $table->enum('accion', ['CREATE','UPDATE','DELETE','IMPORT','IMPORT_ERROR_DISMISSED','VALIDATION_ERROR']);
+            $table->unsignedBigInteger('entidad_id')->nullable();
+            $table->json('datos_antes')->nullable();
+            $table->json('datos_despues')->nullable();
+            $table->json('error_detalle')->nullable();
+            $table->string('ip', 45)->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('sistemas_log');
+    }
+};
+```
+
+`backend/database/migrations/2026_04_24_000012_create_subsistemas_log_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('subsistemas_log', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('proyecto_id')->nullable();
+            $table->unsignedBigInteger('usuario_id');
+            $table->enum('accion', ['CREATE','UPDATE','DELETE','IMPORT','IMPORT_ERROR_DISMISSED','VALIDATION_ERROR']);
+            $table->unsignedBigInteger('entidad_id')->nullable();
+            $table->json('datos_antes')->nullable();
+            $table->json('datos_despues')->nullable();
+            $table->json('error_detalle')->nullable();
+            $table->string('ip', 45)->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('subsistemas_log');
+    }
+};
+```
+
+`backend/database/migrations/2026_04_24_000013_create_proyectos_log_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('proyectos_log', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('proyecto_id')->nullable();
+            $table->unsignedBigInteger('usuario_id');
+            $table->enum('accion', ['CREATE','UPDATE','DELETE','IMPORT','IMPORT_ERROR_DISMISSED','VALIDATION_ERROR']);
+            $table->unsignedBigInteger('entidad_id')->nullable();
+            $table->json('datos_antes')->nullable();
+            $table->json('datos_despues')->nullable();
+            $table->json('error_detalle')->nullable();
+            $table->string('ip', 45)->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('proyectos_log');
+    }
+};
+```
+
+`backend/database/migrations/2026_04_24_000014_create_usuarios_log_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('usuarios_log', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('proyecto_id')->nullable();
+            $table->unsignedBigInteger('usuario_id');
+            $table->enum('accion', ['CREATE','UPDATE','DELETE','IMPORT','IMPORT_ERROR_DISMISSED','VALIDATION_ERROR']);
+            $table->unsignedBigInteger('entidad_id')->nullable();
+            $table->json('datos_antes')->nullable();
+            $table->json('datos_despues')->nullable();
+            $table->json('error_detalle')->nullable();
+            $table->string('ip', 45)->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('usuarios_log');
+    }
+};
+```
+
+`backend/database/migrations/2026_04_24_000015_create_usuarios_proyectos_log_table.php`:
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('usuarios_proyectos_log', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('proyecto_id')->nullable();
+            $table->unsignedBigInteger('usuario_id');
+            $table->enum('accion', ['CREATE','UPDATE','DELETE','IMPORT','IMPORT_ERROR_DISMISSED','VALIDATION_ERROR']);
+            $table->unsignedBigInteger('entidad_id')->nullable();
+            $table->json('datos_antes')->nullable();
+            $table->json('datos_despues')->nullable();
+            $table->json('error_detalle')->nullable();
+            $table->string('ip', 45)->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('usuarios_proyectos_log');
+    }
+};
+```
+
+- [ ] **Step 2.10: Ejecutar migraciones y verificar**
+
+```bash
+cd backend
+php artisan migrate
+php artisan migrate:status
+```
+
+Esperado: las 15 tablas aparecen como `Ran` en el status. En MySQL:
+```bash
+mysql -u root -p apphub -e "SHOW TABLES;"
+```
+Debe mostrar las 15 tablas.
+
+- [ ] **Step 2.11: Commit**
+
+```bash
+cd ..
+git add backend/database/migrations/
+git commit -m "feat: add 15 database migrations (8 main tables + 7 audit logs)"
+```

@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 use App\Models\Proyecto;
 use App\Services\LogService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProyectoController extends Controller
 {
@@ -42,8 +43,11 @@ class ProyectoController extends Controller
             'nombre' => 'required|string|max:255',
             'estado' => 'in:activo,archivado',
         ]);
-        $proyecto = Proyecto::create($data);
-        LogService::log('proyectos', $proyecto->id, $request->user()->id, 'CREATE', $proyecto->id, null, $proyecto->toArray(), null, $request->ip());
+        $proyecto = DB::transaction(function () use ($data, $request) {
+            $p = Proyecto::create($data);
+            LogService::log('proyectos', $p->id, $request->user()->id, 'CREATE', $p->id, null, $p->toArray(), null, $request->ip());
+            return $p;
+        });
         return response()->json($proyecto, 201);
     }
 
@@ -56,8 +60,12 @@ class ProyectoController extends Controller
             'estado' => 'in:activo,archivado',
         ]);
         $antes = $proyecto->toArray();
-        $proyecto->update($data);
-        LogService::log('proyectos', $proyecto->id, $request->user()->id, 'UPDATE', $proyecto->id, $antes, $proyecto->fresh()->toArray(), null, $request->ip());
-        return response()->json($proyecto->fresh());
+        $proyecto = DB::transaction(function () use ($proyecto, $data, $antes, $request, $id) {
+            $proyecto->update($data);
+            $fresh = $proyecto->fresh();
+            LogService::log('proyectos', $proyecto->id, $request->user()->id, 'UPDATE', $proyecto->id, $antes, $fresh->toArray(), null, $request->ip());
+            return $fresh;
+        });
+        return response()->json($proyecto);
     }
 }

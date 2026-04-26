@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 use App\Models\Area;
 use App\Services\LogService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class AreaController extends Controller
@@ -20,8 +21,11 @@ class AreaController extends Controller
             'nombre' => 'required|string|max:255',
             'orden'  => 'integer|min:0',
         ]);
-        $area = Area::create(array_merge($data, ['proyecto_id' => $proyecto_id]));
-        LogService::log('areas', $proyecto_id, $request->user()->id, 'CREATE', $area->id, null, $area->toArray(), null, $request->ip());
+        $area = DB::transaction(function () use ($data, $proyecto_id, $request) {
+            $a = Area::create(array_merge($data, ['proyecto_id' => $proyecto_id]));
+            LogService::log('areas', $proyecto_id, $request->user()->id, 'CREATE', $a->id, null, $a->toArray(), null, $request->ip());
+            return $a;
+        });
         return response()->json($area, 201);
     }
 
@@ -34,16 +38,22 @@ class AreaController extends Controller
             'orden'  => 'integer|min:0',
         ]);
         $antes = $area->toArray();
-        $area->update($data);
-        LogService::log('areas', $proyecto_id, $request->user()->id, 'UPDATE', $area->id, $antes, $area->fresh()->toArray(), null, $request->ip());
-        return response()->json($area->fresh());
+        $area = DB::transaction(function () use ($area, $data, $antes, $proyecto_id, $request) {
+            $area->update($data);
+            $fresh = $area->fresh();
+            LogService::log('areas', $proyecto_id, $request->user()->id, 'UPDATE', $area->id, $antes, $fresh->toArray(), null, $request->ip());
+            return $fresh;
+        });
+        return response()->json($area);
     }
 
     public function destroy(Request $request, int $proyecto_id, int $id)
     {
         $area = Area::where('proyecto_id', $proyecto_id)->findOrFail($id);
-        LogService::log('areas', $proyecto_id, $request->user()->id, 'DELETE', $area->id, $area->toArray(), null, null, $request->ip());
-        $area->delete();
+        DB::transaction(function () use ($area, $proyecto_id, $request) {
+            LogService::log('areas', $proyecto_id, $request->user()->id, 'DELETE', $area->id, $area->toArray(), null, null, $request->ip());
+            $area->delete();
+        });
         return response()->noContent();
     }
 }

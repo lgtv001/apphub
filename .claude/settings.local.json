@@ -60,11 +60,12 @@
       "Bash(/c/xampp/php/php.exe artisan *)",
       "Bash(php -l app/Http/Middleware/CheckRole.php)",
       "Bash(php -l app/Http/Middleware/CheckProyectoAccess.php)",
-      "Bash(php -l app/Services/LogService.php)"
+      "Bash(php -l app/Services/LogService.php)",
+      "Bash(C:\\\\xampp\\\\php\\\\php.exe artisan *)",
+      "Bash(/c/xampp/php/php \"C:\\\\Users\\\\luisg\\\\Documents\\\\GitHub\\\\apphub\\\\.worktrees\\\\quiebre-contrato\\\\backend\\\\artisan\" test tests/Feature/SubareaTest.php tests/Feature/SistemaTest.php tests/Feature/SubsistemaTest.php)"
     ],
     "defaultMode": "bypassPermissions"
   },
-  "skipDangerousModePermissionPrompt": true,
   "hooks": {
     "SubagentStop": [
       {
@@ -90,5 +91,6 @@
       }
     ]
   },
-  "autoCompactWindow": 160000
+  "autoCompactWindow": 160000,
+  "skipDangerousModePermissionPrompt": true
 }

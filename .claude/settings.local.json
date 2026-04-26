@@ -62,8 +62,9 @@
       "Bash(php -l app/Http/Middleware/CheckProyectoAccess.php)",
       "Bash(php -l app/Services/LogService.php)"
     ],
-    "defaultMode": "dontAsk"
+    "defaultMode": "bypassPermissions"
   },
+  "skipDangerousModePermissionPrompt": true,
   "hooks": {
     "SubagentStop": [
       {

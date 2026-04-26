@@ -5,6 +5,11 @@ use App\Http\Controllers\AreaController;
 use App\Http\Controllers\SubareaController;
 use App\Http\Controllers\SistemaController;
 use App\Http\Controllers\SubsistemaController;
+use App\Http\Controllers\ImportController;
+use App\Http\Controllers\Admin\AsignacionController;
+use App\Http\Controllers\Admin\LogController;
+use App\Http\Controllers\Admin\TipoUsuarioController;
+use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
@@ -39,6 +44,28 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/subsistemas',       [SubsistemaController::class, 'store'])->middleware('check.role:admin');
         Route::put('/subsistemas/{id}',   [SubsistemaController::class, 'update'])->middleware('check.role:admin');
         Route::delete('/subsistemas/{id}',[SubsistemaController::class, 'destroy'])->middleware('check.role:admin');
+
+        Route::get('/import/template', [ImportController::class, 'template']);
+        Route::post('/import/preview', [ImportController::class, 'preview']);
+        Route::post('/import/confirm', [ImportController::class, 'confirm'])->middleware('check.role:admin');
+    });
+
+    Route::prefix('admin')->middleware('check.role:superuser')->group(function () {
+        Route::get('/usuarios',              [AdminUsuarioController::class, 'index']);
+        Route::post('/usuarios',             [AdminUsuarioController::class, 'store']);
+        Route::put('/usuarios/{id}',         [AdminUsuarioController::class, 'update']);
+        Route::delete('/usuarios/{id}',      [AdminUsuarioController::class, 'destroy']);
+
+        Route::get('/tipos-usuario',         [TipoUsuarioController::class, 'index']);
+        Route::post('/tipos-usuario',        [TipoUsuarioController::class, 'store']);
+        Route::put('/tipos-usuario/{id}',    [TipoUsuarioController::class, 'update']);
+        Route::delete('/tipos-usuario/{id}', [TipoUsuarioController::class, 'destroy']);
+
+        Route::get('/asignaciones',          [AsignacionController::class, 'index']);
+        Route::post('/asignaciones',         [AsignacionController::class, 'store']);
+        Route::delete('/asignaciones/{id}',  [AsignacionController::class, 'destroy']);
+
+        Route::get('/logs',                  [LogController::class, 'index']);
     });
 
 });

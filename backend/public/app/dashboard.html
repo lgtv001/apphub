@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — AppHub</title>
+  <link rel="stylesheet" href="/assets/css/app.css"/>
+  <style>
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; text-align: center; }
+    .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
+    .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+    .stat-card.danger .stat-value { color: var(--red); }
+    .progress-bar-bg { background: rgba(255,255,255,0.06); border-radius: 6px; height: 10px; margin-top: 12px; }
+    .progress-bar-fill { height: 10px; border-radius: 6px; background: var(--blue); transition: width 0.4s; }
+
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 12px; }
+
+    .gantt-table { width: 100%; border-collapse: collapse; }
+    .gantt-table th { background: var(--bg-row); color: var(--text-dim); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    .gantt-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+    .gantt-track { position: relative; height: 22px; }
+    .gantt-bar { position: absolute; height: 8px; border-radius: 3px; min-width: 3px; }
+    .gantt-bar.plan  { background: rgba(255,255,255,0.18); top: 4px; }
+    .gantt-bar.real  { background: var(--blue); top: 13px; }
+    .gantt-bar.retraso { background: var(--red); }
+
+    .avance-list { list-style: none; padding: 0; }
+    .avance-list li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+    .a-code { font-family: monospace; background: rgba(79,126,255,0.08); color: var(--blue-soft); padding: 2px 7px; border-radius: 4px; font-size: 11px; white-space: nowrap; }
+    .a-name { flex: 1; color: var(--text-muted); }
+    .a-bar-wrap { width: 120px; background: rgba(255,255,255,0.06); border-radius: 4px; height: 8px; flex-shrink: 0; }
+    .a-bar-fill { height: 8px; border-radius: 4px; background: var(--blue); }
+    .a-pct { width: 36px; text-align: right; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-left">
+      <a class="nav-brand" href="/app/selector-proyecto.html">AppHub</a>
+      <span class="nav-sep">/</span>
+      <span id="proyecto-codigo" class="nav-project-code"></span>
+      <span id="proyecto-nombre" class="nav-project-name"></span>
+      <span class="nav-sep">/</span>
+      <span class="nav-current">Dashboard</span>
+    </div>
+    <div class="nav-right">
+      <span id="user-name" class="nav-user"></span>
+      <a id="btn-quiebre" href="/app/quiebre.html" class="btn btn-ghost btn-sm">← Quiebre del Contrato</a>
+      <a href="/app/selector-proyecto.html" class="btn btn-ghost btn-sm">Cambiar proyecto</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Dashboard del Proyecto</h1>
+        <p id="subtitle" class="subtitle mt-8"></p>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total">—</div>
+        <div class="stat-label">Total subsistemas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-avance">—%</div>
+        <div class="stat-label">Avance promedio</div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="bar-avance" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="stat-card" id="card-retraso">
+        <div class="stat-value" id="stat-retraso">—</div>
+        <div class="stat-label">Con retraso</div>
+      </div>
+    </div>
+
+    <div class="section-title">Gantt por subsistema</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="gantt-table">
+        <thead>
+          <tr>
+            <th style="width:110px">Código</th>
+            <th>Nombre</th>
+            <th style="width:140px">Sistema</th>
+            <th style="width:280px">Cronograma</th>
+          </tr>
+        </thead>
+        <tbody id="gantt-body">
+          <tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text-muted)">Cargando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Avance constructivo por subsistema</div>
+    <div class="card">
+      <ul class="avance-list" id="avance-list">
+        <li style="color:var(--text-muted);font-size:13px">Cargando…</li>
+      </ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getUser, apiGet } from '/assets/js/api.js';
+
+    requireAuth();
+
+    const params     = new URLSearchParams(window.location.search);
+    const proyectoId = params.get('proyecto_id') || sessionStorage.getItem('proyecto_id');
+    if (!proyectoId) { window.location.href = '/app/selector-proyecto.html'; }
+
+    document.getElementById('user-name').textContent = getUser()?.nombre ?? '';
+
+    async function loadDashboard() {
+      const data = await apiGet(`/proyectos/${proyectoId}/dashboard`);
+
+      document.getElementById('proyecto-codigo').textContent = data.proyecto.codigo;
+      document.getElementById('proyecto-nombre').textContent = data.proyecto.nombre;
+      document.getElementById('subtitle').textContent = `${data.resumen.total_subsistemas} subsistemas`;
+
+      const pct = data.resumen.avance_promedio;
+      document.getElementById('stat-total').textContent   = data.resumen.total_subsistemas;
+      document.getElementById('stat-avance').textContent  = `${pct}%`;
+      document.getElementById('bar-avance').style.width   = `${pct}%`;
+      document.getElementById('stat-retraso').textContent = data.resumen.con_retraso;
+      if (data.resumen.con_retraso > 0) {
+        document.getElementById('card-retraso').classList.add('danger');
+      }
+
+      renderGantt(data.subsistemas);
+      renderAvance(data.subsistemas);
+    }
+
+    function renderGantt(subsistemas) {
+      const withDates = subsistemas.filter(s => s.fecha_inicio_plan || s.fecha_inicio_real);
+      const tbody = document.getElementById('gantt-body');
+
+      if (withDates.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text-muted)">Sin fechas registradas.</td></tr>`;
+        return;
+      }
+
+      const allDates = withDates.flatMap(s => [
+        s.fecha_inicio_plan, s.fecha_termino_plan,
+        s.fecha_inicio_real, s.fecha_termino_real,
+      ]).filter(Boolean).map(d => new Date(d));
+      const minDate = new Date(Math.min(...allDates));
+      const maxDate = new Date(Math.max(...allDates));
+      const span    = Math.max(1, maxDate - minDate);
+
+      tbody.innerHTML = '';
+      for (const s of withDates) {
+        const tr = document.createElement('tr');
+        const retraso = s.fecha_termino_real && s.fecha_termino_plan
+          && new Date(s.fecha_termino_real) > new Date(s.fecha_termino_plan);
+
+        let barHtml = '<div class="gantt-track">';
+        if (s.fecha_inicio_plan && s.fecha_termino_plan) {
+          const l = pctOf(new Date(s.fecha_inicio_plan)  - minDate, span);
+          const w = pctOf(new Date(s.fecha_termino_plan) - new Date(s.fecha_inicio_plan), span);
+          barHtml += `<div class="gantt-bar plan" style="left:${l}%;width:${Math.max(1,w)}%"></div>`;
+        }
+        if (s.fecha_inicio_real && s.fecha_termino_real) {
+          const l = pctOf(new Date(s.fecha_inicio_real)  - minDate, span);
+          const w = pctOf(new Date(s.fecha_termino_real) - new Date(s.fecha_inicio_real), span);
+          barHtml += `<div class="gantt-bar real ${retraso ? 'retraso' : ''}" style="left:${l}%;width:${Math.max(1,w)}%"></div>`;
+        }
+        barHtml += '</div>';
+
+        tr.innerHTML = `
+          <td><span style="font-family:monospace;font-size:11px;background:rgba(79,126,255,0.08);color:var(--blue-soft);padding:2px 7px;border-radius:4px">${escHtml(s.codigo)}</span></td>
+          <td style="color:var(--text-muted)">${escHtml(s.nombre)}</td>
+          <td style="font-size:11px;color:var(--text-dim)">${escHtml(s.sistema_nombre)}</td>
+          <td>${barHtml}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function pctOf(num, denom) {
+      return Math.max(0, Math.min(100, (num / denom) * 100));
+    }
+
+    function renderAvance(subsistemas) {
+      const sorted = [...subsistemas].sort((a, b) => (a.avance_constructivo ?? 0) - (b.avance_constructivo ?? 0));
+      const ul = document.getElementById('avance-list');
+      ul.innerHTML = '';
+      if (sorted.length === 0) {
+        ul.innerHTML = `<li style="color:var(--text-muted)">Sin subsistemas.</li>`;
+        return;
+      }
+      for (const s of sorted) {
+        const av = s.avance_constructivo ?? 0;
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="a-code">${escHtml(s.codigo)}</span>
+          <span class="a-name">${escHtml(s.nombre)}</span>
+          <div class="a-bar-wrap"><div class="a-bar-fill" style="width:${av}%"></div></div>
+          <span class="a-pct">${av}%</span>`;
+        ul.appendChild(li);
+      }
+    }
+
+    function escHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

@@ -22,6 +22,24 @@
   --text-secondary: var(--text-muted);
 }
 
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:        #F5F7FF;
+    --bg-card:   #FFFFFF;
+    --bg-row:    #EDF0FA;
+    --border:    rgba(0,0,0,0.08);
+    --border-lo: rgba(0,0,0,0.04);
+    --text:      #111320;
+    --text-muted:#4A4F6A;
+    --text-dim:  #7A7F96;
+    --blue:      #4F7EFF;
+    --blue-soft: #2E5EE8;
+    --red:       #D93025;
+    --green:     #15925F;
+    --orange:    #C47A15;
+  }
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -115,7 +133,7 @@ td {
   border-bottom: 1px solid var(--border-lo);
   color: var(--text);
 }
-tr:hover td { background: rgba(255,255,255,0.02); }
+tr:hover td { background: rgba(79,126,255,0.04); }
 .code { font-family: monospace; font-size: 12px; color: var(--blue-soft); }
 
 /* ── Árbol jerárquico ────────────────────────────────────── */

@@ -12,8 +12,7 @@ nixPkgs = [
   "php82Extensions.ctype",
   "php82Extensions.fileinfo",
   "php82Extensions.openssl",
-  "php82Extensions.gd",
-  "composer"
+  "php82Extensions.gd"
 ]
 
 [phases.build]

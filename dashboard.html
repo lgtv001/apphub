@@ -532,6 +532,24 @@
       </div>
     </a>
 
+    <a class="app-card" href="#" onclick="openQuiebre(event)" style="animation-delay:0.3s">
+      <div class="app-card-top">
+        <div class="app-icon" style="background:rgba(79,126,255,0.15)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4F7EFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+        </div>
+        <div class="app-status status-live"><span class="app-status-dot"></span>Activo</div>
+      </div>
+      <div class="app-card-name">Quiebre del Contrato</div>
+      <div class="app-card-desc">Gestiona jerarquías de áreas, subáreas, sistemas y subsistemas por proyecto.</div>
+      <div class="app-card-footer">
+        <span class="app-tag">Operaciones</span>
+        <span class="btn-open">Abrir →</span>
+      </div>
+    </a>
+
     <div class="app-card-add" onclick="alert('Función disponible próximamente')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
         <circle cx="12" cy="12" r="10"/>
@@ -555,6 +573,17 @@
     document.getElementById('userInitial').textContent = inicial;
     document.getElementById('userName').textContent = nombre;
     document.getElementById('welcomeName').textContent = nombre.split(' ')[0];
+  }
+
+  function openQuiebre(e) {
+    e.preventDefault();
+    const token = sessionStorage.getItem('token');
+    const user  = sessionStorage.getItem('usuario');
+    if (!token) { window.location.href = 'index.html'; return; }
+    const url = 'https://regretfully-multiengined-anson.ngrok-free.dev/app/selector-proyecto.html'
+      + '?token=' + encodeURIComponent(token)
+      + '&user='  + encodeURIComponent(user);
+    window.location.href = url;
   }
 
   function logout() {

@@ -571,19 +571,25 @@ async function handleLogin() {
   btn.style.opacity = '0.7';
 
   try {
-    const response = await fetch('https://regretfully-multiengined-anson.ngrok-free.dev/apphub/login.php', {
+    const response = await fetch('https://regretfully-multiengined-anson.ngrok-free.dev/api/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
       body: JSON.stringify({ email, password })
     });
 
     const data = await response.json();
 
-    if (data.success) {
+    if (response.ok && data.token) {
+      sessionStorage.setItem('token', data.token);
       sessionStorage.setItem('usuario', JSON.stringify(data.usuario));
+      localStorage.setItem('apphub_token', data.token);
+      localStorage.setItem('apphub_user', JSON.stringify(data.usuario));
       window.location.href = 'dashboard.html';
     } else {
-      alert('Error: ' + data.message);
+      alert('Error: ' + (data.message || 'Credenciales inválidas'));
     }
   } catch (err) {
     alert('No se pudo conectar con el servidor');

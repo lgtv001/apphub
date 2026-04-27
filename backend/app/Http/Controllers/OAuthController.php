@@ -9,6 +9,16 @@ class OAuthController extends Controller
 {
     private const ALLOWED = ['github', 'google'];
 
+    public function ping()
+    {
+        return response()->json([
+            'status'  => 'ok',
+            'app_url' => config('app.url'),
+            'github_id_set' => !empty(config('services.github.client_id')),
+            'google_id_set' => !empty(config('services.google.client_id')),
+        ]);
+    }
+
     public function redirect(string $provider)
     {
         abort_unless(in_array($provider, self::ALLOWED), 404);

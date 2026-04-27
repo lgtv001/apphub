@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Informe de Desarrollo — AppHub</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:   #2563EB;
+      --blue-l: #EFF6FF;
+      --green:  #059669;
+      --green-l:#ECFDF5;
+      --red:    #DC2626;
+      --red-l:  #FEF2F2;
+      --orange: #D97706;
+      --orange-l:#FFFBEB;
+      --gray:   #6B7280;
+      --border: #E5E7EB;
+      --bg:     #F9FAFB;
+      --text:   #111827;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      background: #fff;
+      line-height: 1.55;
+    }
+
+    /* ── Portada ── */
+    .cover {
+      background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 60%, #2563EB 100%);
+      color: #fff;
+      padding: 64px 56px;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .cover .tag {
+      font-size: 11px; font-weight: 600; letter-spacing: 1.5px;
+      text-transform: uppercase; opacity: .6; margin-bottom: 12px;
+    }
+    .cover h1 { font-size: 32px; font-weight: 700; line-height: 1.2; margin-bottom: 10px; }
+    .cover .sub { font-size: 15px; opacity: .8; }
+    .cover .meta { margin-top: 28px; font-size: 11px; opacity: .55; }
+
+    /* ── Contenido ── */
+    .body { padding: 40px 56px; }
+
+    /* ── Secciones ── */
+    .section { margin-bottom: 40px; }
+    .section-title {
+      font-size: 16px; font-weight: 700;
+      border-bottom: 2px solid var(--blue);
+      padding-bottom: 6px; margin-bottom: 18px;
+      color: #1E3A8A;
+    }
+    .section-intro { color: var(--gray); margin-bottom: 16px; font-size: 12px; }
+
+    /* ── Tablas ── */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
+    th {
+      background: #1E3A8A; color: #fff;
+      padding: 9px 12px; text-align: left;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.4px;
+    }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:nth-child(even) td { background: var(--bg); }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Tarjetas de métricas ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .kpi {
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px; text-align: center;
+    }
+    .kpi .val { font-size: 28px; font-weight: 700; color: var(--blue); }
+    .kpi .lbl { font-size: 11px; color: var(--gray); margin-top: 4px; }
+
+    /* ── Barras de esfuerzo ── */
+    .bar-row { margin-bottom: 10px; }
+    .bar-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; }
+    .bar-track { background: var(--border); border-radius: 100px; height: 10px; }
+    .bar-fill  { height: 10px; border-radius: 100px; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block; padding: 2px 9px; border-radius: 100px;
+      font-size: 10px; font-weight: 600;
+    }
+    .badge-blue   { background: var(--blue-l);   color: var(--blue); }
+    .badge-green  { background: var(--green-l);  color: var(--green); }
+    .badge-red    { background: var(--red-l);    color: var(--red); }
+    .badge-orange { background: var(--orange-l); color: var(--orange); }
+
+    /* ── Callouts ── */
+    .callout {
+      border-left: 4px solid var(--blue);
+      background: var(--blue-l);
+      padding: 12px 16px; border-radius: 0 8px 8px 0;
+      font-size: 12px; margin-bottom: 16px;
+    }
+    .callout.warn  { border-color: var(--orange); background: var(--orange-l); }
+    .callout.ok    { border-color: var(--green);  background: var(--green-l); }
+    .callout.alert { border-color: var(--red);    background: var(--red-l); }
+    .callout strong { display: block; margin-bottom: 4px; }
+
+    /* ── Semáforo ── */
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+    .dot-g { background: var(--green); }
+    .dot-o { background: var(--orange); }
+    .dot-r { background: var(--red); }
+
+    /* ── Print ── */
+    @media print {
+      body { font-size: 11px; }
+      .cover { padding: 48px 40px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .body  { padding: 28px 40px; }
+      .section { page-break-inside: avoid; }
+      .kpi-grid { break-inside: avoid; }
+      th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr:nth-child(even) td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ PORTADA ══════════════ -->
+<div class="cover">
+  <div class="tag">Informe técnico de desarrollo</div>
+  <h1>AppHub — Plataforma de<br>Gestión de Proyectos</h1>
+  <div class="sub">Análisis de complejidad, decisiones de arquitectura y requerimientos de mantención</div>
+  <div class="meta">Fecha: Abril 2026 &nbsp;·&nbsp; Versión: 1.0 &nbsp;·&nbsp; Branch: feature/quiebre-contrato</div>
+</div>
+
+<div class="body">
+
+<!-- ══════════════ 1. MÉTRICAS GENERALES ══════════════ -->
+<div class="section">
+  <div class="section-title">1. Métricas generales del proyecto</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="val">13</div><div class="lbl">Archivos de backend creados / modificados</div></div>
+    <div class="kpi"><div class="val">9</div><div class="lbl">Páginas HTML de frontend</div></div>
+    <div class="kpi"><div class="val">85</div><div class="lbl">Tests automatizados</div></div>
+    <div class="kpi"><div class="val">6</div><div class="lbl">Módulos de dominio (área → subsistema)</div></div>
+  </div>
+
+  <table>
+    <thead><tr><th>Área</th><th>Iteraciones / ajustes</th><th>Motivo principal</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Autenticación y sesión</strong></td><td>5</td><td>Sanctum + cookie session + Socialite OAuth no comparten la misma sesión; requirió separar rutas web de rutas API</td></tr>
+      <tr><td><strong>Quiebre del Contrato (CRUD + árbol)</strong></td><td>8</td><td>Árbol jerárquico de 4 niveles con cascada de selects, validación por proyecto y mini-barra de avance</td></tr>
+      <tr><td><strong>Dashboard (Gantt + avance)</strong></td><td>6</td><td>Parseo de fechas ISO, guard de redirect JS, errores de scope de variables</td></tr>
+      <tr><td><strong>Importación Excel</strong></td><td>4</td><td>Preview/confirm en dos pasos, detección de padres inexistentes y duplicados</td></tr>
+      <tr><td><strong>Panel Superuser</strong></td><td>7</td><td>6 tabs con caches locales cruzados (proyectos ↔ asignaciones ↔ usuarios)</td></tr>
+      <tr><td><strong>OAuth / Solicitudes de acceso</strong></td><td>3</td><td>Separación de flujo web (Socialite necesita sesión) del flujo API (Sanctum)</td></tr>
+      <tr><td><strong>CSS / Modo claro adaptativo</strong></td><td>3</td><td>Variables CSS + media query; corrección de hover invisible en fondo blanco</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════ 2. DÓNDE SE GASTÓ MÁS ══════════════ -->
+<div class="section">
+  <div class="section-title">2. Distribución del esfuerzo</div>
+  <p class="section-intro">Estimación porcentual basada en número de iteraciones, correcciones y complejidad lógica de cada componente.</p>
+
+  <div class="bar-row">
+    <div class="bar-label"><span>Quiebre del Contrato (UI + lógica de árbol)</span><span><strong>26%</strong></span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:26%;background:#1D4ED8"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label"><span>Panel Superuser (6 tabs + modales)</span><span><strong>20%</strong></span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:20%;background:#2563EB"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label"><span>Backend API (controllers + middlewares + tests)</span><span><strong>18%</strong></span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:18%;background:#3B82F6"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label"><span>Dashboard (Gantt + avance constructivo)</span><span><strong>14%</strong></span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:14%;background:#60A5FA"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label"><span>OAuth + flujo de solicitudes de acceso</span><span><strong>10%</strong></span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:10%;background:#93C5FD"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label"><span>Importación Excel (preview/confirm)</span><span><strong>7%</strong></span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:7%;background:#BFDBFE"></div></div>
+  </div>
+  <div class="bar-row">
+    <div class="bar-label"><span>CSS / Design system / modo claro</span><span><strong>5%</strong></span></div>
+    <div class="bar-track"><div class="bar-fill" style="width:5%;background:#DBEAFE"></div></div>
+  </div>
+
+  <br>
+  <div class="callout">
+    <strong>Por qué tantas iteraciones en el árbol jerárquico</strong>
+    Cada nivel (Área → Subárea → Sistema → Subsistema) tiene su propio estado de visibilidad, select en cascada, validación de padre y mini-barra de avance. Cada una de esas funciones interactuaba con las demás, generando bugs de "reset de formulario que no limpia el estado anterior". Fue el componente con mayor densidad lógica de todo el frontend.
+  </div>
+</div>
+
+<!-- ══════════════ 3. STACK TECNOLÓGICO ══════════════ -->
+<div class="section">
+  <div class="section-title">3. Stack tecnológico y justificación</div>
+
+  <table>
+    <thead><tr><th>Tecnología</th><th>Rol en el proyecto</th><th>Por qué se eligió</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Laravel 12 (PHP 8.2)</strong><br><span class="badge badge-blue">Backend</span></td>
+        <td>API REST, ORM, migraciones, middleware, tests</td>
+        <td>Ecosistema maduro para proyectos de gestión. Sanctum, Socialite y Eloquent reducen código boilerplate. Amplia comunidad en Latinoamérica facilita mantención futura.</td>
+      </tr>
+      <tr>
+        <td><strong>Laravel Sanctum</strong><br><span class="badge badge-blue">Auth</span></td>
+        <td>Tokens de API para SPA + protección de rutas</td>
+        <td>Más ligero que Passport. Perfecto para SPA que no necesitan OAuth completo propio.</td>
+      </tr>
+      <tr>
+        <td><strong>Laravel Socialite</strong><br><span class="badge badge-blue">OAuth</span></td>
+        <td>Autenticación con GitHub y Google</td>
+        <td>Abstrae el protocolo OAuth 2.0 completo en 2 líneas de código. Evita implementar manualmente intercambio de tokens, state CSRF, refresh tokens.</td>
+      </tr>
+      <tr>
+        <td><strong>MySQL</strong><br><span class="badge badge-green">Base de datos</span></td>
+        <td>Persistencia de todos los datos del proyecto</td>
+        <td>Modelo relacional natural para la jerarquía área→subsistema. Soporte nativo en Railway y la mayoría de hostings.</td>
+      </tr>
+      <tr>
+        <td><strong>HTML + CSS + Vanilla JS (ES Modules)</strong><br><span class="badge badge-orange">Frontend</span></td>
+        <td>Todas las páginas de la app</td>
+        <td>Sin framework = sin bundle, sin npm en producción, carga instantánea. Para una app interna con equipos no-técnicos es más fácil de mantener que React/Vue. El diseño system propio en CSS variables permite modo claro/oscuro sin dependencias.</td>
+      </tr>
+      <tr>
+        <td><strong>PHPUnit (via Artisan)</strong><br><span class="badge badge-green">Tests</span></td>
+        <td>85 tests de integración sobre base de datos real</td>
+        <td>Se eligió integración sobre mocks porque en proyectos anteriores los mocks ocultaron bugs de migración. Cada endpoint se prueba contra una BD SQLite en memoria.</td>
+      </tr>
+      <tr>
+        <td><strong>Railway.app</strong><br><span class="badge badge-orange">Hosting</span></td>
+        <td>Deploy automático desde GitHub</td>
+        <td>Soporta PHP 8.2, MySQL gestionado, variables de entorno por UI, deploy en push. Sin gestión de servidor.</td>
+      </tr>
+      <tr>
+        <td><strong>Maatwebsite Excel</strong><br><span class="badge badge-blue">Importación</span></td>
+        <td>Lectura de archivos .xlsx para importación masiva</td>
+        <td>El único paquete Laravel con soporte robusto para Excel sin depender de LibreOffice.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════ 4. DECISIONES DE ARQUITECTURA ══════════════ -->
+<div class="section">
+  <div class="section-title">4. Decisiones de arquitectura importantes</div>
+
+  <table>
+    <thead><tr><th>Decisión</th><th>Alternativa descartada</th><th>Impacto</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>SPA con HTML estático + API separada</strong></td>
+        <td>Blade templates (Laravel full-stack)</td>
+        <td>El frontend puede ser servido desde CDN o cualquier servidor estático. El backend es intercambiable. Permite escalar ambos de forma independiente.</td>
+      </tr>
+      <tr>
+        <td><strong>Rutas OAuth en web.php (no API)</strong></td>
+        <td>Rutas API sin sesión</td>
+        <td>Socialite requiere sesión PHP para el parámetro <em>state</em> CSRF. Mezclar con API sin sesión rompe el flujo de seguridad OAuth.</td>
+      </tr>
+      <tr>
+        <td><strong>solicitudes_acceso separado de usuarios</strong></td>
+        <td>Crear usuario inactivo al registrarse</td>
+        <td>Permite que el superuser vea la solicitud antes de que el usuario exista en el sistema. Evita cuentas zombie si la solicitud es rechazada.</td>
+      </tr>
+      <tr>
+        <td><strong>Logs de auditoría por tabla (no log global)</strong></td>
+        <td>Una tabla de log unificada</td>
+        <td>Cada tabla de log tiene la estructura exacta de su entidad. Consultas más rápidas. Facilita purga de logs antiguos sin afectar otros módulos.</td>
+      </tr>
+      <tr>
+        <td><strong>Middleware check.project en API</strong></td>
+        <td>Validar proyecto en cada controller</td>
+        <td>Un solo punto de control garantiza que ningún usuario acceda a datos de un proyecto al que no pertenece, sin repetir la lógica en 20+ métodos.</td>
+      </tr>
+      <tr>
+        <td><strong>Tests de integración sobre BD real (SQLite :memory:)</strong></td>
+        <td>Mocks de repositorios</td>
+        <td>Los tests detectan errores de migración, constraints de clave foránea y lógica de Eloquent que los mocks no capturarían.</td>
+      </tr>
+      <tr>
+        <td><strong>CSS variables + prefers-color-scheme</strong></td>
+        <td>Clase .dark-mode en body</td>
+        <td>El tema sigue automáticamente la preferencia del sistema operativo del usuario. Cero JavaScript. Funciona en todos los navegadores modernos.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════ 5. MANTENCIÓN EN EL TIEMPO ══════════════ -->
+<div class="section">
+  <div class="section-title">5. Requerimientos para mantener la aplicación</div>
+
+  <table>
+    <thead><tr><th>Tarea</th><th>Frecuencia</th><th>Nivel técnico requerido</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Actualizar dependencias PHP (<code>composer update</code>)</td>
+        <td>Cada 3 meses</td>
+        <td><span class="badge badge-orange">Medio</span> — revisar changelog de Laravel y paquetes</td>
+      </tr>
+      <tr>
+        <td>Renovar credenciales OAuth (GitHub/Google expiran si no se usan)</td>
+        <td>Anual o ante cambio</td>
+        <td><span class="badge badge-blue">Bajo</span> — solo actualizar variables en Railway</td>
+      </tr>
+      <tr>
+        <td>Backup de base de datos MySQL</td>
+        <td>Diario / automático</td>
+        <td><span class="badge badge-blue">Bajo</span> — Railway ofrece backups automáticos en plan pagado</td>
+      </tr>
+      <tr>
+        <td>Agregar nuevos módulos (Calidad, Protocolos, EDP)</td>
+        <td>Según roadmap</td>
+        <td><span class="badge badge-red">Alto</span> — requiere developer con conocimiento de Laravel + ES Modules</td>
+      </tr>
+      <tr>
+        <td>Monitoreo de errores (Railway logs)</td>
+        <td>Continuo</td>
+        <td><span class="badge badge-blue">Bajo</span> — revisar panel Railway ante reportes de usuarios</td>
+      </tr>
+      <tr>
+        <td>Rotación de <code>APP_KEY</code> (Laravel encryption key)</td>
+        <td>Ante sospecha de compromiso</td>
+        <td><span class="badge badge-orange">Medio</span> — invalida todas las sesiones activas</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════ 6. ¿FUNCIONA EN BLUEHOSTING? ══════════════ -->
+<div class="section">
+  <div class="section-title">6. Compatibilidad con Bluehosting u otros hostings compartidos</div>
+
+  <div class="callout alert">
+    <strong>Respuesta corta: NO directamente en hosting compartido</strong>
+    Laravel requiere acceso SSH, ejecución de comandos CLI (<code>composer install</code>, <code>php artisan migrate</code>) y PHP 8.2+. El hosting compartido estándar de Bluehosting (planes Basic/Plus) no cumple estos requisitos.
+  </div>
+
+  <table>
+    <thead><tr><th>Requisito</th><th>Railway (actual)</th><th>Bluehosting Shared</th><th>Bluehosting VPS</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>PHP 8.2+</td>
+        <td><span class="dot dot-g"></span>Sí</td>
+        <td><span class="dot dot-o"></span>Depende del plan (usualmente 7.4–8.1)</td>
+        <td><span class="dot dot-g"></span>Sí (configurable)</td>
+      </tr>
+      <tr>
+        <td>Acceso SSH / CLI</td>
+        <td><span class="dot dot-g"></span>Sí</td>
+        <td><span class="dot dot-r"></span>No</td>
+        <td><span class="dot dot-g"></span>Sí</td>
+      </tr>
+      <tr>
+        <td><code>composer install</code></td>
+        <td><span class="dot dot-g"></span>Automático en deploy</td>
+        <td><span class="dot dot-r"></span>No</td>
+        <td><span class="dot dot-g"></span>Sí (via SSH)</td>
+      </tr>
+      <tr>
+        <td><code>php artisan migrate</code></td>
+        <td><span class="dot dot-g"></span>Automático en start.sh</td>
+        <td><span class="dot dot-r"></span>No</td>
+        <td><span class="dot dot-g"></span>Sí (manual)</td>
+      </tr>
+      <tr>
+        <td>MySQL incluido</td>
+        <td><span class="dot dot-g"></span>Sí (servicio separado)</td>
+        <td><span class="dot dot-g"></span>Sí</td>
+        <td><span class="dot dot-g"></span>Sí</td>
+      </tr>
+      <tr>
+        <td>Variables de entorno (.env)</td>
+        <td><span class="dot dot-g"></span>Panel UI Railway</td>
+        <td><span class="dot dot-o"></span>Subir .env por FTP (inseguro)</td>
+        <td><span class="dot dot-g"></span>Sí (SSH)</td>
+      </tr>
+      <tr>
+        <td>OAuth callbacks HTTPS</td>
+        <td><span class="dot dot-g"></span>Automático</td>
+        <td><span class="dot dot-o"></span>Requiere SSL configurado</td>
+        <td><span class="dot dot-g"></span>Configurable</td>
+      </tr>
+      <tr>
+        <td>Deploy automático desde GitHub</td>
+        <td><span class="dot dot-g"></span>Sí</td>
+        <td><span class="dot dot-r"></span>No</td>
+        <td><span class="dot dot-o"></span>Con webhook manual</td>
+      </tr>
+      <tr>
+        <td>Costo mensual estimado</td>
+        <td>~USD 10–15 (app + DB)</td>
+        <td>~USD 5–8</td>
+        <td>~USD 20–40</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout ok">
+    <strong>Alternativas recomendadas si se quiere salir de Railway</strong>
+    <strong>1. DigitalOcean App Platform</strong> — misma experiencia que Railway, soporte nativo Laravel, deploy desde GitHub.<br>
+    <strong>2. Render.com</strong> — plan gratuito disponible, soporta PHP/MySQL, deploy automático.<br>
+    <strong>3. Bluehosting VPS</strong> — requiere configuración inicial (Nginx + PHP-FPM + MySQL) pero una vez configurado es completamente funcional y económico para uso en Chile.<br><br>
+    En todos los casos se necesitan las mismas variables de entorno (<code>DB_*</code>, <code>APP_KEY</code>, <code>GITHUB_*</code>, <code>GOOGLE_*</code>) y ejecutar <code>php artisan migrate --force</code> en el primer deploy.
+  </div>
+</div>
+
+<!-- ══════════════ 7. RESUMEN EJECUTIVO ══════════════ -->
+<div class="section">
+  <div class="section-title">7. Resumen ejecutivo — ¿Por qué tomó tantas consultas?</div>
+
+  <table>
+    <thead><tr><th>Factor</th><th>Explicación</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Dominio complejo</strong></td>
+        <td>La jerarquía de 4 niveles con validaciones cruzadas (un código puede repetirse entre proyectos pero no dentro del mismo) requirió múltiples rondas de refinamiento en validaciones backend y frontend.</td>
+      </tr>
+      <tr>
+        <td><strong>SPA sin framework</strong></td>
+        <td>Sin React/Vue, todo el manejo de estado (selects en cascada, modales de edición, reset de formularios) fue implementado manualmente. Más control, pero más superficie para bugs de estado.</td>
+      </tr>
+      <tr>
+        <td><strong>Dos capas independientes</strong></td>
+        <td>Backend Laravel (API) y Frontend HTML/JS son capas desacopladas. Cada cambio en la API requería verificar que el JS lo consumiera correctamente, y viceversa.</td>
+      </tr>
+      <tr>
+        <td><strong>Calidad con tests</strong></td>
+        <td>Se escribieron 85 tests de integración. Cada feature requirió escribir primero el test, ejecutarlo en rojo, implementar, ejecutarlo en verde. Más iteraciones, pero 0 regresiones durante todo el desarrollo.</td>
+      </tr>
+      <tr>
+        <td><strong>Flujo OAuth desde cero</strong></td>
+        <td>Implementar un flujo "solicitar acceso" en lugar de "login directo" no tiene una receta estándar. Requirió diseñar la tabla, el flujo de redirección web, los estados y la interfaz de aprobación del superuser.</td>
+      </tr>
+      <tr>
+        <td><strong>Decisiones de UX iterativas</strong></td>
+        <td>El diseño del dashboard, los iconos, el modo claro/oscuro y las tarjetas del hub fueron refinados según feedback directo durante el desarrollo. Cada ajuste visual fue una consulta adicional.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <strong>Conclusión</strong>
+    La cantidad de consultas refleja el nivel de completitud de la aplicación: no se construyó un prototipo, sino una plataforma funcional con autenticación, autorización por roles, auditoría, importación de datos, dashboard, OAuth y panel de administración. En un equipo de desarrollo tradicional, esto equivale a 3–4 semanas de trabajo de un desarrollador full-stack senior.
+  </div>
+</div>
+
+</div><!-- /body -->
+</body>
+</html>

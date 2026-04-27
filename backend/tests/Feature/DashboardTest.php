@@ -116,4 +116,11 @@ class DashboardTest extends TestCase
             ->assertStatus(200)
             ->assertJsonCount(2, 'subsistemas');
     }
+
+    public function test_dashboard_requiere_autenticacion(): void
+    {
+        $proyecto = Proyecto::factory()->create();
+        $this->getJson("/api/proyectos/{$proyecto->id}/dashboard")
+             ->assertStatus(401);
+    }
 }

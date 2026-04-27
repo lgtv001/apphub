@@ -18,6 +18,7 @@ class DashboardController extends Controller
 
         $total      = $subsistemas->count();
         $conAvance  = $subsistemas->filter(fn($s) => $s->avance_constructivo !== null)->count();
+        // null avance counts as 0 — consistent with spec: promedio sobre todos los subsistemas
         $promedio   = $total > 0
             ? (int) round($subsistemas->avg(fn($s) => $s->avance_constructivo ?? 0))
             : 0;

@@ -413,7 +413,7 @@
       if (tipo === 'subsistema') {
         const pct = item.avance_constructivo ?? null;
         if (pct !== null) {
-          tdAvance.innerHTML = `<span class="mini-bar-wrap"><span class="mini-bar-fill" style="width:${pct}%"></span></span> <span>${pct}%</span>`;
+          tdAvance.innerHTML = `<span class="mini-bar-wrap"><span class="mini-bar-fill" style="width:${pct}%"></span></span> <span>${escHtml(pct)}%</span>`;
         } else {
           tdAvance.textContent = '—';
         }
@@ -486,6 +486,10 @@
       document.getElementById('item-form').reset();
       clearFormErrors();
       resetCascades();
+      document.getElementById('f-inicio-plan').style.display       = '';
+      document.getElementById('f-inicio-plan-text').style.display  = 'none';
+      document.getElementById('f-termino-plan').style.display      = '';
+      document.getElementById('f-termino-plan-text').style.display = 'none';
       modalForm.classList.add('open');
     }
 

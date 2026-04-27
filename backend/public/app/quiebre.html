@@ -78,6 +78,21 @@
     }
     .drop-zone.over { border-color: var(--blue); color: var(--blue-soft); }
     .drop-zone input[type="file"] { display: none; }
+
+    .mini-bar-wrap { width: 80px; background: rgba(255,255,255,0.06); border-radius: 3px; height: 6px; display: inline-block; vertical-align: middle; }
+    .mini-bar-fill { height: 6px; border-radius: 3px; background: var(--blue); }
+    .avance-cell   { white-space: nowrap; font-size: 12px; color: var(--text-muted); }
+
+    .form-group input[type="date"],
+    .form-group input[type="number"] {
+      width: 100%; background: var(--bg);
+      border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text); padding: 8px 12px; font-size: 13px;
+    }
+    .form-group input[type="date"]:focus,
+    .form-group input[type="number"]:focus { outline: none; border-color: var(--blue); }
+    .date-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-readonly { font-size: 13px; color: var(--text); padding: 8px 0; }
   </style>
 </head>
 <body>
@@ -92,6 +107,7 @@
       <span class="nav-current">Quiebre del Contrato</span>
     </div>
     <div class="nav-right">
+      <a id="btn-dashboard" href="#" class="btn btn-secondary btn-sm">Dashboard</a>
       <span id="user-name" class="nav-user"></span>
       <a href="/app/selector-proyecto.html" class="btn btn-ghost btn-sm">← Volver a Proyectos</a>
       <a href="/app/selector-proyecto.html" class="btn btn-ghost btn-sm">Cambiar proyecto</a>
@@ -117,11 +133,12 @@
           <tr>
             <th>Código</th>
             <th>Nombre</th>
+            <th style="width:120px">Avance</th>
             <th id="th-acciones" style="display:none;width:100px">Acciones</th>
           </tr>
         </thead>
         <tbody id="tree-body">
-          <tr><td colspan="3" style="padding:24px;text-align:center;color:var(--text-muted)">Cargando…</td></tr>
+          <tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text-muted)">Cargando…</td></tr>
         </tbody>
       </table>
     </div>
@@ -180,6 +197,41 @@
           <label>Nombre *</label>
           <input type="text" id="f-nombre" placeholder="Ej: Pilotes de hormigón"/>
           <div class="field-error" id="err-nombre">El nombre es obligatorio.</div>
+        </div>
+
+        <div id="group-avance" style="display:none">
+          <div class="form-group">
+            <label>Fechas planificadas</label>
+            <div class="date-grid">
+              <div>
+                <label style="font-size:11px;color:var(--text-dim)">Inicio plan</label>
+                <input type="date" id="f-inicio-plan"/>
+                <div class="field-readonly" id="f-inicio-plan-text" style="display:none"></div>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text-dim)">Término plan</label>
+                <input type="date" id="f-termino-plan"/>
+                <div class="field-readonly" id="f-termino-plan-text" style="display:none"></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Fechas reales</label>
+            <div class="date-grid">
+              <div>
+                <label style="font-size:11px;color:var(--text-dim)">Inicio real</label>
+                <input type="date" id="f-inicio-real"/>
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text-dim)">Término real</label>
+                <input type="date" id="f-termino-real"/>
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Avance constructivo (%)</label>
+            <input type="number" id="f-avance" min="0" max="100" placeholder="0–100"/>
+          </div>
         </div>
 
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
@@ -321,7 +373,7 @@
       totalEl.textContent = `${areasData.length} área(s) · ${subAreasData.length} subárea(s) · ${sistemasData.length} sistema(s) · ${subsistemasData.length} subsistema(s)`;
 
       if (!tbody.hasChildNodes()) {
-        tbody.innerHTML = `<tr><td colspan="3" style="padding:24px;text-align:center;color:var(--text-muted)">Sin resultados.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--text-muted)">Sin resultados.</td></tr>`;
       }
     }
 
@@ -356,8 +408,20 @@
       tdNombre.appendChild(toggleSpan);
       tdNombre.appendChild(nameSpan);
 
+      const tdAvance = document.createElement('td');
+      tdAvance.className = 'avance-cell';
+      if (tipo === 'subsistema') {
+        const pct = item.avance_constructivo ?? null;
+        if (pct !== null) {
+          tdAvance.innerHTML = `<span class="mini-bar-wrap"><span class="mini-bar-fill" style="width:${pct}%"></span></span> <span>${pct}%</span>`;
+        } else {
+          tdAvance.textContent = '—';
+        }
+      }
+
       tr.appendChild(tdCodigo);
       tr.appendChild(tdNombre);
+      tr.appendChild(tdAvance);
 
       if (canEdit) {
         const tdActions = document.createElement('td');
@@ -399,6 +463,11 @@
 
     // ── Búsqueda ───────────────────────────────────────────────────
     document.getElementById('search-input').addEventListener('input', renderTree);
+
+    document.getElementById('btn-dashboard').addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = `/app/dashboard.html?proyecto_id=${proyectoId}`;
+    });
 
     // ── Modal Formulario ───────────────────────────────────────────
     const modalForm = document.getElementById('modal-form');
@@ -446,9 +515,29 @@
             document.getElementById('f-sistema').value = item.sistema_id;
           });
         });
+
+        setDateField('f-inicio-plan',  'f-inicio-plan-text',  item.fecha_inicio_plan  ?? null);
+        setDateField('f-termino-plan', 'f-termino-plan-text', item.fecha_termino_plan ?? null);
+        document.getElementById('f-inicio-real').value  = item.fecha_inicio_real  ?? '';
+        document.getElementById('f-termino-real').value = item.fecha_termino_real ?? '';
+        document.getElementById('f-avance').value       = item.avance_constructivo ?? '';
       }
 
       modalForm.classList.add('open');
+    }
+
+    function setDateField(inputId, textId, value) {
+      const input = document.getElementById(inputId);
+      const text  = document.getElementById(textId);
+      if (value) {
+        input.style.display = 'none';
+        text.style.display  = '';
+        text.textContent    = value;
+      } else {
+        input.style.display = '';
+        text.style.display  = 'none';
+        input.value         = '';
+      }
     }
 
     function closeFormModal() {
@@ -463,6 +552,7 @@
       document.getElementById('group-area').style.display    = ['subarea','sistema','subsistema'].includes(nivel) ? '' : 'none';
       document.getElementById('group-subarea').style.display = ['sistema','subsistema'].includes(nivel) ? '' : 'none';
       document.getElementById('group-sistema').style.display = nivel === 'subsistema' ? '' : 'none';
+      document.getElementById('group-avance').style.display  = nivel === 'subsistema' ? '' : 'none';
 
       if (['subarea','sistema','subsistema'].includes(nivel)) {
         populateSelect('f-area', areasData, 'id', 'nombre', true);
@@ -470,7 +560,7 @@
     }
 
     function resetCascades() {
-      ['group-area','group-subarea','group-sistema'].forEach(id => {
+      ['group-area','group-subarea','group-sistema','group-avance'].forEach(id => {
         document.getElementById(id).style.display = 'none';
       });
       populateSelect('f-area',    [], 'id', 'nombre', true);
@@ -577,7 +667,25 @@
       const b = { codigo, nombre };
       if (nivel === 'subarea')    { b.area_id = areaId; }
       if (nivel === 'sistema')    { b.area_id = areaId; b.subarea_id = subareaId; }
-      if (nivel === 'subsistema') { b.area_id = areaId; b.subarea_id = subareaId; b.sistema_id = sistemaId; }
+      if (nivel === 'subsistema') {
+        b.area_id    = areaId;
+        b.subarea_id = subareaId;
+        b.sistema_id = sistemaId;
+
+        const iniPlanEl  = document.getElementById('f-inicio-plan');
+        const termPlanEl = document.getElementById('f-termino-plan');
+
+        if (iniPlanEl.style.display !== 'none'  && iniPlanEl.value)  b.fecha_inicio_plan  = iniPlanEl.value;
+        if (termPlanEl.style.display !== 'none' && termPlanEl.value) b.fecha_termino_plan = termPlanEl.value;
+
+        const iniReal  = document.getElementById('f-inicio-real').value;
+        const termReal = document.getElementById('f-termino-real').value;
+        b.fecha_inicio_real  = iniReal  || null;
+        b.fecha_termino_real = termReal || null;
+
+        const av = document.getElementById('f-avance').value;
+        if (av !== '') b.avance_constructivo = parseInt(av, 10);
+      }
       return b;
     }
 

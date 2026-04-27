@@ -248,4 +248,19 @@ class SubsistemaTest extends TestCase
             ->assertJsonPath('avance_constructivo', 75)
             ->assertJsonPath('fecha_inicio_real', '2026-05-10');
     }
+
+    public function test_avance_constructivo_negativo_falla(): void
+    {
+        [$proyecto, $sistema, , $token] = $this->makeFixture();
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/subsistemas", [
+                'sistema_id'          => $sistema->id,
+                'codigo'              => 'AV-001',
+                'nombre'              => 'Con avance negativo',
+                'avance_constructivo' => -1,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['avance_constructivo']);
+    }
 }

@@ -12,7 +12,11 @@ class OAuthController extends Controller
     public function redirect(string $provider)
     {
         abort_unless(in_array($provider, self::ALLOWED), 404);
-        return Socialite::driver($provider)->redirect();
+        try {
+            return Socialite::driver($provider)->redirect();
+        } catch (\Throwable) {
+            return redirect('/app/login.html?oauth_error=1');
+        }
     }
 
     public function callback(string $provider)

@@ -44,13 +44,21 @@
       </div>
     </div>
 
-    <div class="cards-grid" style="max-width:700px">
+    <div class="cards-grid" style="max-width:700px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
 
       <div class="card card-selectable app-card" id="app-quiebre">
         <div class="app-icon">📋</div>
         <div class="app-info">
           <h3>Quiebre del Contrato</h3>
           <p class="subtitle">Gestión de la jerarquía de ítems del contrato: áreas, subáreas, sistemas y subsistemas.</p>
+        </div>
+      </div>
+
+      <div class="card card-selectable app-card" id="app-dashboard">
+        <div class="app-icon">📊</div>
+        <div class="app-info">
+          <h3>Dashboard</h3>
+          <p class="subtitle">Avance constructivo, cronograma Gantt y métricas generales del proyecto.</p>
         </div>
       </div>
 
@@ -84,6 +92,10 @@
 
     document.getElementById('app-quiebre').addEventListener('click', () => {
       window.location.href = '/app/quiebre.html';
+    });
+
+    document.getElementById('app-dashboard').addEventListener('click', () => {
+      window.location.href = `/app/dashboard.html?proyecto_id=${proyectoId}`;
     });
   </script>
 </body>

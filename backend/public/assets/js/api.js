@@ -40,6 +40,7 @@ export async function apiFetch(path, options = {}) {
 
     const headers = {
         'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
         ...(options.body && !(options.body instanceof FormData)
             ? { 'Content-Type': 'application/json' }
             : {}),

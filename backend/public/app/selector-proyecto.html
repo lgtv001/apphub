@@ -35,7 +35,16 @@
   </div>
 
   <script type="module">
-    import { requireAuth, getUser, clearSession, apiGet, isSuperuser } from '/assets/js/api.js';
+    import { requireAuth, getUser, clearSession, apiGet, isSuperuser, saveSession } from '/assets/js/api.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    const urlUser  = params.get('user');
+    if (urlToken && urlUser) {
+      saveSession(urlToken, JSON.parse(decodeURIComponent(urlUser)));
+      const clean = window.location.pathname;
+      window.history.replaceState({}, '', clean);
+    }
 
     requireAuth();
 
@@ -95,24 +104,26 @@
       return card;
     }
 
-    try {
-      const { data } = await apiGet('/proyectos');
+    (async () => {
+      try {
+        const { data } = await apiGet('/proyectos');
 
-      loadingEl.classList.add('hidden');
+        loadingEl.classList.add('hidden');
 
-      if (!data.length) {
-        emptyEl.classList.remove('hidden');
-        return;
+        if (!data.length) {
+          emptyEl.classList.remove('hidden');
+          return;
+        }
+
+        gridEl.classList.remove('hidden');
+        data.forEach(p => gridEl.appendChild(renderProyecto(p)));
+
+      } catch {
+        loadingEl.classList.add('hidden');
+        alertEl.textContent = 'Error al cargar los proyectos.';
+        alertEl.classList.remove('hidden');
       }
-
-      gridEl.classList.remove('hidden');
-      data.forEach(p => gridEl.appendChild(renderProyecto(p)));
-
-    } catch {
-      loadingEl.classList.add('hidden');
-      alertEl.textContent = 'Error al cargar los proyectos.';
-      alertEl.classList.remove('hidden');
-    }
+    })();
   </script>
 </body>
 </html>

@@ -13,7 +13,7 @@ class ImportController extends Controller
 
     public function template(int $proyecto_id)
     {
-        return Excel::download(new QuiebreTemplateExport(), 'plantilla-quiebre.xlsx');
+        return Excel::download(new QuiebreTemplateExport($proyecto_id), 'plantilla-quiebre.xlsx');
     }
 
     public function preview(Request $request, int $proyecto_id)

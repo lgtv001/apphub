@@ -2,10 +2,8 @@
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $publicDir = __DIR__.'/public';
 
-if ($uri === '/') {
-    header('HTTP/1.1 302 Found');
-    header('Location: /app/login.html');
-    exit;
+if ($uri === '/' || $uri === '/index.html') {
+    return false;
 }
 
 $file = $publicDir.$uri;

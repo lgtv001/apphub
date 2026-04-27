@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AppHub — Solicitud enviada</title>
+  <link rel="stylesheet" href="/assets/css/app.css"/>
+  <style>
+    .pending-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pending-box {
+      width: 420px;
+      text-align: center;
+    }
+    .pending-icon {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: rgba(79,126,255,0.1);
+      border: 2px solid rgba(79,126,255,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px;
+      margin: 0 auto 24px;
+    }
+    .pending-box h1 { font-size: 22px; margin-bottom: 12px; }
+    .pending-box p  { color: var(--text-muted); line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <div class="pending-wrap">
+    <div class="pending-box">
+      <div class="pending-icon">⏳</div>
+      <h1>Solicitud enviada</h1>
+      <p>Tu solicitud de acceso fue recibida.<br>
+         Un administrador revisará tu solicitud y creará tu cuenta.<br>
+         Una vez aprobada, podrás iniciar sesión con tu correo y la contraseña que te asignen.</p>
+      <a href="/app/login.html" class="btn btn-ghost" style="margin-top:28px;display:inline-flex">
+        Volver al inicio de sesión
+      </a>
+    </div>
+  </div>
+</body>
+</html>

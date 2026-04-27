@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\Admin\AsignacionController;
 use App\Http\Controllers\Admin\LogController;
+use App\Http\Controllers\Admin\SolicitudController;
 use App\Http\Controllers\Admin\TipoUsuarioController;
 use App\Http\Controllers\Admin\UsuarioController as AdminUsuarioController;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +70,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/asignaciones/{id}',  [AsignacionController::class, 'destroy']);
 
         Route::get('/logs',                  [LogController::class, 'index']);
+
+        Route::get('/solicitudes',              [SolicitudController::class, 'index']);
+        Route::post('/solicitudes/{id}/aprobar',[SolicitudController::class, 'approve']);
+        Route::post('/solicitudes/{id}/rechazar',[SolicitudController::class, 'reject']);
     });
 
 });

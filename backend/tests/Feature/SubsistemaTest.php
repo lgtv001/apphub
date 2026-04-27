@@ -188,4 +188,64 @@ class SubsistemaTest extends TestCase
             'entidad_id'  => $subsistema->id,
         ]);
     }
+
+    public function test_admin_puede_crear_subsistema_con_avance(): void
+    {
+        [$proyecto, $sistema, , $token] = $this->makeFixture();
+
+        $response = $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/subsistemas", [
+                'sistema_id'          => $sistema->id,
+                'codigo'              => 'AV-001',
+                'nombre'              => 'Con avance',
+                'fecha_inicio_plan'   => '2026-05-01',
+                'fecha_termino_plan'  => '2026-06-30',
+                'fecha_inicio_real'   => '2026-05-03',
+                'avance_constructivo' => 40,
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('avance_constructivo', 40)
+            ->assertJsonPath('fecha_inicio_plan', '2026-05-01');
+
+        $this->assertDatabaseHas('subsistemas', [
+            'proyecto_id'         => $proyecto->id,
+            'codigo'              => 'AV-001',
+            'avance_constructivo' => 40,
+        ]);
+    }
+
+    public function test_avance_constructivo_debe_estar_entre_0_y_100(): void
+    {
+        [$proyecto, $sistema, , $token] = $this->makeFixture();
+
+        $this->withToken($token)
+            ->postJson("/api/proyectos/{$proyecto->id}/subsistemas", [
+                'sistema_id'          => $sistema->id,
+                'codigo'              => 'AV-001',
+                'nombre'              => 'Con avance',
+                'avance_constructivo' => 101,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['avance_constructivo']);
+    }
+
+    public function test_admin_puede_actualizar_avance_constructivo(): void
+    {
+        [$proyecto, $sistema, , $token] = $this->makeFixture();
+        $subsistema = Subsistema::factory()->create([
+            'proyecto_id'         => $proyecto->id,
+            'sistema_id'          => $sistema->id,
+            'avance_constructivo' => null,
+        ]);
+
+        $this->withToken($token)
+            ->putJson("/api/proyectos/{$proyecto->id}/subsistemas/{$subsistema->id}", [
+                'avance_constructivo' => 75,
+                'fecha_inicio_real'   => '2026-05-10',
+            ])
+            ->assertStatus(200)
+            ->assertJsonPath('avance_constructivo', 75)
+            ->assertJsonPath('fecha_inicio_real', '2026-05-10');
+    }
 }

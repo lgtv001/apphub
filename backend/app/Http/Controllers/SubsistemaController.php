@@ -22,10 +22,15 @@ class SubsistemaController extends Controller
     public function store(Request $request, int $proyecto_id)
     {
         $data = $request->validate([
-            'sistema_id' => ['required', 'integer', Rule::exists('sistemas', 'id')->where('proyecto_id', $proyecto_id)],
-            'codigo'     => ['required', 'string', 'max:50', Rule::unique('subsistemas')->where('proyecto_id', $proyecto_id)],
-            'nombre'     => 'required|string|max:255',
-            'orden'      => 'integer|min:0',
+            'sistema_id'          => ['required', 'integer', Rule::exists('sistemas', 'id')->where('proyecto_id', $proyecto_id)],
+            'codigo'              => ['required', 'string', 'max:50', Rule::unique('subsistemas')->where('proyecto_id', $proyecto_id)],
+            'nombre'              => 'required|string|max:255',
+            'orden'               => 'integer|min:0',
+            'fecha_inicio_plan'   => 'nullable|date',
+            'fecha_termino_plan'  => 'nullable|date',
+            'fecha_inicio_real'   => 'nullable|date',
+            'fecha_termino_real'  => 'nullable|date',
+            'avance_constructivo' => 'nullable|integer|min:0|max:100',
         ]);
         $subsistema = DB::transaction(function () use ($data, $proyecto_id, $request) {
             $s = Subsistema::create(array_merge($data, ['proyecto_id' => $proyecto_id]));
@@ -39,10 +44,15 @@ class SubsistemaController extends Controller
     {
         $subsistema = Subsistema::where('proyecto_id', $proyecto_id)->findOrFail($id);
         $data = $request->validate([
-            'sistema_id' => ['integer', Rule::exists('sistemas', 'id')->where('proyecto_id', $proyecto_id)],
-            'codigo'     => ['string', 'max:50', Rule::unique('subsistemas')->where('proyecto_id', $proyecto_id)->ignore($id)],
-            'nombre'     => 'string|max:255',
-            'orden'      => 'integer|min:0',
+            'sistema_id'          => ['integer', Rule::exists('sistemas', 'id')->where('proyecto_id', $proyecto_id)],
+            'codigo'              => ['string', 'max:50', Rule::unique('subsistemas')->where('proyecto_id', $proyecto_id)->ignore($id)],
+            'nombre'              => 'string|max:255',
+            'orden'               => 'integer|min:0',
+            'fecha_inicio_plan'   => 'nullable|date',
+            'fecha_termino_plan'  => 'nullable|date',
+            'fecha_inicio_real'   => 'nullable|date',
+            'fecha_termino_real'  => 'nullable|date',
+            'avance_constructivo' => 'nullable|integer|min:0|max:100',
         ]);
         $antes = $subsistema->toArray();
         $subsistema = DB::transaction(function () use ($subsistema, $data, $antes, $proyecto_id, $request) {

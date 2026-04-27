@@ -16,10 +16,13 @@ nixPkgs = [
   "php82Packages.composer"
 ]
 
-[phases.build]
+[phases.install]
 cmds = [
   "composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-gd"
 ]
+
+[phases.build]
+cmds = []
 
 [start]
 cmd = "bash start.sh"

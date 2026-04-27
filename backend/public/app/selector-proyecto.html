@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AppHub — Proyectos</title>
+  <link rel="stylesheet" href="/assets/css/app.css"/>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a class="navbar-brand" href="/app/selector-proyecto.html">AppHub</a>
+    <div class="navbar-user">
+      <span id="user-name" class="text-muted"></span>
+      <a href="/dashboard.html" class="btn btn-ghost btn-sm">← Volver al Hub</a>
+      <button class="btn btn-ghost btn-sm" id="btn-logout">Cerrar sesión</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Proyectos</h1>
+        <p class="subtitle mt-8">Selecciona el proyecto en el que deseas trabajar</p>
+      </div>
+      <button id="btn-admin" class="btn btn-danger hidden">Panel SUPERUSER</button>
+    </div>
+
+    <div id="alert-error" class="alert alert-error hidden"></div>
+    <div id="loading" class="text-muted">Cargando proyectos...</div>
+
+    <div id="projects-grid" class="cards-grid hidden"></div>
+    <div id="empty-msg" class="text-muted hidden">
+      No tienes proyectos asignados. Contacta al administrador.
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getUser, clearSession, apiGet, isSuperuser, saveSession } from '/assets/js/api.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    const urlUser  = params.get('user');
+    if (urlToken && urlUser) {
+      saveSession(urlToken, JSON.parse(decodeURIComponent(urlUser)));
+      const clean = window.location.pathname;
+      window.history.replaceState({}, '', clean);
+    }
+
+    requireAuth();
+
+    const user      = getUser();
+    const loadingEl = document.getElementById('loading');
+    const gridEl    = document.getElementById('projects-grid');
+    const emptyEl   = document.getElementById('empty-msg');
+    const alertEl   = document.getElementById('alert-error');
+    const btnAdmin  = document.getElementById('btn-admin');
+
+    document.getElementById('user-name').textContent = user?.nombre ?? '';
+
+    if (isSuperuser()) {
+      btnAdmin.classList.remove('hidden');
+      btnAdmin.addEventListener('click', () => {
+        window.location.href = '/app/superuser.html';
+      });
+    }
+
+    document.getElementById('btn-logout').addEventListener('click', async () => {
+      try {
+        await fetch('/api/auth/logout', {
+          method:  'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('apphub_token')}`,
+            'Accept': 'application/json',
+          },
+        });
+      } finally {
+        clearSession();
+        window.location.href = '/app/login.html';
+      }
+    });
+
+    function estadoBadge(estado) {
+      return estado === 'activo'
+        ? '<span class="badge badge-activo">Activo</span>'
+        : '<span class="badge badge-archivado">Archivado</span>';
+    }
+
+    function renderProyecto(p) {
+      const card = document.createElement('div');
+      card.className = 'card card-selectable';
+      card.innerHTML = `
+        <div class="flex-between" style="margin-bottom:10px">
+          <span class="code">${p.codigo}</span>
+          ${estadoBadge(p.estado)}
+        </div>
+        <h3>${p.nombre}</h3>
+      `;
+      card.addEventListener('click', () => {
+        sessionStorage.setItem('proyecto_id',     p.id);
+        sessionStorage.setItem('proyecto_codigo', p.codigo);
+        sessionStorage.setItem('proyecto_nombre', p.nombre);
+        window.location.href = '/app/selector-app.html';
+      });
+      return card;
+    }
+
+    (async () => {
+      try {
+        const { data } = await apiGet('/proyectos');
+
+        loadingEl.classList.add('hidden');
+
+        if (!data.length) {
+          emptyEl.classList.remove('hidden');
+          return;
+        }
+
+        gridEl.classList.remove('hidden');
+        data.forEach(p => gridEl.appendChild(renderProyecto(p)));
+
+      } catch {
+        loadingEl.classList.add('hidden');
+        alertEl.textContent = 'Error al cargar los proyectos.';
+        alertEl.classList.remove('hidden');
+      }
+    })();
+  </script>
+</body>
+</html>

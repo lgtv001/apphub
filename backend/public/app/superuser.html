@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Panel SUPERUSER — AppHub</title>
+  <link rel="stylesheet" href="/assets/css/app.css"/>
+  <style>
+    .tabs { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+    .tab {
+      padding: 8px 16px; font-size: 12px; font-weight: 600;
+      color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
+      margin-bottom: -1px; background: none; border-top: none; border-left: none; border-right: none;
+    }
+    .tab.active { color: var(--blue-soft); border-bottom-color: var(--blue); }
+
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .admin-table th {
+      background: var(--bg-row); color: var(--text-dim);
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    .admin-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text); }
+    .admin-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .code-badge { font-family: monospace; font-size: 11px; background: rgba(79,126,255,0.08); color: var(--blue-soft); padding: 2px 7px; border-radius: 4px; }
+    .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+    .dot-active   { background: var(--green); }
+    .dot-archived { background: var(--text-dim); }
+
+    .role-badge { padding: 2px 9px; border-radius: 100px; font-size: 10px; font-weight: 700; }
+    .role-su      { background: rgba(255,107,107,0.1);  color: var(--red);      border: 1px solid rgba(255,107,107,0.25); }
+    .role-admin   { background: rgba(79,126,255,0.1);   color: var(--blue-soft); border: 1px solid rgba(79,126,255,0.25); }
+    .role-usuario { background: rgba(46,204,138,0.08);  color: var(--green);    border: 1px solid rgba(46,204,138,0.2); }
+
+    .user-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: linear-gradient(135deg,#4F7EFF,#7C5DFF);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; vertical-align: middle; margin-right: 8px;
+    }
+
+    .btn-row { display: flex; gap: 4px; }
+    .btn-tbl {
+      background: none; border: 1px solid var(--border); border-radius: 5px;
+      color: var(--text-muted); font-size: 11px; padding: 3px 8px; cursor: pointer;
+    }
+    .btn-tbl:hover { border-color: var(--blue); color: var(--blue-soft); }
+    .btn-tbl.danger:hover { border-color: var(--red); color: var(--red); }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px; width: 460px; max-width: 95vw;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+    .modal-close { float: right; background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+    .form-group input,
+    .form-group select {
+      width: 100%; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; color: var(--text); padding: 8px 12px; font-size: 13px;
+    }
+    .form-group input:focus,
+    .form-group select:focus { outline: none; border-color: var(--blue); }
+    .field-error { color: var(--red); font-size: 11px; margin-top: 4px; display: none; }
+    .field-error.visible { display: block; }
+
+    .log-origin { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--text-muted); }
+    .action-badge { font-size: 10px; font-weight: 600; }
+    .action-CREATE  { color: var(--green); }
+    .action-UPDATE  { color: var(--blue-soft); }
+    .action-DELETE  { color: var(--red); }
+    .action-IMPORT  { color: var(--orange); }
+    .action-IMPORT_ERROR_DISMISSED { color: var(--text-dim); }
+    .action-VALIDATION_ERROR       { color: var(--red); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-left">
+      <span class="nav-brand">AppHub</span>
+      <span class="nav-sep">/</span>
+      <span class="nav-current" style="color:var(--red)">Panel SUPERUSER</span>
+    </div>
+    <div class="nav-right">
+      <span id="user-name" class="nav-user"></span>
+      <a href="/app/selector-proyecto.html" class="btn btn-ghost btn-sm">Proyectos</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Administración Global <span style="font-size:14px;vertical-align:middle;margin-left:8px;background:rgba(255,107,107,0.1);color:var(--red);border:1px solid rgba(255,107,107,0.3);border-radius:100px;padding:2px 10px;font-weight:700">SUPERUSER</span></h1>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="proyectos">Proyectos</button>
+      <button class="tab"        data-tab="usuarios">Usuarios</button>
+      <button class="tab"        data-tab="tipos">Tipos de Usuario</button>
+      <button class="tab"        data-tab="asignaciones">Asignaciones</button>
+      <button class="tab"        data-tab="solicitudes">Solicitudes <span id="badge-solicitudes" style="display:none;background:rgba(255,107,107,0.15);color:var(--red);border-radius:100px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px"></span></button>
+      <button class="tab"        data-tab="logs">Logs</button>
+    </div>
+
+    <!-- TAB: Proyectos -->
+    <div id="tab-proyectos" class="tab-panel">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn btn-primary btn-sm" id="btn-new-proyecto">+ Nuevo Proyecto</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="admin-table">
+          <thead><tr><th>Código</th><th>Nombre</th><th>Estado</th><th style="width:80px"></th></tr></thead>
+          <tbody id="tbody-proyectos"><tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Usuarios -->
+    <div id="tab-usuarios" class="tab-panel hidden">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn btn-primary btn-sm" id="btn-new-usuario">+ Nuevo Usuario</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="admin-table">
+          <thead><tr><th>Usuario</th><th>Email</th><th>Rol Global</th><th>Estado</th><th style="width:80px"></th></tr></thead>
+          <tbody id="tbody-usuarios"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Tipos de Usuario -->
+    <div id="tab-tipos" class="tab-panel hidden">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn btn-primary btn-sm" id="btn-new-tipo">+ Nuevo Tipo</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="admin-table">
+          <thead><tr><th>Nombre</th><th>Descripción</th><th>Activo</th><th style="width:80px"></th></tr></thead>
+          <tbody id="tbody-tipos"><tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Asignaciones -->
+    <div id="tab-asignaciones" class="tab-panel hidden">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn btn-primary btn-sm" id="btn-new-asignacion">+ Nueva Asignación</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="admin-table">
+          <thead><tr><th>Usuario</th><th>Proyecto</th><th>Rol</th><th>Tipo</th><th style="width:60px"></th></tr></thead>
+          <tbody id="tbody-asignaciones"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Solicitudes -->
+    <div id="tab-solicitudes" class="tab-panel hidden">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn btn-ghost btn-sm" id="btn-reload-solicitudes">↺ Actualizar</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="admin-table">
+          <thead><tr><th>Usuario</th><th>Email</th><th>Proveedor</th><th>Fecha</th><th>Estado</th><th style="width:120px"></th></tr></thead>
+          <tbody id="tbody-solicitudes"><tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Logs -->
+    <div id="tab-logs" class="tab-panel hidden">
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+        <select id="log-proyecto-filter" style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px">
+          <option value="">Todos los proyectos</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" id="btn-reload-logs">↺ Actualizar</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="admin-table">
+          <thead><tr><th>Fecha</th><th>Origen</th><th>Acción</th><th>Usuario</th><th>Proyecto</th></tr></thead>
+          <tbody id="tbody-logs"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Proyecto -->
+  <div class="modal-overlay" id="modal-proyecto">
+    <div class="modal">
+      <button class="modal-close" id="close-modal-proyecto">✕</button>
+      <h2 class="modal-title" id="title-modal-proyecto">Nuevo Proyecto</h2>
+      <form id="form-proyecto" novalidate>
+        <div class="form-group">
+          <label>Código *</label>
+          <input type="text" id="p-codigo" placeholder="Ej: AUT-002"/>
+          <div class="field-error" id="err-p-codigo">Campo obligatorio.</div>
+        </div>
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" id="p-nombre" placeholder="Ej: Autopista Norte Tramo 2"/>
+          <div class="field-error" id="err-p-nombre">Campo obligatorio.</div>
+        </div>
+        <div class="form-group">
+          <label>Estado</label>
+          <select id="p-estado">
+            <option value="activo">Activo</option>
+            <option value="archivado">Archivado</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="btn btn-ghost" id="cancel-proyecto">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="submit-proyecto">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Usuario -->
+  <div class="modal-overlay" id="modal-usuario">
+    <div class="modal">
+      <button class="modal-close" id="close-modal-usuario">✕</button>
+      <h2 class="modal-title" id="title-modal-usuario">Nuevo Usuario</h2>
+      <form id="form-usuario" novalidate>
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" id="u-nombre" placeholder="Ej: Juan Pérez"/>
+          <div class="field-error" id="err-u-nombre">Campo obligatorio.</div>
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="u-email" placeholder="juan@empresa.cl"/>
+          <div class="field-error" id="err-u-email">Email obligatorio.</div>
+        </div>
+        <div class="form-group" id="group-u-password">
+          <label id="label-u-password">Contraseña *</label>
+          <input type="password" id="u-password" placeholder="Mínimo 8 caracteres"/>
+          <div class="field-error" id="err-u-password">Contraseña obligatoria.</div>
+        </div>
+        <div class="form-group">
+          <label>Rol Global</label>
+          <select id="u-rol">
+            <option value="usuario">Usuario</option>
+            <option value="admin">Admin</option>
+            <option value="superuser">SUPERUSER</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Activo</label>
+          <select id="u-activo">
+            <option value="1">Sí</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="btn btn-ghost" id="cancel-usuario">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="submit-usuario">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Tipo de Usuario -->
+  <div class="modal-overlay" id="modal-tipo">
+    <div class="modal">
+      <button class="modal-close" id="close-modal-tipo">✕</button>
+      <h2 class="modal-title" id="title-modal-tipo">Nuevo Tipo de Usuario</h2>
+      <form id="form-tipo" novalidate>
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" id="t-nombre" placeholder="Ej: Inspector de Calidad"/>
+          <div class="field-error" id="err-t-nombre">Campo obligatorio.</div>
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <input type="text" id="t-descripcion" placeholder="Descripción breve…"/>
+        </div>
+        <div class="form-group">
+          <label>Activo</label>
+          <select id="t-activo">
+            <option value="1">Sí</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="btn btn-ghost" id="cancel-tipo">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="submit-tipo">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Asignación -->
+  <div class="modal-overlay" id="modal-asignacion">
+    <div class="modal">
+      <button class="modal-close" id="close-modal-asignacion">✕</button>
+      <h2 class="modal-title">Nueva Asignación</h2>
+      <form id="form-asignacion" novalidate>
+        <div class="form-group">
+          <label>Usuario *</label>
+          <select id="a-usuario">
+            <option value="">— Seleccionar usuario —</option>
+          </select>
+          <div class="field-error" id="err-a-usuario">Campo obligatorio.</div>
+        </div>
+        <div class="form-group">
+          <label>Proyecto *</label>
+          <select id="a-proyecto">
+            <option value="">— Seleccionar proyecto —</option>
+          </select>
+          <div class="field-error" id="err-a-proyecto">Campo obligatorio.</div>
+        </div>
+        <div class="form-group">
+          <label>Rol en el proyecto</label>
+          <select id="a-rol">
+            <option value="usuario">Usuario</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Tipo (opcional)</label>
+          <select id="a-tipo">
+            <option value="">— Sin tipo especial —</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="btn btn-ghost" id="cancel-asignacion">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="submit-asignacion">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Aprobar Solicitud -->
+  <div class="modal-overlay" id="modal-solicitud">
+    <div class="modal">
+      <button class="modal-close" id="close-modal-solicitud">✕</button>
+      <h2 class="modal-title">Aprobar solicitud de acceso</h2>
+      <form id="form-solicitud" novalidate>
+        <input type="hidden" id="s-id"/>
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input type="text" id="s-nombre" placeholder="Nombre completo"/>
+          <div class="field-error" id="err-s-nombre">Campo obligatorio.</div>
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input type="email" id="s-email" placeholder="correo@empresa.cl"/>
+          <div class="field-error" id="err-s-email">Email obligatorio.</div>
+        </div>
+        <div class="form-group">
+          <label>Contraseña inicial *</label>
+          <input type="password" id="s-password" placeholder="Mínimo 8 caracteres"/>
+          <div class="field-error" id="err-s-password">Contraseña obligatoria (mín. 8 caracteres).</div>
+        </div>
+        <div class="form-group">
+          <label>Rol Global</label>
+          <select id="s-rol">
+            <option value="usuario">Usuario</option>
+            <option value="admin">Admin</option>
+            <option value="superuser">SUPERUSER</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="btn btn-ghost" id="cancel-solicitud">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="submit-solicitud">Crear cuenta</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getUser, apiGet, apiPost, apiPut, apiDelete } from '/assets/js/api.js';
+
+    requireAuth();
+
+    const user = getUser();
+    if (user?.rol_global !== 'superuser') {
+      window.location.href = '/app/selector-proyecto.html';
+    }
+    document.getElementById('user-name').textContent = user?.nombre ?? '';
+
+    // ── Tabs ───────────────────────────────────────────────────────
+    const tabButtons = document.querySelectorAll('.tab');
+    const tabPanels  = document.querySelectorAll('.tab-panel');
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        tabPanels.forEach(p => p.classList.add('hidden'));
+        btn.classList.add('active');
+        document.getElementById(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+        loadTab(btn.dataset.tab);
+      });
+    });
+
+    function loadTab(tab) {
+      if (tab === 'proyectos')    loadProyectos();
+      if (tab === 'usuarios')     loadUsuarios();
+      if (tab === 'tipos')        loadTipos();
+      if (tab === 'asignaciones') loadAsignaciones();
+      if (tab === 'solicitudes')  loadSolicitudes();
+      if (tab === 'logs')         loadLogs();
+    }
+
+    let proyectosCache = [];
+    let usuariosCache  = [];
+    let tiposCache     = [];
+
+    // ── TAB: Proyectos ─────────────────────────────────────────────
+    async function loadProyectos() {
+      const resp = await apiGet('/proyectos?all=1');
+      proyectosCache = resp?.data ?? [];
+      const tbody = document.getElementById('tbody-proyectos');
+      if (!proyectosCache.length) {
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)">Sin proyectos.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = proyectosCache.map(p => `
+        <tr>
+          <td><span class="code-badge">${escHtml(p.codigo)}</span></td>
+          <td>${escHtml(p.nombre)}</td>
+          <td><span class="status-dot ${p.estado === 'activo' ? 'dot-active' : 'dot-archived'}"></span>${escHtml(p.estado)}</td>
+          <td><div class="btn-row">
+            <button class="btn-tbl" onclick="openEditProyecto(${p.id})">✏</button>
+          </div></td>
+        </tr>
+      `).join('');
+
+      const sel = document.getElementById('log-proyecto-filter');
+      proyectosCache.forEach(p => {
+        if (!sel.querySelector(`option[value="${p.id}"]`)) {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = `${p.codigo} — ${p.nombre}`;
+          sel.appendChild(opt);
+        }
+      });
+    }
+
+    let editProyectoId = null;
+
+    document.getElementById('btn-new-proyecto').addEventListener('click', () => {
+      editProyectoId = null;
+      document.getElementById('title-modal-proyecto').textContent = 'Nuevo Proyecto';
+      document.getElementById('form-proyecto').reset();
+      clearErrors('form-proyecto');
+      document.getElementById('modal-proyecto').classList.add('open');
+    });
+
+    window.openEditProyecto = (id) => {
+      editProyectoId = id;
+      const p = proyectosCache.find(x => x.id === id);
+      document.getElementById('title-modal-proyecto').textContent = 'Editar Proyecto';
+      document.getElementById('p-codigo').value = p.codigo;
+      document.getElementById('p-nombre').value = p.nombre;
+      document.getElementById('p-estado').value = p.estado;
+      clearErrors('form-proyecto');
+      document.getElementById('modal-proyecto').classList.add('open');
+    };
+
+    document.getElementById('close-modal-proyecto').addEventListener('click', () => document.getElementById('modal-proyecto').classList.remove('open'));
+    document.getElementById('cancel-proyecto').addEventListener('click', () => document.getElementById('modal-proyecto').classList.remove('open'));
+
+    document.getElementById('form-proyecto').addEventListener('submit', async e => {
+      e.preventDefault();
+      clearErrors('form-proyecto');
+      const codigo = document.getElementById('p-codigo').value.trim();
+      const nombre = document.getElementById('p-nombre').value.trim();
+      const estado = document.getElementById('p-estado').value;
+
+      let valid = true;
+      if (!codigo) { showErr('err-p-codigo'); valid = false; }
+      if (!nombre) { showErr('err-p-nombre'); valid = false; }
+      if (!valid) return;
+
+      const btn = document.getElementById('submit-proyecto');
+      btn.disabled = true;
+      try {
+        if (editProyectoId) {
+          await apiPut(`/proyectos/${editProyectoId}`, { codigo, nombre, estado });
+        } else {
+          await apiPost('/proyectos', { codigo, nombre, estado });
+        }
+        document.getElementById('modal-proyecto').classList.remove('open');
+        loadProyectos();
+      } catch (err) {
+        handleFormError(err, { codigo: 'err-p-codigo', nombre: 'err-p-nombre' });
+      } finally { btn.disabled = false; }
+    });
+
+    // ── TAB: Usuarios ──────────────────────────────────────────────
+    async function loadUsuarios() {
+      const resp = await apiGet('/admin/usuarios');
+      usuariosCache = resp?.data ?? [];
+      const tbody = document.getElementById('tbody-usuarios');
+      if (!usuariosCache.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Sin usuarios.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = usuariosCache.map(u => `
+        <tr>
+          <td>
+            <span class="user-avatar">${initials(u.nombre)}</span>
+            ${escHtml(u.nombre)}
+          </td>
+          <td style="color:var(--text-muted)">${escHtml(u.email)}</td>
+          <td><span class="role-badge role-${u.rol_global === 'superuser' ? 'su' : u.rol_global === 'admin' ? 'admin' : 'usuario'}">${escHtml(u.rol_global)}</span></td>
+          <td>${u.activo ? '<span style="color:var(--green)">Activo</span>' : '<span style="color:var(--text-dim)">Inactivo</span>'}</td>
+          <td><div class="btn-row">
+            <button class="btn-tbl" onclick="openEditUsuario(${u.id})">✏</button>
+            ${u.rol_global !== 'superuser' ? `<button class="btn-tbl danger" onclick="deleteUsuario(${u.id})">✕</button>` : ''}
+          </div></td>
+        </tr>
+      `).join('');
+    }
+
+    function initials(nombre) {
+      return nombre.split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('');
+    }
+
+    let editUsuarioId = null;
+
+    document.getElementById('btn-new-usuario').addEventListener('click', () => {
+      editUsuarioId = null;
+      document.getElementById('title-modal-usuario').textContent = 'Nuevo Usuario';
+      document.getElementById('form-usuario').reset();
+      document.getElementById('label-u-password').textContent = 'Contraseña *';
+      document.getElementById('u-password').placeholder = 'Mínimo 8 caracteres';
+      clearErrors('form-usuario');
+      document.getElementById('modal-usuario').classList.add('open');
+    });
+
+    window.openEditUsuario = (id) => {
+      editUsuarioId = id;
+      const u = usuariosCache.find(x => x.id === id);
+      document.getElementById('title-modal-usuario').textContent = 'Editar Usuario';
+      document.getElementById('u-nombre').value = u.nombre;
+      document.getElementById('u-email').value  = u.email;
+      document.getElementById('u-rol').value    = u.rol_global;
+      document.getElementById('u-activo').value = u.activo ? '1' : '0';
+      document.getElementById('u-password').value = '';
+      document.getElementById('label-u-password').textContent = 'Contraseña (dejar vacío para no cambiar)';
+      document.getElementById('u-password').placeholder = 'Dejar vacío para mantener';
+      clearErrors('form-usuario');
+      document.getElementById('modal-usuario').classList.add('open');
+    };
+
+    window.deleteUsuario = async (id) => {
+      const u = usuariosCache.find(x => x.id === id);
+      if (!confirm(`¿Eliminar a ${u.nombre}? Esta acción no se puede deshacer.`)) return;
+      try {
+        await apiDelete(`/admin/usuarios/${id}`);
+        loadUsuarios();
+      } catch (err) { alert(err?.message ?? 'Error al eliminar.'); }
+    };
+
+    document.getElementById('close-modal-usuario').addEventListener('click', () => document.getElementById('modal-usuario').classList.remove('open'));
+    document.getElementById('cancel-usuario').addEventListener('click', () => document.getElementById('modal-usuario').classList.remove('open'));
+
+    document.getElementById('form-usuario').addEventListener('submit', async e => {
+      e.preventDefault();
+      clearErrors('form-usuario');
+      const nombre   = document.getElementById('u-nombre').value.trim();
+      const email    = document.getElementById('u-email').value.trim();
+      const password = document.getElementById('u-password').value;
+      const rol      = document.getElementById('u-rol').value;
+      const activo   = document.getElementById('u-activo').value === '1';
+
+      let valid = true;
+      if (!nombre) { showErr('err-u-nombre'); valid = false; }
+      if (!email)  { showErr('err-u-email');  valid = false; }
+      if (!editUsuarioId && !password) { showErr('err-u-password'); valid = false; }
+      if (!valid) return;
+
+      const body = { nombre, email, rol_global: rol, activo };
+      if (password) body.password = password;
+
+      const btn = document.getElementById('submit-usuario');
+      btn.disabled = true;
+      try {
+        if (editUsuarioId) {
+          await apiPut(`/admin/usuarios/${editUsuarioId}`, body);
+        } else {
+          await apiPost('/admin/usuarios', body);
+        }
+        document.getElementById('modal-usuario').classList.remove('open');
+        loadUsuarios();
+      } catch (err) {
+        handleFormError(err, { nombre: 'err-u-nombre', email: 'err-u-email', password: 'err-u-password' });
+      } finally { btn.disabled = false; }
+    });
+
+    // ── TAB: Tipos de Usuario ──────────────────────────────────────
+    async function loadTipos() {
+      const resp = await apiGet('/admin/tipos-usuario');
+      tiposCache = resp?.data ?? [];
+      const tbody = document.getElementById('tbody-tipos');
+      if (!tiposCache.length) {
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)">Sin tipos definidos.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = tiposCache.map(t => `
+        <tr>
+          <td>${escHtml(t.nombre)}</td>
+          <td style="color:var(--text-muted)">${escHtml(t.descripcion ?? '—')}</td>
+          <td>${t.activo ? '<span style="color:var(--green)">Sí</span>' : '<span style="color:var(--text-dim)">No</span>'}</td>
+          <td><div class="btn-row">
+            <button class="btn-tbl" onclick="openEditTipo(${t.id})">✏</button>
+            <button class="btn-tbl danger" onclick="deleteTipo(${t.id})">✕</button>
+          </div></td>
+        </tr>
+      `).join('');
+
+      const sel = document.getElementById('a-tipo');
+      sel.innerHTML = '<option value="">— Sin tipo especial —</option>';
+      tiposCache.filter(t => t.activo).forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id; opt.textContent = t.nombre;
+        sel.appendChild(opt);
+      });
+    }
+
+    let editTipoId = null;
+
+    document.getElementById('btn-new-tipo').addEventListener('click', () => {
+      editTipoId = null;
+      document.getElementById('title-modal-tipo').textContent = 'Nuevo Tipo de Usuario';
+      document.getElementById('form-tipo').reset();
+      clearErrors('form-tipo');
+      document.getElementById('modal-tipo').classList.add('open');
+    });
+
+    window.openEditTipo = (id) => {
+      editTipoId = id;
+      const t = tiposCache.find(x => x.id === id);
+      document.getElementById('title-modal-tipo').textContent = 'Editar Tipo';
+      document.getElementById('t-nombre').value      = t.nombre;
+      document.getElementById('t-descripcion').value = t.descripcion ?? '';
+      document.getElementById('t-activo').value      = t.activo ? '1' : '0';
+      clearErrors('form-tipo');
+      document.getElementById('modal-tipo').classList.add('open');
+    };
+
+    window.deleteTipo = async (id) => {
+      const t = tiposCache.find(x => x.id === id);
+      if (!confirm(`¿Eliminar tipo "${t.nombre}"?`)) return;
+      try {
+        await apiDelete(`/admin/tipos-usuario/${id}`);
+        loadTipos();
+      } catch (err) { alert(err?.message ?? 'Error.'); }
+    };
+
+    document.getElementById('close-modal-tipo').addEventListener('click', () => document.getElementById('modal-tipo').classList.remove('open'));
+    document.getElementById('cancel-tipo').addEventListener('click', () => document.getElementById('modal-tipo').classList.remove('open'));
+
+    document.getElementById('form-tipo').addEventListener('submit', async e => {
+      e.preventDefault();
+      clearErrors('form-tipo');
+      const nombre      = document.getElementById('t-nombre').value.trim();
+      const descripcion = document.getElementById('t-descripcion').value.trim();
+      const activo      = document.getElementById('t-activo').value === '1';
+
+      if (!nombre) { showErr('err-t-nombre'); return; }
+
+      const btn = document.getElementById('submit-tipo');
+      btn.disabled = true;
+      try {
+        if (editTipoId) {
+          await apiPut(`/admin/tipos-usuario/${editTipoId}`, { nombre, descripcion, activo });
+        } else {
+          await apiPost('/admin/tipos-usuario', { nombre, descripcion, activo });
+        }
+        document.getElementById('modal-tipo').classList.remove('open');
+        loadTipos();
+      } catch (err) {
+        handleFormError(err, { nombre: 'err-t-nombre' });
+      } finally { btn.disabled = false; }
+    });
+
+    // ── TAB: Asignaciones ──────────────────────────────────────────
+    async function loadAsignaciones() {
+      if (!proyectosCache.length) {
+        const r = await apiGet('/proyectos?all=1');
+        proyectosCache = r?.data ?? [];
+      }
+      if (!usuariosCache.length) {
+        const r = await apiGet('/admin/usuarios');
+        usuariosCache = r?.data ?? [];
+      }
+      if (!tiposCache.length) {
+        const r = await apiGet('/admin/tipos-usuario');
+        tiposCache = r?.data ?? [];
+      }
+
+      populateSelectFromCache('a-usuario', usuariosCache,  'id', 'nombre');
+      populateSelectFromCache('a-proyecto', proyectosCache, 'id', 'nombre');
+
+      const resp = await apiGet('/admin/asignaciones');
+      const rows = resp?.data ?? [];
+      const tbody = document.getElementById('tbody-asignaciones');
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Sin asignaciones.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map(a => {
+        const u = usuariosCache.find(x => x.id === a.usuario_id);
+        const p = proyectosCache.find(x => x.id === a.proyecto_id);
+        const t = tiposCache.find(x => x.id === a.tipo_id);
+        return `<tr>
+          <td>${escHtml(u?.nombre ?? `#${a.usuario_id}`)}</td>
+          <td><span class="code-badge">${escHtml(p?.codigo ?? `#${a.proyecto_id}`)}</span> ${escHtml(p?.nombre ?? '')}</td>
+          <td><span class="role-badge role-${a.rol === 'admin' ? 'admin' : 'usuario'}">${escHtml(a.rol)}</span></td>
+          <td style="color:var(--text-muted)">${escHtml(t?.nombre ?? '—')}</td>
+          <td><button class="btn-tbl danger" onclick="deleteAsignacion(${a.id})">✕</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    window.deleteAsignacion = async (id) => {
+      if (!confirm('¿Revocar esta asignación?')) return;
+      try {
+        await apiDelete(`/admin/asignaciones/${id}`);
+        loadAsignaciones();
+      } catch (err) { alert(err?.message ?? 'Error.'); }
+    };
+
+    document.getElementById('btn-new-asignacion').addEventListener('click', () => {
+      document.getElementById('form-asignacion').reset();
+      clearErrors('form-asignacion');
+      document.getElementById('modal-asignacion').classList.add('open');
+    });
+    document.getElementById('close-modal-asignacion').addEventListener('click', () => document.getElementById('modal-asignacion').classList.remove('open'));
+    document.getElementById('cancel-asignacion').addEventListener('click', () => document.getElementById('modal-asignacion').classList.remove('open'));
+
+    document.getElementById('form-asignacion').addEventListener('submit', async e => {
+      e.preventDefault();
+      clearErrors('form-asignacion');
+      const usuarioId  = document.getElementById('a-usuario').value;
+      const proyectoId = document.getElementById('a-proyecto').value;
+      const rol        = document.getElementById('a-rol').value;
+      const tipoId     = document.getElementById('a-tipo').value || null;
+
+      let valid = true;
+      if (!usuarioId)  { showErr('err-a-usuario');  valid = false; }
+      if (!proyectoId) { showErr('err-a-proyecto'); valid = false; }
+      if (!valid) return;
+
+      const btn = document.getElementById('submit-asignacion');
+      btn.disabled = true;
+      try {
+        await apiPost('/admin/asignaciones', { usuario_id: usuarioId, proyecto_id: proyectoId, rol, tipo_id: tipoId });
+        document.getElementById('modal-asignacion').classList.remove('open');
+        loadAsignaciones();
+      } catch (err) {
+        handleFormError(err, { usuario_id: 'err-a-usuario', proyecto_id: 'err-a-proyecto' });
+      } finally { btn.disabled = false; }
+    });
+
+    // ── TAB: Solicitudes ──────────────────────────────────────────
+    async function loadSolicitudes() {
+      const resp = await apiGet('/admin/solicitudes');
+      const rows = resp?.data ?? [];
+      solicitudesCache = rows;
+      const pending = rows.filter(r => r.estado === 'pendiente').length;
+      const badge = document.getElementById('badge-solicitudes');
+      if (pending > 0) {
+        badge.textContent = pending;
+        badge.style.display = '';
+      } else {
+        badge.style.display = 'none';
+      }
+
+      const tbody = document.getElementById('tbody-solicitudes');
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--text-muted)">Sin solicitudes.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map(r => {
+        const fecha = new Date(r.created_at).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+        const estadoColor = r.estado === 'pendiente' ? 'var(--orange)' : r.estado === 'aprobado' ? 'var(--green)' : 'var(--text-dim)';
+        const avatar = r.avatar_url
+          ? `<img src="${escHtml(r.avatar_url)}" style="width:28px;height:28px;border-radius:50%;vertical-align:middle;margin-right:8px" onerror="this.style.display='none'">`
+          : `<span class="user-avatar" style="width:28px;height:28px;font-size:10px;vertical-align:middle;margin-right:8px">${initials(r.nombre)}</span>`;
+        const providerIcon = r.provider === 'github'
+          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:4px"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.61-4.04-1.61-.54-1.37-1.33-1.74-1.33-1.74-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.93.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/></svg>'
+          : '<svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>';
+        return `<tr>
+          <td>${avatar}${escHtml(r.nombre)}</td>
+          <td style="color:var(--text-muted)">${escHtml(r.email)}</td>
+          <td>${providerIcon}${escHtml(r.provider)}</td>
+          <td style="color:var(--text-muted);font-size:11px">${fecha}</td>
+          <td><span style="color:${estadoColor};font-weight:600;font-size:11px">${escHtml(r.estado)}</span></td>
+          <td><div class="btn-row">
+            ${r.estado === 'pendiente' ? `
+              <button class="btn-tbl" onclick="openApprove(${r.id})">Aprobar</button>
+              <button class="btn-tbl danger" onclick="rejectSolicitud(${r.id})">Rechazar</button>
+            ` : '—'}
+          </div></td>
+        </tr>`;
+      }).join('');
+    }
+
+    window.openApprove = (id) => {
+      const tbody = document.getElementById('tbody-solicitudes');
+      const rows  = [...tbody.querySelectorAll('tr')];
+      // Get data from the API cache via DOM is awkward; re-fetch inline by id from last load
+      // Instead we keep a local cache
+      const r = solicitudesCache.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('s-id').value       = r.id;
+      document.getElementById('s-nombre').value   = r.nombre;
+      document.getElementById('s-email').value    = r.email;
+      document.getElementById('s-password').value = '';
+      document.getElementById('s-rol').value      = 'usuario';
+      clearErrors('form-solicitud');
+      document.getElementById('modal-solicitud').classList.add('open');
+    };
+
+    window.rejectSolicitud = async (id) => {
+      if (!confirm('¿Rechazar esta solicitud de acceso?')) return;
+      try {
+        await apiPost(`/admin/solicitudes/${id}/rechazar`);
+        loadSolicitudes();
+      } catch (err) { alert(err?.message ?? 'Error.'); }
+    };
+
+    document.getElementById('close-modal-solicitud').addEventListener('click', () => document.getElementById('modal-solicitud').classList.remove('open'));
+    document.getElementById('cancel-solicitud').addEventListener('click', () => document.getElementById('modal-solicitud').classList.remove('open'));
+
+    document.getElementById('form-solicitud').addEventListener('submit', async e => {
+      e.preventDefault();
+      clearErrors('form-solicitud');
+      const id       = document.getElementById('s-id').value;
+      const nombre   = document.getElementById('s-nombre').value.trim();
+      const email    = document.getElementById('s-email').value.trim();
+      const password = document.getElementById('s-password').value;
+      const rol      = document.getElementById('s-rol').value;
+
+      let valid = true;
+      if (!nombre)   { showErr('err-s-nombre');   valid = false; }
+      if (!email)    { showErr('err-s-email');     valid = false; }
+      if (!password) { showErr('err-s-password');  valid = false; }
+      if (!valid) return;
+
+      const btn = document.getElementById('submit-solicitud');
+      btn.disabled = true;
+      try {
+        await apiPost(`/admin/solicitudes/${id}/aprobar`, { nombre, email, password, rol_global: rol });
+        document.getElementById('modal-solicitud').classList.remove('open');
+        loadSolicitudes();
+        loadUsuarios();
+      } catch (err) {
+        handleFormError(err, { nombre: 'err-s-nombre', email: 'err-s-email', password: 'err-s-password' });
+      } finally { btn.disabled = false; }
+    });
+
+    document.getElementById('btn-reload-solicitudes').addEventListener('click', loadSolicitudes);
+
+    let solicitudesCache = [];
+
+    // ── TAB: Logs ──────────────────────────────────────────────────
+    async function loadLogs() {
+      const proyectoFiltro = document.getElementById('log-proyecto-filter').value;
+      const url  = proyectoFiltro ? `/admin/logs?proyecto_id=${proyectoFiltro}` : '/admin/logs';
+      const resp = await apiGet(url);
+      const rows = resp?.data ?? [];
+      const tbody = document.getElementById('tbody-logs');
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Sin registros.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map(r => {
+        const u    = usuariosCache.find(x => x.id === r.usuario_id);
+        const p    = proyectosCache.find(x => x.id === r.proyecto_id);
+        const fecha = new Date(r.created_at).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+        return `<tr>
+          <td style="color:var(--text-muted);font-size:11px">${fecha}</td>
+          <td><span class="log-origin">${escHtml(r.origen)}</span></td>
+          <td><span class="action-badge action-${r.accion}">${escHtml(r.accion)}</span></td>
+          <td>${escHtml(u?.nombre ?? `#${r.usuario_id}`)}</td>
+          <td>${p ? `<span class="code-badge">${escHtml(p.codigo)}</span>` : '<span style="color:var(--text-muted)">—</span>'}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    document.getElementById('btn-reload-logs').addEventListener('click', loadLogs);
+    document.getElementById('log-proyecto-filter').addEventListener('change', loadLogs);
+
+    // ── Helpers ────────────────────────────────────────────────────
+    function escHtml(s) {
+      if (s == null) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function showErr(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('visible');
+    }
+
+    function clearErrors(formId) {
+      document.getElementById(formId)?.querySelectorAll('.field-error').forEach(el => el.classList.remove('visible'));
+    }
+
+    function handleFormError(err, fieldMap) {
+      if (err?.errors) {
+        Object.entries(fieldMap).forEach(([apiField, errId]) => {
+          if (err.errors[apiField]) {
+            const el = document.getElementById(errId);
+            if (el) { el.textContent = err.errors[apiField][0]; el.classList.add('visible'); }
+          }
+        });
+      } else {
+        alert(err?.message ?? 'Error al guardar.');
+      }
+    }
+
+    function populateSelectFromCache(selectId, items, valKey, labelKey) {
+      const sel  = document.getElementById(selectId);
+      const prev = sel.value;
+      sel.innerHTML = '<option value="">— Seleccionar —</option>';
+      items.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item[valKey];
+        opt.textContent = item.codigo ? `${item.codigo} — ${item[labelKey]}` : item[labelKey];
+        sel.appendChild(opt);
+      });
+      sel.value = prev;
+    }
+
+    // ── Init ───────────────────────────────────────────────────────
+    loadProyectos();
+    loadSolicitudes();
+  </script>
+</body>
+</html>

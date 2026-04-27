@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AppHub — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #08090C;
+      --surface: #111318;
+      --surface2: #181B22;
+      --border: rgba(255,255,255,0.07);
+      --border-strong: rgba(255,255,255,0.14);
+      --accent: #4F7EFF;
+      --accent2: #7C5DFF;
+      --accent-glow: rgba(79,126,255,0.18);
+      --text: #F0F2F8;
+      --muted: #7A7F96;
+      --muted2: #4A4F66;
+      --success: #2ECC8A;
+      --font-head: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --grid-color: rgba(79,126,255,0.04);
+      --orb1-color: rgba(79,126,255,0.22);
+      --orb2-color: rgba(124,93,255,0.18);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #F5F7FF;
+        --surface: #FFFFFF;
+        --surface2: #EDF0FA;
+        --border: rgba(0,0,0,0.08);
+        --border-strong: rgba(0,0,0,0.16);
+        --accent-glow: rgba(79,126,255,0.14);
+        --text: #111320;
+        --muted: #5C6080;
+        --muted2: #9BA0B8;
+        --grid-color: rgba(79,126,255,0.06);
+        --orb1-color: rgba(79,126,255,0.14);
+        --orb2-color: rgba(124,93,255,0.11);
+      }
+    }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, var(--orb1-color) 0%, transparent 70%);
+      top: -160px; right: -100px;
+      animation: float1 14s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 360px; height: 360px;
+      background: radial-gradient(circle, var(--orb2-color) 0%, transparent 70%);
+      bottom: 0; left: -80px;
+      animation: float2 18s ease-in-out infinite;
+    }
+    @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-30px,20px)} }
+    @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(20px,-30px)} }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      height: 64px;
+      background: rgba(8,9,12,0.7);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    @media (prefers-color-scheme: light) {
+      nav { background: rgba(245,247,255,0.8); }
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-icon svg { width: 16px; height: 16px; }
+    .logo-name {
+      font-family: var(--font-head);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.3px;
+    }
+    .logo-name span { color: var(--accent); }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 14px 6px 6px;
+    }
+    .user-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-head);
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .user-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .btn-logout {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 7px 14px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--border-strong); color: var(--text); }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 52px 40px 80px;
+    }
+
+    .page-header {
+      margin-bottom: 48px;
+      animation: fadeUp 0.5s ease both;
+    }
+    .page-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .page-title {
+      font-family: var(--font-head);
+      font-size: clamp(28px, 3vw, 40px);
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+    }
+    .page-title span { color: var(--accent); }
+    .page-sub {
+      margin-top: 10px;
+      font-size: 15px;
+      color: var(--muted);
+      font-weight: 300;
+    }
+
+    .search-wrap {
+      position: relative;
+      max-width: 380px;
+      margin-bottom: 40px;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+    .search-wrap svg {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted2);
+      pointer-events: none;
+    }
+    .search-wrap input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px 10px 40px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-wrap input::placeholder { color: var(--muted2); }
+    .search-wrap input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.9px;
+      text-transform: uppercase;
+      color: var(--muted2);
+      margin-bottom: 16px;
+    }
+
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .app-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+      animation: fadeUp 0.4s ease both;
+      text-decoration: none;
+      color: inherit;
+    }
+    .app-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    }
+
+    @media (prefers-color-scheme: light) {
+      .app-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
+    }
+
+    .app-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .app-icon {
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .app-icon svg { width: 22px; height: 22px; }
+    .app-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: 100px;
+    }
+    .app-status-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-live { background: rgba(46,204,138,0.12); color: #2ECC8A; }
+    .status-live .app-status-dot { background: #2ECC8A; }
+    .status-soon { background: rgba(122,127,150,0.12); color: var(--muted); }
+    .status-soon .app-status-dot { background: var(--muted2); }
+
+    .app-card-name {
+      font-family: var(--font-head);
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .app-card-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      flex: 1;
+    }
+    .app-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+    }
+    .app-tag {
+      font-size: 11px;
+      color: var(--muted2);
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 3px 8px;
+    }
+    .btn-open {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+      background: rgba(79,126,255,0.1);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-family: var(--font-body);
+      text-decoration: none;
+    }
+    .btn-open:hover { background: rgba(79,126,255,0.2); }
+    .btn-open.disabled {
+      color: var(--muted2);
+      background: var(--surface2);
+      cursor: default;
+    }
+    .btn-open.disabled:hover { background: var(--surface2); }
+
+    .app-card-add {
+      background: none;
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      min-height: 180px;
+      color: var(--muted2);
+    }
+    .app-card-add:hover { border-color: var(--accent); background: var(--accent-glow); color: var(--accent); }
+    .app-card-add svg { width: 28px; height: 28px; }
+    .app-card-add span { font-size: 13px; font-weight: 500; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 20px; }
+      main { padding: 32px 20px 60px; }
+      .apps-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<nav>
+  <a href="/index.html" class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="2" width="7" height="7" rx="2" fill="white" opacity="0.9"/>
+        <rect x="11" y="2" width="7" height="7" rx="2" fill="white" opacity="0.6"/>
+        <rect x="2" y="11" width="7" height="7" rx="2" fill="white" opacity="0.6"/>
+        <rect x="11" y="11" width="7" height="7" rx="2" fill="white" opacity="0.9"/>
+      </svg>
+    </div>
+    <div class="logo-name">App<span>Hub</span></div>
+  </a>
+  <div class="nav-right">
+    <div class="user-pill">
+      <div class="user-avatar" id="userInitial">?</div>
+      <div class="user-name" id="userName">Cargando...</div>
+    </div>
+    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-header">
+    <div class="page-label">Panel principal</div>
+    <div class="page-title">Bienvenido, <span id="welcomeName">usuario</span></div>
+    <div class="page-sub">Accede a todas las herramientas de tu organización desde aquí.</div>
+  </div>
+
+  <div class="search-wrap">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M10 10l3.5 3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>
+    <input type="text" placeholder="Buscar aplicación..." id="searchInput" oninput="filterApps()"/>
+  </div>
+
+  <div class="section-label">Aplicaciones disponibles</div>
+
+  <div class="apps-grid" id="appsGrid">
+
+    <a class="app-card" href="#" style="animation-delay:0.05s">
+      <div class="app-card-top">
+        <div class="app-icon" style="background:rgba(79,126,255,0.15)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4F7EFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div class="app-status status-live"><span class="app-status-dot"></span>Activo</div>
+      </div>
+      <div class="app-card-name">Analytics</div>
+      <div class="app-card-desc">Visualiza métricas clave, reportes en tiempo real y tendencias de tu negocio.</div>
+      <div class="app-card-footer">
+        <span class="app-tag">Datos</span>
+        <span class="btn-open">Abrir →</span>
+      </div>
+    </a>
+
+    <a class="app-card" href="#" style="animation-delay:0.1s">
+      <div class="app-card-top">
+        <div class="app-icon" style="background:rgba(124,93,255,0.15)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#7C5DFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+        </div>
+        <div class="app-status status-live"><span class="app-status-dot"></span>Activo</div>
+      </div>
+      <div class="app-card-name">CRM</div>
+      <div class="app-card-desc">Gestiona clientes, oportunidades y el ciclo de ventas de tu equipo comercial.</div>
+      <div class="app-card-footer">
+        <span class="app-tag">Ventas</span>
+        <span class="btn-open">Abrir →</span>
+      </div>
+    </a>
+
+    <a class="app-card" href="#" style="animation-delay:0.15s">
+      <div class="app-card-top">
+        <div class="app-icon" style="background:rgba(46,204,138,0.15)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2ECC8A" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <div class="app-status status-live"><span class="app-status-dot"></span>Activo</div>
+      </div>
+      <div class="app-card-name">Reportes</div>
+      <div class="app-card-desc">Genera y exporta reportes personalizados en PDF, Excel o CSV con un clic.</div>
+      <div class="app-card-footer">
+        <span class="app-tag">Documentos</span>
+        <span class="btn-open">Abrir →</span>
+      </div>
+    </a>
+
+    <a class="app-card" href="#" style="animation-delay:0.2s">
+      <div class="app-card-top">
+        <div class="app-icon" style="background:rgba(255,107,107,0.15)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="14" rx="2"/>
+            <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+            <line x1="12" y1="12" x2="12" y2="16"/>
+            <line x1="10" y1="14" x2="14" y2="14"/>
+          </svg>
+        </div>
+        <div class="app-status status-soon"><span class="app-status-dot"></span>Próximamente</div>
+      </div>
+      <div class="app-card-name">RRHH</div>
+      <div class="app-card-desc">Administra tu equipo, solicitudes de vacaciones, nóminas y evaluaciones de desempeño.</div>
+      <div class="app-card-footer">
+        <span class="app-tag">Personas</span>
+        <span class="btn-open disabled">Pronto</span>
+      </div>
+    </a>
+
+    <a class="app-card" href="#" style="animation-delay:0.25s">
+      <div class="app-card-top">
+        <div class="app-icon" style="background:rgba(255,179,71,0.15)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#FFB347" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+          </svg>
+        </div>
+        <div class="app-status status-soon"><span class="app-status-dot"></span>Próximamente</div>
+      </div>
+      <div class="app-card-name">Finanzas</div>
+      <div class="app-card-desc">Control de presupuestos, flujo de caja, facturación y conciliación contable.</div>
+      <div class="app-card-footer">
+        <span class="app-tag">Contabilidad</span>
+        <span class="btn-open disabled">Pronto</span>
+      </div>
+    </a>
+
+    <a class="app-card" href="/app/selector-proyecto.html" style="animation-delay:0.3s">
+      <div class="app-card-top">
+        <div class="app-icon" style="background:rgba(79,126,255,0.15)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#4F7EFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+        </div>
+        <div class="app-status status-live"><span class="app-status-dot"></span>Activo</div>
+      </div>
+      <div class="app-card-name">Quiebre del Contrato</div>
+      <div class="app-card-desc">Gestiona jerarquías de áreas, subáreas, sistemas y subsistemas por proyecto.</div>
+      <div class="app-card-footer">
+        <span class="app-tag">Operaciones</span>
+        <span class="btn-open">Abrir →</span>
+      </div>
+    </a>
+
+    <div class="app-card-add" onclick="alert('Función disponible próximamente')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="16"/>
+        <line x1="8" y1="12" x2="16" y2="12"/>
+      </svg>
+      <span>Agregar aplicación</span>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  const usuario = JSON.parse(localStorage.getItem('apphub_user') || 'null');
+
+  if (!usuario) {
+    window.location.href = '/index.html';
+  } else {
+    const nombre = usuario.nombre || 'Usuario';
+    const inicial = nombre.charAt(0).toUpperCase();
+    document.getElementById('userInitial').textContent = inicial;
+    document.getElementById('userName').textContent = nombre;
+    document.getElementById('welcomeName').textContent = nombre.split(' ')[0];
+  }
+
+  function logout() {
+    localStorage.removeItem('apphub_token');
+    localStorage.removeItem('apphub_user');
+    window.location.href = '/index.html';
+  }
+
+  function filterApps() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    document.querySelectorAll('.app-card').forEach(card => {
+      const name = card.querySelector('.app-card-name')?.textContent.toLowerCase() || '';
+      const desc = card.querySelector('.app-card-desc')?.textContent.toLowerCase() || '';
+      card.style.display = (name.includes(q) || desc.includes(q)) ? '' : 'none';
+    });
+  }
+</script>
+</body>
+</html>

@@ -5,6 +5,7 @@ use App\Http\Controllers\AreaController;
 use App\Http\Controllers\SubareaController;
 use App\Http\Controllers\SistemaController;
 use App\Http\Controllers\SubsistemaController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\Admin\AsignacionController;
 use App\Http\Controllers\Admin\LogController;
@@ -48,6 +49,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/import/template', [ImportController::class, 'template']);
         Route::post('/import/preview', [ImportController::class, 'preview']);
         Route::post('/import/confirm', [ImportController::class, 'confirm'])->middleware('check.role:admin');
+
+        Route::get('/dashboard', [DashboardController::class, 'show']);
     });
 
     Route::prefix('admin')->middleware('check.role:superuser')->group(function () {

@@ -109,8 +109,12 @@
     requireAuth();
 
     const params     = new URLSearchParams(window.location.search);
-    const proyectoId = params.get('proyecto_id') || sessionStorage.getItem('proyecto_id');
-    if (!proyectoId) { window.location.href = '/app/selector-proyecto.html'; }
+    const fromUrl    = params.get('proyecto_id');
+    if (fromUrl) sessionStorage.setItem('proyecto_id', fromUrl);
+    const proyectoId = fromUrl || sessionStorage.getItem('proyecto_id');
+    if (!proyectoId) {
+      window.location.href = '/app/selector-proyecto.html';
+    } else {
 
     document.getElementById('user-name').textContent = getUser()?.nombre ?? '';
 
@@ -146,7 +150,7 @@
       const allDates = withDates.flatMap(s => [
         s.fecha_inicio_plan, s.fecha_termino_plan,
         s.fecha_inicio_real, s.fecha_termino_real,
-      ]).filter(Boolean).map(d => new Date(d));
+      ]).filter(Boolean).map(d => parseDate(d));
       const minDate = new Date(Math.min(...allDates));
       const maxDate = new Date(Math.max(...allDates));
       const span    = Math.max(1, maxDate - minDate);
@@ -155,17 +159,17 @@
       for (const s of withDates) {
         const tr = document.createElement('tr');
         const retraso = s.fecha_termino_real && s.fecha_termino_plan
-          && new Date(s.fecha_termino_real) > new Date(s.fecha_termino_plan);
+          && parseDate(s.fecha_termino_real) > parseDate(s.fecha_termino_plan);
 
         let barHtml = '<div class="gantt-track">';
         if (s.fecha_inicio_plan && s.fecha_termino_plan) {
-          const l = pctOf(new Date(s.fecha_inicio_plan)  - minDate, span);
-          const w = pctOf(new Date(s.fecha_termino_plan) - new Date(s.fecha_inicio_plan), span);
+          const l = pctOf(parseDate(s.fecha_inicio_plan)  - minDate, span);
+          const w = pctOf(parseDate(s.fecha_termino_plan) - parseDate(s.fecha_inicio_plan), span);
           barHtml += `<div class="gantt-bar plan" style="left:${l}%;width:${Math.max(1,w)}%"></div>`;
         }
         if (s.fecha_inicio_real && s.fecha_termino_real) {
-          const l = pctOf(new Date(s.fecha_inicio_real)  - minDate, span);
-          const w = pctOf(new Date(s.fecha_termino_real) - new Date(s.fecha_inicio_real), span);
+          const l = pctOf(parseDate(s.fecha_inicio_real)  - minDate, span);
+          const w = pctOf(parseDate(s.fecha_termino_real) - parseDate(s.fecha_inicio_real), span);
           barHtml += `<div class="gantt-bar real ${retraso ? 'retraso' : ''}" style="left:${l}%;width:${Math.max(1,w)}%"></div>`;
         }
         barHtml += '</div>';
@@ -203,11 +207,19 @@
       }
     }
 
+    function parseDate(s) { return new Date(s.substring(0, 10)); }
+
     function escHtml(s) {
-      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    loadDashboard();
+      loadDashboard().catch(err => {
+        document.getElementById('gantt-body').innerHTML =
+          `<tr><td colspan="4" style="padding:24px;text-align:center;color:var(--red)">
+            Error al cargar el dashboard: ${escHtml(err?.message ?? String(err))}
+          </td></tr>`;
+      });
+    }
   </script>
 </body>
 </html>

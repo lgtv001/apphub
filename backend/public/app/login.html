@@ -571,7 +571,7 @@
   import { saveSession, getToken, ensureCsrf } from '/assets/js/api.js';
 
   if (getToken()) {
-    window.location.href = '/app/selector-proyecto.html';
+    window.location.href = '/dashboard.html';
   }
 
   // Show feedback from OAuth redirects
@@ -640,7 +640,7 @@
       }
 
       saveSession(data.token, data.usuario);
-      window.location.href = '/app/selector-proyecto.html';
+      window.location.href = '/dashboard.html';
 
     } catch {
       showError('No se pudo conectar al servidor. Verifica tu conexión.');

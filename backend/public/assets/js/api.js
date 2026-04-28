@@ -2,6 +2,19 @@ const API_BASE = '/api';
 const TOKEN_KEY = 'apphub_token';
 const USER_KEY  = 'apphub_user';
 
+function getCsrfToken() {
+    const match = document.cookie.split(';')
+        .map(c => c.trim())
+        .find(c => c.startsWith('XSRF-TOKEN='));
+    return match ? decodeURIComponent(match.split('=').slice(1).join('=')) : null;
+}
+
+export async function ensureCsrf() {
+    if (!getCsrfToken()) {
+        await fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' });
+    }
+}
+
 // ── Token y sesión ──────────────────────────────────────────
 
 export function getToken() {
@@ -38,18 +51,22 @@ export function requireAuth() {
 export async function apiFetch(path, options = {}) {
     const token = getToken();
 
+    const method = (options.method || 'GET').toUpperCase();
+    const csrfToken = getCsrfToken();
+
     const headers = {
         'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true',
         ...(options.body && !(options.body instanceof FormData)
             ? { 'Content-Type': 'application/json' }
             : {}),
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        ...(csrfToken && method !== 'GET' ? { 'X-XSRF-TOKEN': csrfToken } : {}),
         ...(options.headers || {}),
     };
 
     const res = await fetch(`${API_BASE}${path}`, {
         ...options,
+        credentials: 'same-origin',
         headers,
         body: options.body instanceof FormData
             ? options.body

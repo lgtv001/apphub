@@ -568,7 +568,7 @@
 </div>
 
 <script type="module">
-  import { saveSession, getToken } from '/assets/js/api.js';
+  import { saveSession, getToken, ensureCsrf } from '/assets/js/api.js';
 
   if (getToken()) {
     window.location.href = '/app/selector-proyecto.html';
@@ -616,9 +616,19 @@
     btnSubmit.textContent = 'Verificando...';
 
     try {
+      await ensureCsrf();
+      const csrfToken = document.cookie.split(';')
+        .map(c => c.trim()).find(c => c.startsWith('XSRF-TOKEN='))
+        ?.split('=').slice(1).join('=');
+
       const res = await fetch('/api/auth/login', {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          ...(csrfToken ? { 'X-XSRF-TOKEN': decodeURIComponent(csrfToken) } : {}),
+        },
         body:    JSON.stringify({ email, password }),
       });
 

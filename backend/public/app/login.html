@@ -4,176 +4,641 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AppHub — Iniciar sesión</title>
-  <link rel="stylesheet" href="/assets/css/app.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
-    .login-wrap {
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #08090C;
+      --surface: #111318;
+      --surface2: #181B22;
+      --border: rgba(255,255,255,0.07);
+      --border-strong: rgba(255,255,255,0.14);
+      --accent: #4F7EFF;
+      --accent2: #7C5DFF;
+      --accent-glow: rgba(79,126,255,0.18);
+      --text: #F0F2F8;
+      --muted: #7A7F96;
+      --muted2: #4A4F66;
+      --success: #2ECC8A;
+      --danger: #FF6B6B;
+      --font-head: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --right-bg: rgba(17,19,24,0.5);
+      --grid-color: rgba(79,126,255,0.04);
+      --orb1-color: rgba(79,126,255,0.22);
+      --orb2-color: rgba(124,93,255,0.18);
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #F5F7FF;
+        --surface: #FFFFFF;
+        --surface2: #EDF0FA;
+        --border: rgba(0,0,0,0.08);
+        --border-strong: rgba(0,0,0,0.16);
+        --accent-glow: rgba(79,126,255,0.14);
+        --text: #111320;
+        --muted: #5C6080;
+        --muted2: #9BA0B8;
+        --right-bg: rgba(255,255,255,0.7);
+        --grid-color: rgba(79,126,255,0.06);
+        --orb1-color: rgba(79,126,255,0.14);
+        --orb2-color: rgba(124,93,255,0.11);
+      }
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+    }
+
+    /* ── Grid lines background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Glow orbs ── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 {
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, var(--orb1-color) 0%, transparent 70%);
+      top: -120px; left: -80px;
+      animation: float1 12s ease-in-out infinite;
+    }
+    .orb-2 {
+      width: 340px; height: 340px;
+      background: radial-gradient(circle, var(--orb2-color) 0%, transparent 70%);
+      bottom: 60px; right: -60px;
+      animation: float2 16s ease-in-out infinite;
+    }
+    @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,20px)} }
+    @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-20px,30px)} }
+
+    /* ── Layout ── */
+    .layout {
+      position: relative;
+      z-index: 1;
       min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    /* ── Left panel ── */
+    .left {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 48px 52px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-icon svg { width: 18px; height: 18px; }
+    .logo-name {
+      font-family: var(--font-head);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .logo-name span { color: var(--accent); }
+
+    .hero {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 40px 0;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(79,126,255,0.12);
+      border: 1px solid rgba(79,126,255,0.25);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 12px;
+      color: #8AABFF;
+      font-weight: 500;
+      width: fit-content;
+      margin-bottom: 28px;
+      animation: fadeUp 0.5s ease both;
+    }
+    .badge-dot {
+      width: 7px; height: 7px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    h1 {
+      font-family: var(--font-head);
+      font-size: clamp(36px, 4.5vw, 58px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s 0.1s ease both;
+    }
+    h1 .accent { color: var(--accent); }
+    h1 .accent2 { color: var(--accent2); }
+
+    .subtitle {
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--muted);
+      max-width: 420px;
+      margin-bottom: 40px;
+      font-weight: 300;
+      animation: fadeUp 0.5s 0.2s ease both;
+    }
+
+    /* App icons row */
+    .app-icons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s 0.3s ease both;
+    }
+    .app-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 7px 14px;
+      font-size: 13px;
+      color: var(--muted);
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .app-chip:hover { border-color: var(--border-strong); color: var(--text); }
+    .app-chip-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 28px;
+      animation: fadeUp 0.5s 0.4s ease both;
+    }
+    .stat-val {
+      font-family: var(--font-head);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .footer-left {
+      font-size: 12px;
+      color: var(--muted2);
+    }
+
+    /* ── Right panel (login form) ── */
+    .right {
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 48px 52px;
+      border-left: 1px solid var(--border);
+      background: var(--right-bg);
+      backdrop-filter: blur(12px);
     }
-    .login-box {
-      width: 360px;
+
+    .form-card {
+      width: 100%;
+      max-width: 400px;
+      animation: fadeUp 0.5s 0.15s ease both;
     }
-    .login-logo {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    .login-logo h1 {
-      font-size: 24px;
+
+    .form-title {
+      font-family: var(--font-head);
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 6px;
       letter-spacing: -0.5px;
     }
-    .login-logo .subtitle {
-      margin-top: 4px;
+    .form-sub {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 24px;
     }
+
+    /* Alert */
+    .alert {
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      border: 1px solid transparent;
+    }
+    .alert-error {
+      background: rgba(255,107,107,0.1);
+      border-color: rgba(255,107,107,0.3);
+      color: #FF9090;
+    }
+    .hidden { display: none !important; }
+
+    .input-group {
+      margin-bottom: 18px;
+    }
+    .input-group label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 7px;
+      font-weight: 500;
+    }
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap svg {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted2);
+      pointer-events: none;
+    }
+    .input-wrap input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px 14px 11px 40px;
+      font-family: var(--font-body);
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-wrap input::placeholder { color: var(--muted2); }
+    .input-wrap input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .row-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .check-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .check-label input[type=checkbox] {
+      accent-color: var(--accent);
+      width: 14px; height: 14px;
+    }
+    .link {
+      font-size: 13px;
+      color: var(--accent);
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .link:hover { opacity: 0.75; }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-family: var(--font-head);
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 13px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: opacity 0.2s, transform 0.15s;
+      letter-spacing: 0.2px;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-primary:active { transform: scale(0.99); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
     .divider {
-      display: flex; align-items: center; gap: 10px;
-      margin: 20px 0;
-      color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 22px 0;
+      color: var(--muted2);
+      font-size: 12px;
     }
     .divider::before, .divider::after {
-      content: ''; flex: 1; height: 1px; background: var(--border);
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
     }
-    .btn-oauth {
-      width: 100%; margin-bottom: 10px; justify-content: center;
-      background: var(--bg-row);
+
+    .btn-ghost {
+      width: 100%;
+      background: var(--surface2);
       border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 11px;
+      font-family: var(--font-body);
+      font-size: 14px;
       color: var(--text);
-      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 10px;
+      text-decoration: none;
     }
-    .btn-oauth:hover { border-color: var(--blue); color: var(--text); opacity: 1; background: rgba(79,126,255,0.06); }
-    .oauth-icon { width: 18px; height: 18px; display: inline-block; vertical-align: middle; }
+    .btn-ghost:hover { border-color: var(--border-strong); background: var(--surface); }
+
+    /* ── Security badge ── */
+    .security-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 24px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border);
+    }
+    .lock-badge {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--muted2);
+    }
+    .lock-badge svg { color: var(--success); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      .left { display: none; }
+      .right { border-left: none; padding: 40px 24px; min-height: 100vh; }
+    }
   </style>
 </head>
 <body>
-  <div class="login-wrap">
-    <div class="login-box">
 
-      <div class="login-logo">
-        <h1>AppHub</h1>
-        <p class="subtitle">Plataforma de gestión de proyectos</p>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="layout">
+
+  <!-- LEFT: Hero -->
+  <div class="left">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="7" height="7" rx="2" fill="white" opacity="0.9"/>
+          <rect x="11" y="2" width="7" height="7" rx="2" fill="white" opacity="0.6"/>
+          <rect x="2" y="11" width="7" height="7" rx="2" fill="white" opacity="0.6"/>
+          <rect x="11" y="11" width="7" height="7" rx="2" fill="white" opacity="0.9"/>
+        </svg>
+      </div>
+      <div class="logo-name">App<span>Hub</span></div>
+    </div>
+
+    <div class="hero">
+      <div class="badge-pill">
+        <span class="badge-dot"></span>
+        Centro de Aplicaciones Empresariales
+      </div>
+      <h1>Todas tus apps,<br/><span class="accent">un</span> solo <span class="accent2">acceso.</span></h1>
+      <p class="subtitle">
+        Centraliza, gestiona y accede a todas las herramientas de tu organización desde un único panel seguro y profesional.
+      </p>
+
+      <div class="app-icons">
+        <div class="app-chip"><span class="app-chip-dot" style="background:#4F7EFF"></span>Analytics</div>
+        <div class="app-chip"><span class="app-chip-dot" style="background:#7C5DFF"></span>CRM</div>
+        <div class="app-chip"><span class="app-chip-dot" style="background:#2ECC8A"></span>Reportes</div>
+        <div class="app-chip"><span class="app-chip-dot" style="background:#FF6B6B"></span>RRHH</div>
+        <div class="app-chip"><span class="app-chip-dot" style="background:#FFB347"></span>Finanzas</div>
+        <div class="app-chip"><span class="app-chip-dot" style="background:#4FFFFF"></span>+ más</div>
       </div>
 
-      <div class="card">
-        <h2 style="margin-bottom:20px">Iniciar sesión</h2>
-
-        <div id="alert-error" class="alert alert-error hidden"></div>
-
-        <form id="login-form" novalidate>
-          <div class="form-group">
-            <label for="email">Correo electrónico</label>
-            <input type="email" id="email" name="email"
-                   placeholder="usuario@empresa.cl" autocomplete="email"/>
-          </div>
-
-          <div class="form-group">
-            <label for="password">Contraseña</label>
-            <input type="password" id="password" name="password"
-                   placeholder="••••••••" autocomplete="current-password"/>
-          </div>
-
-          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px"
-                  id="btn-submit">
-            Ingresar
-          </button>
-        </form>
-
-        <div class="divider">o solicitar acceso con</div>
-
-        <a href="/auth/github/redirect" class="btn btn-oauth" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none">
-          <svg class="oauth-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.39.6.11.82-.26.82-.58v-2.03c-3.34.72-4.04-1.61-4.04-1.61-.54-1.37-1.33-1.74-1.33-1.74-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.3.76-1.6-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.12-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.3-1.23 3.3-1.23.66 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.93.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12c0-6.63-5.37-12-12-12z"/>
-          </svg>
-          Solicitar acceso con GitHub
-        </a>
-
-        <a href="/auth/google/redirect" class="btn btn-oauth" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none">
-          <svg class="oauth-icon" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
-          Solicitar acceso con Google
-        </a>
-
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-val">24/7</div>
+          <div class="stat-label">Disponibilidad</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">TLS 1.3</div>
+          <div class="stat-label">Encriptación</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val">SSO</div>
+          <div class="stat-label">Inicio único</div>
+        </div>
       </div>
+    </div>
 
+    <div class="footer-left">© 2025 AppHub · Prototipo v0.1</div>
+  </div>
+
+  <!-- RIGHT: Login form -->
+  <div class="right">
+    <div class="form-card">
+      <div class="form-title">Iniciar sesión</div>
+      <div class="form-sub">Accede a tu panel centralizado</div>
+
+      <div id="alert-error" class="alert alert-error hidden"></div>
+
+      <form id="login-form" novalidate>
+        <div class="input-group">
+          <label for="email">Correo electrónico</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 4l6 4 6-4M2 4h12v9H2V4z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+            </svg>
+            <input type="email" id="email" name="email" placeholder="tu@empresa.com" autocomplete="email"/>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="password">Contraseña</label>
+          <div class="input-wrap">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+              <path d="M5 7V5a3 3 0 116 0v2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password"/>
+          </div>
+        </div>
+
+        <div class="row-between">
+          <label class="check-label">
+            <input type="checkbox"/> Recordarme
+          </label>
+          <a href="#" class="link">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" class="btn-primary" id="btn-submit">Ingresar al Hub →</button>
+      </form>
+
+      <div class="divider">o continúa con</div>
+
+      <a href="/auth/google/redirect" class="btn-ghost">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+          <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+          <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+        </svg>
+        Continuar con Google
+      </a>
+
+      <a href="/auth/github/redirect" class="btn-ghost">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M9 0C4.032 0 0 4.032 0 9c0 3.98 2.578 7.354 6.156 8.539.45.083.615-.196.615-.434 0-.214-.008-.78-.012-1.532-2.503.543-3.031-1.207-3.031-1.207-.409-1.04-1-1.317-1-1.317-.817-.559.062-.548.062-.548.904.064 1.38.928 1.38.928.803 1.375 2.107.978 2.621.748.08-.582.314-.978.572-1.203-1.998-.227-4.1-1-4.1-4.446 0-.982.351-1.786.928-2.415-.093-.228-.403-1.143.088-2.382 0 0 .756-.243 2.477.923A8.643 8.643 0 019 4.482c.766.004 1.537.104 2.257.304 1.72-1.166 2.475-.923 2.475-.923.492 1.24.183 2.154.09 2.382.578.629.926 1.433.926 2.415 0 3.456-2.105 4.216-4.11 4.438.323.278.611.827.611 1.667 0 1.204-.011 2.175-.011 2.471 0 .24.162.52.62.433C15.425 16.35 18 12.978 18 9c0-4.968-4.032-9-9-9z" fill="currentColor"/>
+        </svg>
+        Continuar con GitHub
+      </a>
+
+      <div class="security-row">
+        <div class="lock-badge">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <rect x="2" y="5" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M4 5V3.5a2 2 0 114 0V5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          </svg>
+          Conexión cifrada TLS 1.3
+        </div>
+        <div class="lock-badge" style="margin-left: auto;">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/>
+            <path d="M4 6l1.5 1.5L8 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          SOC 2 Compliant
+        </div>
+      </div>
     </div>
   </div>
 
-  <script type="module">
-    import { saveSession, getToken } from '/assets/js/api.js';
+</div>
 
-    if (getToken()) {
-      window.location.href = '/app/selector-proyecto.html';
+<script type="module">
+  import { saveSession, getToken } from '/assets/js/api.js';
+
+  if (getToken()) {
+    window.location.href = '/app/selector-proyecto.html';
+  }
+
+  // Show feedback from OAuth redirects
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('oauth_error')) {
+    const el = document.getElementById('alert-error');
+    el.textContent = 'Error al conectar con el proveedor OAuth. Intenta de nuevo.';
+    el.classList.remove('hidden');
+  } else if (params.get('oauth_exists')) {
+    const el = document.getElementById('alert-error');
+    el.textContent = 'Ya tienes una cuenta registrada. Inicia sesión con tu correo y contraseña.';
+    el.classList.remove('hidden');
+  }
+
+  const form      = document.getElementById('login-form');
+  const alertEl   = document.getElementById('alert-error');
+  const btnSubmit = document.getElementById('btn-submit');
+
+  function showError(msg) {
+    alertEl.textContent = msg;
+    alertEl.classList.remove('hidden');
+  }
+
+  function clearError() {
+    alertEl.classList.add('hidden');
+    alertEl.textContent = '';
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearError();
+
+    const email    = form.email.value.trim();
+    const password = form.password.value;
+
+    if (!email || !password) {
+      showError('Ingresa tu correo y contraseña.');
+      return;
     }
 
-    // Show feedback from OAuth redirects
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('oauth_error')) {
-      const el = document.getElementById('alert-error');
-      el.textContent = 'Error al conectar con el proveedor OAuth. Intenta de nuevo.';
-      el.classList.remove('hidden');
-    } else if (params.get('oauth_exists')) {
-      const el = document.getElementById('alert-error');
-      el.textContent = 'Ya tienes una cuenta registrada. Inicia sesión con tu correo y contraseña.';
-      el.classList.remove('hidden');
-    }
+    btnSubmit.disabled = true;
+    btnSubmit.textContent = 'Verificando...';
 
-    const form      = document.getElementById('login-form');
-    const alertEl   = document.getElementById('alert-error');
-    const btnSubmit = document.getElementById('btn-submit');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body:    JSON.stringify({ email, password }),
+      });
 
-    function showError(msg) {
-      alertEl.textContent = msg;
-      alertEl.classList.remove('hidden');
-    }
+      const data = await res.json();
 
-    function clearError() {
-      alertEl.classList.add('hidden');
-      alertEl.textContent = '';
-    }
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      clearError();
-
-      const email    = form.email.value.trim();
-      const password = form.password.value;
-
-      if (!email || !password) {
-        showError('Ingresa tu correo y contraseña.');
+      if (!res.ok) {
+        showError(data.message ?? 'Error al iniciar sesión.');
         return;
       }
 
-      btnSubmit.disabled = true;
-      btnSubmit.textContent = 'Ingresando...';
+      saveSession(data.token, data.usuario);
+      window.location.href = '/app/selector-proyecto.html';
 
-      try {
-        const res = await fetch('/api/auth/login', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body:    JSON.stringify({ email, password }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          showError(data.message ?? 'Error al iniciar sesión.');
-          return;
-        }
-
-        saveSession(data.token, data.usuario);
-        window.location.href = '/app/selector-proyecto.html';
-
-      } catch {
-        showError('No se pudo conectar al servidor. Verifica tu conexión.');
-      } finally {
-        btnSubmit.disabled = false;
-        btnSubmit.textContent = 'Ingresar';
-      }
-    });
-  </script>
+    } catch {
+      showError('No se pudo conectar al servidor. Verifica tu conexión.');
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.textContent = 'Ingresar al Hub →';
+    }
+  });
+</script>
 </body>
 </html>

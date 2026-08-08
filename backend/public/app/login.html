@@ -4,50 +4,45 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AppHub — Iniciar sesión</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
+    /*
+      Rediseño "Sala de control" (dirección aprobada para el ecosistema SSO, ver mockup del
+      dashboard de kpis-sso). Página COMPROMETIDA a tema oscuro a propósito: la metáfora es un
+      panel de control/terminal de operaciones, que no tiene un equivalente natural en modo
+      claro -- se elige un solo mundo visual en vez de invertir los colores sin sentido (ver
+      artifact-design: "A design that deliberately commits to one visual world may stay
+      single-theme -- make it a choice, not an omission"). Si en algún momento se quiere un modo
+      claro real, es una decisión de diseño aparte, no una inversión automática de estas
+      variables.
+    */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #08090C;
-      --surface: #111318;
-      --surface2: #181B22;
-      --border: rgba(255,255,255,0.07);
-      --border-strong: rgba(255,255,255,0.14);
-      --accent: #4F7EFF;
-      --accent2: #7C5DFF;
-      --accent-glow: rgba(79,126,255,0.18);
-      --text: #F0F2F8;
-      --muted: #7A7F96;
-      --muted2: #4A4F66;
-      --success: #2ECC8A;
-      --danger: #FF6B6B;
-      --font-head: 'Syne', sans-serif;
+      --bg: #0a0a0c;
+      --surface: #131316;
+      --surface2: #191a1e;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.16);
+      --accent: #ff9142;
+      --accent2: #3fd6d6;
+      --accent-deep: #e0611c;
+      --accent-glow: rgba(255,145,66,0.22);
+      --accent2-glow: rgba(63,214,214,0.16);
+      --text: #f2f0ea;
+      --muted: #8c8c92;
+      --muted2: #55555c;
+      --success: #4fd18a;
+      --danger: #ff6b6b;
+      --font-head: 'IBM Plex Sans Condensed', sans-serif;
       --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
       --radius: 14px;
-      --radius-sm: 8px;
-      --right-bg: rgba(17,19,24,0.5);
-      --grid-color: rgba(79,126,255,0.04);
-      --orb1-color: rgba(79,126,255,0.22);
-      --orb2-color: rgba(124,93,255,0.18);
-    }
-
-    @media (prefers-color-scheme: light) {
-      :root {
-        --bg: #F5F7FF;
-        --surface: #FFFFFF;
-        --surface2: #EDF0FA;
-        --border: rgba(0,0,0,0.08);
-        --border-strong: rgba(0,0,0,0.16);
-        --accent-glow: rgba(79,126,255,0.14);
-        --text: #111320;
-        --muted: #5C6080;
-        --muted2: #9BA0B8;
-        --right-bg: rgba(255,255,255,0.7);
-        --grid-color: rgba(79,126,255,0.06);
-        --orb1-color: rgba(79,126,255,0.14);
-        --orb2-color: rgba(124,93,255,0.11);
-      }
+      --radius-sm: 7px;
+      --right-bg: rgba(19,19,22,0.55);
+      --grid-color: rgba(255,145,66,0.045);
     }
 
     html, body {
@@ -66,7 +61,7 @@
       background-image:
         linear-gradient(var(--grid-color) 1px, transparent 1px),
         linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-      background-size: 48px 48px;
+      background-size: 46px 46px;
       pointer-events: none;
       z-index: 0;
     }
@@ -75,24 +70,31 @@
     .orb {
       position: fixed;
       border-radius: 50%;
-      filter: blur(80px);
+      filter: blur(84px);
       pointer-events: none;
       z-index: 0;
     }
     .orb-1 {
-      width: 420px; height: 420px;
-      background: radial-gradient(circle, var(--orb1-color) 0%, transparent 70%);
-      top: -120px; left: -80px;
-      animation: float1 12s ease-in-out infinite;
+      width: 440px; height: 440px;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      top: -140px; left: -100px;
+      animation: float1 13s ease-in-out infinite;
     }
     .orb-2 {
-      width: 340px; height: 340px;
-      background: radial-gradient(circle, var(--orb2-color) 0%, transparent 70%);
-      bottom: 60px; right: -60px;
-      animation: float2 16s ease-in-out infinite;
+      width: 360px; height: 360px;
+      background: radial-gradient(circle, var(--accent2-glow) 0%, transparent 70%);
+      bottom: 40px; right: -80px;
+      animation: float2 17s ease-in-out infinite;
     }
-    @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(30px,20px)} }
-    @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-20px,30px)} }
+    @keyframes float1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(26px,18px)} }
+    @keyframes float2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-18px,26px)} }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      .orb, .badge-dot { animation: none !important; }
+      * { transition: none !important; }
+      [style*="animation"] { animation: none !important; }
+    }
 
     /* ── Layout ── */
     .layout {
@@ -100,7 +102,7 @@
       z-index: 1;
       min-height: 100vh;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.05fr 1fr;
     }
 
     /* ── Left panel ── */
@@ -117,19 +119,20 @@
       gap: 10px;
     }
     .logo-icon {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 10px;
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
     }
     .logo-icon svg { width: 18px; height: 18px; }
     .logo-name {
-      font-family: var(--font-head);
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
+      font-family: var(--font-mono);
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
     }
-    .logo-name span { color: var(--accent); }
+    .logo-name span { color: var(--accent); font-weight: 700; }
 
     .hero {
       flex: 1;
@@ -137,37 +140,39 @@
       flex-direction: column;
       justify-content: center;
       padding: 40px 0;
+      max-width: 560px;
     }
 
     .badge-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background: rgba(79,126,255,0.12);
-      border: 1px solid rgba(79,126,255,0.25);
+      gap: 8px;
+      background: rgba(255,145,66,0.1);
+      border: 1px solid rgba(255,145,66,0.28);
       border-radius: 100px;
-      padding: 5px 14px;
-      font-size: 12px;
-      color: #8AABFF;
-      font-weight: 500;
+      padding: 6px 15px;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #ffb27a;
       width: fit-content;
       margin-bottom: 28px;
       animation: fadeUp 0.5s ease both;
     }
     .badge-dot {
-      width: 7px; height: 7px;
+      width: 6px; height: 6px;
       background: var(--accent);
       border-radius: 50%;
       animation: pulse 2s ease-in-out infinite;
     }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
     h1 {
       font-family: var(--font-head);
-      font-size: clamp(36px, 4.5vw, 58px);
-      font-weight: 800;
+      font-size: clamp(34px, 4.2vw, 54px);
+      font-weight: 700;
       line-height: 1.1;
-      letter-spacing: -1.5px;
+      letter-spacing: -0.01em;
       margin-bottom: 20px;
       animation: fadeUp 0.5s 0.1s ease both;
     }
@@ -175,12 +180,11 @@
     h1 .accent2 { color: var(--accent2); }
 
     .subtitle {
-      font-size: 16px;
-      line-height: 1.6;
+      font-size: 15.5px;
+      line-height: 1.65;
       color: var(--muted);
-      max-width: 420px;
-      margin-bottom: 40px;
-      font-weight: 300;
+      max-width: 440px;
+      margin-bottom: 36px;
       animation: fadeUp 0.5s 0.2s ease both;
     }
 
@@ -189,7 +193,7 @@
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
       animation: fadeUp 0.5s 0.3s ease both;
     }
     .app-chip {
@@ -206,30 +210,34 @@
     }
     .app-chip:hover { border-color: var(--border-strong); color: var(--text); }
     .app-chip-dot {
-      width: 8px; height: 8px;
+      width: 7px; height: 7px;
       border-radius: 50%;
     }
 
     .stats-row {
       display: flex;
-      gap: 28px;
+      gap: 30px;
       animation: fadeUp 0.5s 0.4s ease both;
     }
     .stat-val {
-      font-family: var(--font-head);
-      font-size: 24px;
-      font-weight: 700;
+      font-family: var(--font-mono);
+      font-size: 21px;
+      font-weight: 600;
       color: var(--text);
+      letter-spacing: -0.01em;
     }
     .stat-label {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--muted);
-      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 4px;
     }
 
     .footer-left {
-      font-size: 12px;
+      font-size: 11.5px;
       color: var(--muted2);
+      font-family: var(--font-mono);
     }
 
     /* ── Right panel (login form) ── */
@@ -240,7 +248,7 @@
       padding: 48px 52px;
       border-left: 1px solid var(--border);
       background: var(--right-bg);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(14px);
     }
 
     .form-card {
@@ -251,10 +259,10 @@
 
     .form-title {
       font-family: var(--font-head);
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
       margin-bottom: 6px;
-      letter-spacing: -0.5px;
+      letter-spacing: -0.01em;
     }
     .form-sub {
       font-size: 14px;
@@ -273,7 +281,7 @@
     .alert-error {
       background: rgba(255,107,107,0.1);
       border-color: rgba(255,107,107,0.3);
-      color: #FF9090;
+      color: #ff9d9d;
     }
     .hidden { display: none !important; }
 
@@ -282,10 +290,12 @@
     }
     .input-group label {
       display: block;
-      font-size: 13px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
       color: var(--muted);
       margin-bottom: 7px;
-      font-weight: 500;
+      font-weight: 600;
     }
     .input-wrap {
       position: relative;
@@ -336,7 +346,7 @@
     }
     .link {
       font-size: 13px;
-      color: var(--accent);
+      color: var(--accent2);
       text-decoration: none;
       transition: opacity 0.2s;
     }
@@ -344,23 +354,24 @@
 
     .btn-primary {
       width: 100%;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+      color: #14100b;
       font-family: var(--font-head);
       font-size: 15px;
-      font-weight: 600;
+      font-weight: 700;
+      letter-spacing: 0.01em;
       border: none;
       border-radius: var(--radius-sm);
       padding: 13px;
       cursor: pointer;
       position: relative;
       overflow: hidden;
-      transition: opacity 0.2s, transform 0.15s;
-      letter-spacing: 0.2px;
+      transition: transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 0 0 0 var(--accent-glow);
     }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-primary:active { transform: scale(0.99); }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 26px -6px var(--accent-glow); }
+    .btn-primary:active { transform: translateY(0) scale(0.99); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
 
     .divider {
       display: flex;
@@ -368,7 +379,9 @@
       gap: 12px;
       margin: 22px 0;
       color: var(--muted2);
-      font-size: 12px;
+      font-size: 11.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
     }
     .divider::before, .divider::after {
       content: '';
@@ -401,7 +414,7 @@
     .security-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 16px;
       margin-top: 24px;
       padding-top: 18px;
       border-top: 1px solid var(--border);
@@ -409,16 +422,12 @@
     .lock-badge {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       font-size: 11px;
+      font-family: var(--font-mono);
       color: var(--muted2);
     }
-    .lock-badge svg { color: var(--success); }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    .lock-badge svg { color: var(--success); flex-shrink: 0; }
 
     /* ── Responsive ── */
     @media (max-width: 860px) {
@@ -446,26 +455,25 @@
           <rect x="11" y="11" width="7" height="7" rx="2" fill="white" opacity="0.9"/>
         </svg>
       </div>
-      <div class="logo-name">App<span>Hub</span></div>
+      <div class="logo-name">app<span>hub</span></div>
     </div>
 
     <div class="hero">
       <div class="badge-pill">
         <span class="badge-dot"></span>
-        Centro de Aplicaciones Empresariales
+        Acceso único · Ecosistema SSO
       </div>
-      <h1>Todas tus apps,<br/><span class="accent">un</span> solo <span class="accent2">acceso.</span></h1>
+      <h1>Un solo login,<br/><span class="accent">todas</span> tus <span class="accent2">apps de SSO</span>.</h1>
       <p class="subtitle">
-        Centraliza, gestiona y accede a todas las herramientas de tu organización desde un único panel seguro y profesional.
+        apphub es la puerta de entrada única a las herramientas de Seguridad y Salud
+        Ocupacional. Iniciás sesión una vez y tu cuenta decide a qué aplicaciones tenés acceso.
       </p>
 
       <div class="app-icons">
-        <div class="app-chip"><span class="app-chip-dot" style="background:#4F7EFF"></span>Analytics</div>
-        <div class="app-chip"><span class="app-chip-dot" style="background:#7C5DFF"></span>CRM</div>
-        <div class="app-chip"><span class="app-chip-dot" style="background:#2ECC8A"></span>Reportes</div>
-        <div class="app-chip"><span class="app-chip-dot" style="background:#FF6B6B"></span>RRHH</div>
-        <div class="app-chip"><span class="app-chip-dot" style="background:#FFB347"></span>Finanzas</div>
-        <div class="app-chip"><span class="app-chip-dot" style="background:#4FFFFF"></span>+ más</div>
+        <div class="app-chip"><span class="app-chip-dot" style="background:#ff9142"></span>kpis·sso</div>
+        <div class="app-chip"><span class="app-chip-dot" style="background:#3fd6d6"></span>Informe SSO</div>
+        <div class="app-chip"><span class="app-chip-dot" style="background:#4fd18a"></span>Informe TV</div>
+        <div class="app-chip"><span class="app-chip-dot" style="background:#c98f4a"></span>Incidentes por Gerencia</div>
       </div>
 
       <div class="stats-row">
@@ -475,23 +483,23 @@
         </div>
         <div class="stat">
           <div class="stat-val">TLS 1.3</div>
-          <div class="stat-label">Encriptación</div>
+          <div class="stat-label">Cifrado</div>
         </div>
         <div class="stat">
           <div class="stat-val">SSO</div>
-          <div class="stat-label">Inicio único</div>
+          <div class="stat-label">Sesión compartida</div>
         </div>
       </div>
     </div>
 
-    <div class="footer-left">© 2025 AppHub · Prototipo v0.1</div>
+    <div class="footer-left">apphub · gateway de identidad del ecosistema SSO</div>
   </div>
 
   <!-- RIGHT: Login form -->
   <div class="right">
     <div class="form-card">
       <div class="form-title">Iniciar sesión</div>
-      <div class="form-sub">Accede a tu panel centralizado</div>
+      <div class="form-sub">Accedé a tu panel centralizado</div>
 
       <div id="alert-error" class="alert alert-error hidden"></div>
 
@@ -524,7 +532,7 @@
           <a href="#" class="link">¿Olvidaste tu contraseña?</a>
         </div>
 
-        <button type="submit" class="btn-primary" id="btn-submit">Ingresar al Hub →</button>
+        <button type="submit" class="btn-primary" id="btn-submit">Ingresar al hub →</button>
       </form>
 
       <div class="divider">o continúa con</div>
@@ -552,14 +560,14 @@
             <rect x="2" y="5" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/>
             <path d="M4 5V3.5a2 2 0 114 0V5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
           </svg>
-          Conexión cifrada TLS 1.3
+          TLS 1.3
         </div>
-        <div class="lock-badge" style="margin-left: auto;">
+        <div class="lock-badge">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/>
             <path d="M4 6l1.5 1.5L8 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          SOC 2 Compliant
+          Sesión compartida SSO
         </div>
       </div>
     </div>
@@ -646,7 +654,7 @@
       showError('No se pudo conectar al servidor. Verifica tu conexión.');
     } finally {
       btnSubmit.disabled = false;
-      btnSubmit.textContent = 'Ingresar al Hub →';
+      btnSubmit.textContent = 'Ingresar al hub →';
     }
   });
 </script>

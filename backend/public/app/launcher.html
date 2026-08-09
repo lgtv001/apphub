@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AppHub — Ecosistema SSO</title>
+  <link rel="stylesheet" href="/assets/css/app.css"/>
+  <style>
+    .app-card.disabled { opacity: .55; cursor: not-allowed; }
+    .app-card.disabled:hover { transform: none; }
+    .proximamente-badge {
+      display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 100px;
+      background: rgba(255,255,255,0.08); color: var(--text-muted); margin-left: 8px;
+    }
+    .logo-header { width: 56px; height: 56px; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <img src="/assets/img/logo-sso.png" alt="Logo SSO" class="logo-header"/>
+      <span class="navbar-brand">Ecosistema SSO — El Abra</span>
+    </div>
+    <div class="navbar-user">
+      <span id="user-name" class="text-muted"></span>
+      <button class="btn btn-ghost btn-sm" id="btn-logout">Cerrar sesión</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-header">
+      <div>
+        <h1>Aplicaciones</h1>
+        <p class="subtitle mt-8">Elegí con qué app querés trabajar</p>
+      </div>
+    </div>
+
+    <div id="apps-grid" class="cards-grid" style="max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:16px"></div>
+  </div>
+
+  <script type="module">
+    import { requireAuth, getUser, apiGet, apiPost, clearSession } from '/assets/js/api.js';
+
+    requireAuth();
+    document.getElementById('user-name').textContent = getUser()?.nombre ?? '';
+    document.getElementById('btn-logout').addEventListener('click', () => {
+      clearSession();
+      window.location.href = '/app/login.html';
+    });
+
+    const ICONOS = { 'kpis-sso': '📊', 'tarjetas-verdes': '🟩', 'vcc': '✅', 'higiene-seguridad': '🦺' };
+
+    async function cargar() {
+      const { data } = await apiGet('/launcher/aplicaciones');
+      const grid = document.getElementById('apps-grid');
+      grid.innerHTML = data.map((app) => `
+        <div class="card card-selectable app-card ${app.proximamente ? 'disabled' : ''}" data-codigo="${app.codigo}">
+          <div class="app-icon">${ICONOS[app.codigo] ?? '📦'}</div>
+          <div class="app-info">
+            <h3>${app.nombre}${app.proximamente ? '<span class="proximamente-badge">Próximamente</span>' : ''}</h3>
+          </div>
+        </div>
+      `).join('');
+
+      grid.querySelectorAll('.app-card:not(.disabled)').forEach((card) => {
+        card.addEventListener('click', async () => {
+          const { url } = await apiPost(`/launcher/aplicaciones/${card.dataset.codigo}/entrar`, {});
+          window.location.href = url;
+        });
+      });
+    }
+
+    cargar();
+  </script>
+</body>
+</html>

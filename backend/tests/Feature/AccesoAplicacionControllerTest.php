@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AplicacionExterna;
 use App\Models\Usuario;
+use App\Models\UsuarioAplicacion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -34,7 +35,9 @@ class AccesoAplicacionControllerTest extends TestCase
 
         $this->assertDatabaseHas('usuarios_aplicaciones', ['usuario_id' => $usuario->id, 'aplicacion_id' => $app->id]);
         $this->assertSame(['cargar' => 'editar', 'metricas' => 'ver'], $usuario->fresh()->seccionesDeAplicacion('kpis-sso'));
-        $this->assertDatabaseHas('usuarios_aplicaciones_log', ['accion' => 'CREATE', 'entidad_id' => $usuario->id]);
+
+        $grant = UsuarioAplicacion::where('usuario_id', $usuario->id)->where('aplicacion_id', $app->id)->first();
+        $this->assertDatabaseHas('usuarios_aplicaciones_log', ['accion' => 'CREATE', 'entidad_id' => $grant->id]);
     }
 
     public function test_revocar_acceso_borra_grant_y_secciones(): void
@@ -45,13 +48,31 @@ class AccesoAplicacionControllerTest extends TestCase
         $usuario->aplicaciones()->attach($app->id);
         $usuario->seccionesAplicaciones()->attach($seccion->id, ['aplicacion_id' => $app->id, 'nivel' => 'ver']);
 
+        $grantId = UsuarioAplicacion::where('usuario_id', $usuario->id)->where('aplicacion_id', $app->id)->first()->id;
+
         $this->withToken($this->superuserToken())
             ->deleteJson("/api/admin/accesos-aplicacion/{$usuario->id}/{$app->id}")
             ->assertStatus(204);
 
         $this->assertDatabaseMissing('usuarios_aplicaciones', ['usuario_id' => $usuario->id, 'aplicacion_id' => $app->id]);
         $this->assertSame([], $usuario->fresh()->seccionesDeAplicacion('kpis-sso'));
-        $this->assertDatabaseHas('usuarios_aplicaciones_log', ['accion' => 'DELETE', 'entidad_id' => $usuario->id]);
+        $this->assertDatabaseHas('usuarios_aplicaciones_log', ['accion' => 'DELETE', 'entidad_id' => $grantId]);
+    }
+
+    public function test_seccion_de_otra_aplicacion_es_rechazada(): void
+    {
+        $appA = AplicacionExterna::create(['codigo' => 'kpis-sso', 'nombre' => 'KPI', 'url_base' => 'https://x', 'activo' => true]);
+        $appB = AplicacionExterna::create(['codigo' => 'vcc', 'nombre' => 'VCC', 'url_base' => 'https://y', 'activo' => true]);
+        $seccionDeB = $appB->secciones()->create(['codigo' => 'metricas', 'nombre' => 'Métricas']);
+        $usuario = Usuario::factory()->create();
+
+        $this->withToken($this->superuserToken())->postJson('/api/admin/accesos-aplicacion', [
+            'usuario_id' => $usuario->id,
+            'aplicacion_id' => $appA->id,
+            'secciones' => [
+                ['seccion_id' => $seccionDeB->id, 'nivel' => 'ver'],
+            ],
+        ])->assertStatus(422);
     }
 
     public function test_usuario_normal_no_puede_otorgar_acceso(): void

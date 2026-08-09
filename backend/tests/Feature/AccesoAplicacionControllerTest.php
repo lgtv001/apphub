@@ -112,4 +112,31 @@ class AccesoAplicacionControllerTest extends TestCase
             ->assertJsonPath('data.0.secciones.0.codigo', 'cargar')
             ->assertJsonPath('data.0.secciones.0.nivel', 'editar');
     }
+
+    public function test_index_no_mezcla_secciones_entre_apps_del_mismo_usuario(): void
+    {
+        // Regresión dirigida: si el agrupamiento por clave compuesta "usuario_id:aplicacion_id"
+        // colapsara accidentalmente a solo usuario_id, este test lo detectaría -- con un único
+        // usuario+app (como en el test de arriba) el bug pasaría desapercibido.
+        $appA = AplicacionExterna::create(['codigo' => 'kpis-sso', 'nombre' => 'KPI', 'url_base' => 'https://a', 'activo' => true]);
+        $seccionA = $appA->secciones()->create(['codigo' => 'cargar', 'nombre' => 'Cargar datos']);
+        $appB = AplicacionExterna::create(['codigo' => 'vcc', 'nombre' => 'VCC', 'url_base' => 'https://b', 'activo' => true]);
+        $seccionB = $appB->secciones()->create(['codigo' => 'metricas', 'nombre' => 'Métricas']);
+
+        $usuario = Usuario::factory()->create();
+        $usuario->aplicaciones()->attach([$appA->id, $appB->id]);
+        $usuario->seccionesAplicaciones()->attach($seccionA->id, ['aplicacion_id' => $appA->id, 'nivel' => 'editar']);
+        $usuario->seccionesAplicaciones()->attach($seccionB->id, ['aplicacion_id' => $appB->id, 'nivel' => 'ver']);
+
+        $resp = $this->withToken($this->superuserToken())
+            ->getJson('/api/admin/accesos-aplicacion')
+            ->assertStatus(200);
+
+        $porApp = collect($resp->json('data'))->keyBy('aplicacion_id');
+
+        $this->assertSame(['cargar'], array_column($porApp[$appA->id]['secciones'], 'codigo'));
+        $this->assertSame('editar', $porApp[$appA->id]['secciones'][0]['nivel']);
+        $this->assertSame(['metricas'], array_column($porApp[$appB->id]['secciones'], 'codigo'));
+        $this->assertSame('ver', $porApp[$appB->id]['secciones'][0]['nivel']);
+    }
 }

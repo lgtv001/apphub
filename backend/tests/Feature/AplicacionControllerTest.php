@@ -39,6 +39,7 @@ class AplicacionControllerTest extends TestCase
 
         $resp->assertStatus(201);
         $this->assertDatabaseHas('aplicaciones_externas', ['codigo' => 'vcc']);
+        $this->assertDatabaseHas('aplicaciones_externas_log', ['accion' => 'CREATE', 'entidad_id' => $resp->json('id')]);
     }
 
     public function test_codigo_duplicado_da_422(): void
@@ -57,5 +58,7 @@ class AplicacionControllerTest extends TestCase
         $this->withToken($this->token())->putJson("/api/admin/aplicaciones/{$app->id}", ['activo' => true])
             ->assertStatus(200)
             ->assertJsonPath('activo', true);
+
+        $this->assertDatabaseHas('aplicaciones_externas_log', ['accion' => 'UPDATE', 'entidad_id' => $app->id]);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AplicacionExterna;
+use App\Services\LogService;
 use Illuminate\Http\Request;
 
 class AplicacionController extends Controller
@@ -24,6 +25,16 @@ class AplicacionController extends Controller
 
         $app = AplicacionExterna::create($data);
 
+        LogService::log(
+            tabla: 'aplicaciones_externas',
+            proyectoId: null,
+            usuarioId: $request->user()->id,
+            accion: 'CREATE',
+            entidadId: $app->id,
+            datosDespues: $app->toArray(),
+            ip: $request->ip()
+        );
+
         return response()->json($app, 201);
     }
 
@@ -37,7 +48,20 @@ class AplicacionController extends Controller
             'activo'   => 'sometimes|boolean',
         ]);
 
+        $antes = $app->toArray();
+
         $app->update($data);
+
+        LogService::log(
+            tabla: 'aplicaciones_externas',
+            proyectoId: null,
+            usuarioId: $request->user()->id,
+            accion: 'UPDATE',
+            entidadId: $app->id,
+            datosAntes: $antes,
+            datosDespues: $app->fresh()->toArray(),
+            ip: $request->ip()
+        );
 
         return response()->json($app);
     }

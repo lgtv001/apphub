@@ -7,6 +7,7 @@ use App\Http\Controllers\SistemaController;
 use App\Http\Controllers\SubsistemaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\LauncherController;
 use App\Http\Controllers\Admin\AccesoAplicacionController;
 use App\Http\Controllers\Admin\AplicacionController;
 use App\Http\Controllers\Admin\AsignacionController;
@@ -22,6 +23,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::get('/auth/me',     [AuthController::class, 'me']);
+
+    Route::get('/launcher/aplicaciones', [LauncherController::class, 'index']);
 
     Route::get('/proyectos',      [ProyectoController::class, 'index']);
     Route::get('/proyectos/{id}', [ProyectoController::class, 'show']);

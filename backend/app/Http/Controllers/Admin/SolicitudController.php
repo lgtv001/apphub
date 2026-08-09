@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\SolicitudAcceso;
 use App\Models\Usuario;
+use App\Models\UsuarioAplicacion;
+use App\Models\UsuarioAplicacionSeccion;
+use App\Services\LogService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class SolicitudController extends Controller
@@ -25,6 +29,11 @@ class SolicitudController extends Controller
             'email'      => 'required|email|unique:usuarios,email',
             'password'   => 'required|string|min:8',
             'rol_global' => 'required|in:superuser,admin,usuario',
+            'aplicaciones'              => 'array',
+            'aplicaciones.*.aplicacion_id' => 'required|exists:aplicaciones_externas,id',
+            'aplicaciones.*.secciones'      => 'array',
+            'aplicaciones.*.secciones.*.seccion_id' => 'required|exists:aplicaciones_secciones,id',
+            'aplicaciones.*.secciones.*.nivel'      => 'required|in:ver,editar',
         ]);
 
         $solicitud = SolicitudAcceso::findOrFail($id);
@@ -33,13 +42,47 @@ class SolicitudController extends Controller
             return response()->json(['message' => 'La solicitud ya fue procesada.'], 422);
         }
 
-        $usuario = Usuario::create([
-            'nombre'        => $data['nombre'],
-            'email'         => $data['email'],
-            'password_hash' => Hash::make($data['password']),
-            'rol_global'    => $data['rol_global'],
-            'activo'        => true,
-        ]);
+        [$usuario, $grants] = DB::transaction(function () use ($data) {
+            $usuario = Usuario::create([
+                'nombre'        => $data['nombre'],
+                'email'         => $data['email'],
+                'password_hash' => Hash::make($data['password']),
+                'rol_global'    => $data['rol_global'],
+                'activo'        => true,
+            ]);
+
+            $grants = [];
+
+            foreach ($data['aplicaciones'] ?? [] as $app) {
+                $grant = UsuarioAplicacion::updateOrCreate(
+                    ['usuario_id' => $usuario->id, 'aplicacion_id' => $app['aplicacion_id']],
+                    []
+                );
+
+                foreach ($app['secciones'] ?? [] as $seccion) {
+                    UsuarioAplicacionSeccion::updateOrCreate(
+                        ['usuario_id' => $usuario->id, 'seccion_id' => $seccion['seccion_id']],
+                        ['aplicacion_id' => $app['aplicacion_id'], 'nivel' => $seccion['nivel']]
+                    );
+                }
+
+                $grants[] = ['grant' => $grant, 'payload' => $app];
+            }
+
+            return [$usuario, $grants];
+        });
+
+        foreach ($grants as $entry) {
+            LogService::log(
+                tabla:        'usuarios_aplicaciones',
+                proyectoId:   null,
+                usuarioId:    $request->user()->id,
+                accion:       'CREATE',
+                entidadId:    $entry['grant']->id,
+                datosDespues: $entry['payload'],
+                ip:           $request->ip()
+            );
+        }
 
         $solicitud->update(['estado' => 'aprobado']);
 

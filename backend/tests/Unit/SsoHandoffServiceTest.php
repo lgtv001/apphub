@@ -28,4 +28,12 @@ class SsoHandoffServiceTest extends TestCase
 
         $this->assertNotSame($handoffA, $handoffB);
     }
+
+    public function test_firmar_lanza_excepcion_si_el_secreto_no_esta_configurado(): void
+    {
+        config(['services.sso_handoff.secret' => null]);
+
+        $this->expectException(\RuntimeException::class);
+        (new SsoHandoffService())->firmar(['sub' => 'a@b.com']);
+    }
 }

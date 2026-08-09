@@ -12,8 +12,13 @@ class SsoHandoffService
 {
     public function firmar(array $payload): string
     {
+        $secreto = (string) config('services.sso_handoff.secret');
+        if ($secreto === '') {
+            throw new \RuntimeException('SSO_HANDOFF_SECRET no está configurado.');
+        }
+
         $codificado = base64_encode(json_encode($payload));
-        $firma = hash_hmac('sha256', $codificado, (string) config('services.sso_handoff.secret'));
+        $firma = hash_hmac('sha256', $codificado, $secreto);
 
         return "{$codificado}.{$firma}";
     }

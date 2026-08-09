@@ -108,6 +108,7 @@
       <button class="tab"        data-tab="usuarios">Usuarios</button>
       <button class="tab"        data-tab="tipos">Tipos de Usuario</button>
       <button class="tab"        data-tab="asignaciones">Asignaciones</button>
+      <button class="tab"        data-tab="aplicaciones">Aplicaciones</button>
       <button class="tab"        data-tab="solicitudes">Solicitudes <span id="badge-solicitudes" style="display:none;background:rgba(255,107,107,0.15);color:var(--red);border-radius:100px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px"></span></button>
       <button class="tab"        data-tab="logs">Logs</button>
     </div>
@@ -160,6 +161,20 @@
         <table class="admin-table">
           <thead><tr><th>Usuario</th><th>Proyecto</th><th>Rol</th><th>Tipo</th><th style="width:60px"></th></tr></thead>
           <tbody id="tbody-asignaciones"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB: Aplicaciones -->
+    <div id="tab-aplicaciones" class="tab-panel hidden">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
+        <button class="btn btn-ghost btn-sm" id="btn-reload-aplicaciones">↺ Actualizar</button>
+        <button class="btn btn-primary btn-sm" id="btn-nuevo-acceso">+ Otorgar acceso</button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="admin-table">
+          <thead><tr><th>Usuario</th><th>Aplicación</th><th>Secciones</th><th style="width:60px"></th></tr></thead>
+          <tbody id="tbody-accesos-aplicacion"><tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -340,6 +355,38 @@
     </div>
   </div>
 
+  <!-- Modal: Acceso a Aplicación -->
+  <div class="modal-overlay" id="modal-acceso-aplicacion">
+    <div class="modal">
+      <button class="modal-close" id="close-modal-acceso-aplicacion">✕</button>
+      <h2 class="modal-title">Otorgar acceso a una aplicación</h2>
+      <form id="form-acceso-aplicacion" novalidate>
+        <div class="form-group">
+          <label>Usuario *</label>
+          <select id="acceso-usuario-id">
+            <option value="">— Seleccionar usuario —</option>
+          </select>
+          <div class="field-error" id="err-acceso-usuario-id">Campo obligatorio.</div>
+        </div>
+        <div class="form-group">
+          <label>Aplicación *</label>
+          <select id="acceso-aplicacion-id">
+            <option value="">— Seleccionar aplicación —</option>
+          </select>
+          <div class="field-error" id="err-acceso-aplicacion-id">Campo obligatorio.</div>
+        </div>
+        <div class="form-group">
+          <label>Secciones (opcional)</label>
+          <div id="acceso-secciones-lista" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+          <button type="button" class="btn btn-ghost" id="cancel-acceso-aplicacion">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="submit-acceso-aplicacion">Otorgar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modal: Aprobar Solicitud -->
   <div class="modal-overlay" id="modal-solicitud">
     <div class="modal">
@@ -408,6 +455,7 @@
       if (tab === 'usuarios')     loadUsuarios();
       if (tab === 'tipos')        loadTipos();
       if (tab === 'asignaciones') loadAsignaciones();
+      if (tab === 'aplicaciones') loadAccesosAplicacion();
       if (tab === 'solicitudes')  loadSolicitudes();
       if (tab === 'logs')         loadLogs();
     }
@@ -763,6 +811,114 @@
         loadAsignaciones();
       } catch (err) {
         handleFormError(err, { usuario_id: 'err-a-usuario', proyecto_id: 'err-a-proyecto' });
+      } finally { btn.disabled = false; }
+    });
+
+    // ── TAB: Aplicaciones ──────────────────────────────────────────
+    let aplicacionesCache = [];
+
+    async function loadAccesosAplicacion() {
+      if (!usuariosCache.length) {
+        const r = await apiGet('/admin/usuarios');
+        usuariosCache = r?.data ?? [];
+      }
+
+      const [accesosResp, aplicacionesResp] = await Promise.all([
+        apiGet('/admin/accesos-aplicacion'),
+        apiGet('/admin/aplicaciones'),
+      ]);
+      const accesos = accesosResp?.data ?? [];
+      aplicacionesCache = aplicacionesResp?.data ?? [];
+
+      populateSelectFromCache('acceso-usuario-id', usuariosCache, 'id', 'nombre');
+      const selectApp = document.getElementById('acceso-aplicacion-id');
+      selectApp.innerHTML = '<option value="">— Seleccionar aplicación —</option>'
+        + aplicacionesCache.map(a => `<option value="${a.id}">${escHtml(a.nombre)}</option>`).join('');
+      renderSeccionesDelForm(aplicacionesCache[0]?.id ?? null);
+
+      const tbody = document.getElementById('tbody-accesos-aplicacion');
+      if (!accesos.length) {
+        tbody.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)">Sin accesos otorgados.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = accesos.map(a => `
+        <tr>
+          <td>${escHtml(a.usuario?.nombre ?? `#${a.usuario_id}`)}</td>
+          <td>${escHtml(a.aplicacion?.nombre ?? `#${a.aplicacion_id}`)}</td>
+          <td style="color:var(--text-muted)">${(a.secciones ?? []).map(s => `${escHtml(s.codigo)}:${escHtml(s.nivel)}`).join(', ') || '—'}</td>
+          <td><button class="btn-tbl danger" onclick="revocarAcceso(${a.usuario_id}, ${a.aplicacion_id})">✕</button></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderSeccionesDelForm(aplicacionId) {
+      const cont = document.getElementById('acceso-secciones-lista');
+      const app  = aplicacionesCache.find(a => a.id === aplicacionId);
+      const secciones = app?.secciones ?? [];
+      if (!secciones.length) {
+        cont.innerHTML = `<span style="color:var(--text-muted);font-size:12px">Esta aplicación no tiene secciones definidas.</span>`;
+        return;
+      }
+      cont.innerHTML = secciones.map(s => `
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;color:var(--text)">
+          <input type="checkbox" class="chk-seccion" value="${s.id}"/>
+          <span style="flex:1">${escHtml(s.nombre)}</span>
+          <select class="nivel-seccion" data-seccion="${s.id}" style="width:auto">
+            <option value="ver">Ver</option>
+            <option value="editar">Ver y editar/cargar</option>
+          </select>
+        </label>
+      `).join('');
+    }
+
+    window.revocarAcceso = async (usuarioId, aplicacionId) => {
+      if (!confirm('¿Revocar este acceso?')) return;
+      try {
+        await apiDelete(`/admin/accesos-aplicacion/${usuarioId}/${aplicacionId}`);
+        loadAccesosAplicacion();
+      } catch (err) { alert(err?.message ?? 'Error al revocar.'); }
+    };
+
+    document.getElementById('btn-reload-aplicaciones').addEventListener('click', loadAccesosAplicacion);
+
+    document.getElementById('btn-nuevo-acceso').addEventListener('click', () => {
+      document.getElementById('form-acceso-aplicacion').reset();
+      clearErrors('form-acceso-aplicacion');
+      renderSeccionesDelForm(aplicacionesCache[0]?.id ?? null);
+      document.getElementById('modal-acceso-aplicacion').classList.add('open');
+    });
+    document.getElementById('close-modal-acceso-aplicacion').addEventListener('click', () => document.getElementById('modal-acceso-aplicacion').classList.remove('open'));
+    document.getElementById('cancel-acceso-aplicacion').addEventListener('click', () => document.getElementById('modal-acceso-aplicacion').classList.remove('open'));
+    document.getElementById('acceso-aplicacion-id').addEventListener('change', e => renderSeccionesDelForm(Number(e.target.value) || null));
+
+    document.getElementById('form-acceso-aplicacion').addEventListener('submit', async e => {
+      e.preventDefault();
+      clearErrors('form-acceso-aplicacion');
+      const usuarioId    = document.getElementById('acceso-usuario-id').value;
+      const aplicacionId = document.getElementById('acceso-aplicacion-id').value;
+
+      let valid = true;
+      if (!usuarioId)    { showErr('err-acceso-usuario-id');    valid = false; }
+      if (!aplicacionId) { showErr('err-acceso-aplicacion-id'); valid = false; }
+      if (!valid) return;
+
+      const secciones = [...document.querySelectorAll('.chk-seccion:checked')].map(chk => ({
+        seccion_id: Number(chk.value),
+        nivel: document.querySelector(`.nivel-seccion[data-seccion="${chk.value}"]`).value,
+      }));
+
+      const btn = document.getElementById('submit-acceso-aplicacion');
+      btn.disabled = true;
+      try {
+        await apiPost('/admin/accesos-aplicacion', {
+          usuario_id: Number(usuarioId),
+          aplicacion_id: Number(aplicacionId),
+          secciones,
+        });
+        document.getElementById('modal-acceso-aplicacion').classList.remove('open');
+        loadAccesosAplicacion();
+      } catch (err) {
+        handleFormError(err, { usuario_id: 'err-acceso-usuario-id', aplicacion_id: 'err-acceso-aplicacion-id' });
       } finally { btn.disabled = false; }
     });
 

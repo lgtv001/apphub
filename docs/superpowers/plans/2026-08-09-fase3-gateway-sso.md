@@ -62,7 +62,7 @@ de `dashboard.html` de kpis-sso queda fuera de este plan. Solo cambia el MECANIS
 
 ## PARTE A — apphub: modelo de datos (apps, secciones, permisos)
 
-### Task A1: Migraciones + modelos de `AplicacionExterna`, `AplicacionSeccion`, `UsuarioAplicacion`, `UsuarioAplicacionSeccion`
+### Task 1: Migraciones + modelos de `AplicacionExterna`, `AplicacionSeccion`, `UsuarioAplicacion`, `UsuarioAplicacionSeccion`
 
 **Files:**
 - Create: `apphub/backend/database/migrations/2026_08_09_000001_create_aplicaciones_externas_table.php`
@@ -353,7 +353,7 @@ git commit -m "feat: modelo de datos de aplicaciones externas, secciones y permi
 
 ---
 
-### Task A2: Seeder de las 4 apps + secciones de kpis-sso
+### Task 2: Seeder de las 4 apps + secciones de kpis-sso
 
 **Files:**
 - Create: `apphub/backend/database/seeders/AplicacionesSeeder.php`
@@ -361,7 +361,7 @@ git commit -m "feat: modelo de datos de aplicaciones externas, secciones y permi
 - Test: `apphub/backend/tests/Feature/AplicacionesSeederTest.php`
 
 **Interfaces:**
-- Consumes: `AplicacionExterna`, `AplicacionSeccion` (Task A1).
+- Consumes: `AplicacionExterna`, `AplicacionSeccion` (Task 1).
 - Produces: al correr el seeder, existen 4 filas en `aplicaciones_externas` (códigos `kpis-sso` activo=true; `tarjetas-verdes`, `vcc`, `higiene-seguridad` activo=false) y 3 secciones para `kpis-sso` (`metricas`, `historial`, `cargar`).
 
 - [ ] **Step 1: Write the failing test**
@@ -475,7 +475,7 @@ git commit -m "feat: seeder de las 4 apps del ecosistema + secciones de kpis-sso
 
 ---
 
-### Task A3: `Admin\AplicacionController` (CRUD de apps, solo superuser)
+### Task 3: `Admin\AplicacionController` (CRUD de apps, solo superuser)
 
 **Files:**
 - Create: `apphub/backend/app/Http/Controllers/Admin/AplicacionController.php`
@@ -483,7 +483,7 @@ git commit -m "feat: seeder de las 4 apps del ecosistema + secciones de kpis-sso
 - Test: `apphub/backend/tests/Feature/AplicacionControllerTest.php`
 
 **Interfaces:**
-- Consumes: `AplicacionExterna` (Task A1).
+- Consumes: `AplicacionExterna` (Task 1).
 - Produces: `GET /api/admin/aplicaciones` (lista con secciones), `POST /api/admin/aplicaciones`, `PUT /api/admin/aplicaciones/{id}`.
 
 - [ ] **Step 1: Write the failing test**
@@ -631,7 +631,7 @@ git commit -m "feat: CRUD de aplicaciones externas para el superusuario"
 
 ---
 
-### Task A4: `Admin\AccesoAplicacionController` (otorgar/revocar acceso + secciones a un usuario)
+### Task 4: `Admin\AccesoAplicacionController` (otorgar/revocar acceso + secciones a un usuario)
 
 **Files:**
 - Create: `apphub/backend/app/Http/Controllers/Admin/AccesoAplicacionController.php`
@@ -639,7 +639,7 @@ git commit -m "feat: CRUD de aplicaciones externas para el superusuario"
 - Test: `apphub/backend/tests/Feature/AccesoAplicacionControllerTest.php`
 
 **Interfaces:**
-- Consumes: `Usuario::aplicaciones()`, `Usuario::seccionesAplicaciones()` (Task A1).
+- Consumes: `Usuario::aplicaciones()`, `Usuario::seccionesAplicaciones()` (Task 1).
 - Produces: `GET /api/admin/accesos-aplicacion` (todas las asignaciones), `POST /api/admin/accesos-aplicacion` (body: `usuario_id`, `aplicacion_id`, `secciones: [{seccion_id, nivel}]`), `DELETE /api/admin/accesos-aplicacion/{usuario_id}/{aplicacion_id}`.
 
 - [ ] **Step 1: Write the failing test**
@@ -799,7 +799,7 @@ git commit -m "feat: otorgar/revocar acceso a aplicaciones externas con permisos
 
 ---
 
-### Task A5: `LauncherController::index()` (qué ve el usuario en el selector de apps)
+### Task 5: `LauncherController::index()` (qué ve el usuario en el selector de apps)
 
 **Files:**
 - Create: `apphub/backend/app/Http/Controllers/LauncherController.php`
@@ -807,7 +807,7 @@ git commit -m "feat: otorgar/revocar acceso a aplicaciones externas con permisos
 - Test: `apphub/backend/tests/Feature/LauncherControllerTest.php`
 
 **Interfaces:**
-- Consumes: `Usuario::aplicaciones()`, `Usuario::seccionesDeAplicacion()` (Task A1).
+- Consumes: `Usuario::aplicaciones()`, `Usuario::seccionesDeAplicacion()` (Task 1).
 - Produces: `GET /api/launcher/aplicaciones` → `{"data": [{"codigo","nombre","url_base","proximamente":bool,"secciones":{...}|null}]}`.
 
 - [ ] **Step 1: Write the failing test**
@@ -918,7 +918,7 @@ git commit -m "feat: endpoint del launcher (apps con grant + placeholders proxim
 
 ---
 
-### Task A6: Extender `SolicitudController::approve()` para otorgar apps+secciones al crear la cuenta
+### Task 6: Extender `SolicitudController::approve()` para otorgar apps+secciones al crear la cuenta
 
 **Files:**
 - Modify: `apphub/backend/app/Http/Controllers/Admin/SolicitudController.php`
@@ -1067,7 +1067,7 @@ git commit -m "feat: aprobar solicitud otorga acceso a aplicaciones+secciones en
 
 ## PARTE B — Handoff SSO firmado (apphub emite, kpis-sso valida)
 
-### Task B1: Config del secreto compartido + servicio de firma en apphub
+### Task 7: Config del secreto compartido + servicio de firma en apphub
 
 **Files:**
 - Modify: `apphub/backend/config/services.php`
@@ -1076,7 +1076,7 @@ git commit -m "feat: aprobar solicitud otorga acceso a aplicaciones+secciones en
 - Test: `apphub/backend/tests/Unit/SsoHandoffServiceTest.php`
 
 **Interfaces:**
-- Produces: `SsoHandoffService::firmar(array $payload): string` (retorna `"<base64>.<firma>"`), usado por Task B2.
+- Produces: `SsoHandoffService::firmar(array $payload): string` (retorna `"<base64>.<firma>"`), usado por Task 8.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1173,7 +1173,7 @@ git commit -m "feat: servicio de firma HMAC para el handoff de SSO entre apps"
 
 ---
 
-### Task B2: `LauncherController::entrar($codigo)` — mintear el handoff
+### Task 8: `LauncherController::entrar($codigo)` — mintear el handoff
 
 **Files:**
 - Modify: `apphub/backend/app/Http/Controllers/LauncherController.php`
@@ -1181,7 +1181,7 @@ git commit -m "feat: servicio de firma HMAC para el handoff de SSO entre apps"
 - Test: `apphub/backend/tests/Feature/LauncherControllerTest.php` (agregar casos)
 
 **Interfaces:**
-- Consumes: `SsoHandoffService::firmar()` (Task B1), `Usuario::seccionesDeAplicacion()` (Task A1).
+- Consumes: `SsoHandoffService::firmar()` (Task 7), `Usuario::seccionesDeAplicacion()` (Task 1).
 - Produces: `POST /api/launcher/aplicaciones/{codigo}/entrar` → `{"url": "https://.../sso/entrar?handoff=..."}` o 403 si no tiene grant.
 
 - [ ] **Step 1: Write the failing test**
@@ -1233,7 +1233,7 @@ Expected: FAIL — la ruta `entrar` no existe.
 
 - [ ] **Step 3: Add the method + route**
 
-Agregar a `LauncherController` (mismo archivo de Task A5):
+Agregar a `LauncherController` (mismo archivo de Task 5):
 
 ```php
     public function __construct(private \App\Services\SsoHandoffService $firmador) {}
@@ -1286,7 +1286,7 @@ git commit -m "feat: emitir handoff firmado al entrar a una aplicacion desde el 
 
 ---
 
-### Task B3: kpis-sso — tabla + modelo de nonces consumidos (anti-replay)
+### Task 9: kpis-sso — tabla + modelo de nonces consumidos (anti-replay)
 
 **Files:**
 - Create: `kpis-sso/backend/database/migrations/2026_08_09_000001_create_sso_handoffs_consumidos_table.php`
@@ -1397,7 +1397,7 @@ git commit -m "feat: tabla de nonces consumidos para evitar reusar un handoff de
 
 ---
 
-### Task B4: kpis-sso — `SsoController::entrar()` (valida el handoff y abre sesión local)
+### Task 10: kpis-sso — `SsoController::entrar()` (valida el handoff y abre sesión local)
 
 **Files:**
 - Modify: `kpis-sso/backend/config/services.php`
@@ -1407,8 +1407,8 @@ git commit -m "feat: tabla de nonces consumidos para evitar reusar un handoff de
 - Test: `kpis-sso/backend/tests/Feature/SsoControllerTest.php`
 
 **Interfaces:**
-- Consumes: `SsoHandoffConsumido` (Task B3).
-- Produces: `GET /sso/entrar?handoff=...` (ruta WEB, no API — necesita la sesión + cookie del navegador, no JSON). Éxito: 302 a `/dashboard.html` con `session('sso_usuario')`/`session('sso_secciones')` poblados. Deja disponible el mismo formato de firma que `SsoHandoffService::firmar()` de apphub (Task B1) — **el string a firmar es literalmente `base64_encode(json_encode($payload))`, mismo orden de claves no importa porque se decodifica como array asociativo**.
+- Consumes: `SsoHandoffConsumido` (Task 9).
+- Produces: `GET /sso/entrar?handoff=...` (ruta WEB, no API — necesita la sesión + cookie del navegador, no JSON). Éxito: 302 a `/dashboard.html` con `session('sso_usuario')`/`session('sso_secciones')` poblados. Deja disponible el mismo formato de firma que `SsoHandoffService::firmar()` de apphub (Task 7) — **el string a firmar es literalmente `base64_encode(json_encode($payload))`, mismo orden de claves no importa porque se decodifica como array asociativo**.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1574,7 +1574,7 @@ git commit -m "feat: validar el handoff de SSO y abrir sesion local de kpis-sso"
 
 ---
 
-### Task B5: kpis-sso — middleware `EnsureSsoSession` reemplaza `auth:sanctum` en `routes/api.php`
+### Task 11: kpis-sso — middleware `EnsureSsoSession` reemplaza `auth:sanctum` en `routes/api.php`
 
 **Files:**
 - Create: `kpis-sso/backend/app/Http/Middleware/EnsureSsoSession.php`
@@ -1583,8 +1583,8 @@ git commit -m "feat: validar el handoff de SSO y abrir sesion local de kpis-sso"
 - Test: `kpis-sso/backend/tests/Feature/EnsureSsoSessionTest.php`
 
 **Interfaces:**
-- Consumes: `session('sso_usuario')` / `session('sso_secciones')` (escritos por Task B4).
-- Produces: middleware alias `auth.sso`; helper `request()->attributes->get('sso_secciones')` disponible en los controllers de más abajo en el mismo request (para Task B6).
+- Consumes: `session('sso_usuario')` / `session('sso_secciones')` (escritos por Task 10).
+- Produces: middleware alias `auth.sso`; helper `request()->attributes->get('sso_secciones')` disponible en los controllers de más abajo en el mismo request (para Task 12).
 
 **IMPORTANTE — orden de esta tarea:** hacer esto DE ÚLTIMO dentro de la Parte B, y verificar el `RoleAccessTest`/`AuthTest`/`MetricasApiTest`/etc. existentes ANTES de tocar `routes/api.php` — varios ya usan `auth:sanctum` y `actingAs($usuario, 'sanctum')`. Esos tests van a necesitar ajustarse (ver Step 5) porque las rutas de Métricas dejan de aceptar Sanctum.
 
@@ -1644,7 +1644,7 @@ class EnsureSsoSession
             return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        // Disponible para los controllers de esta misma request (Task B6: gate de "cargar").
+        // Disponible para los controllers de esta misma request (Task 12: gate de "cargar").
         $request->attributes->set('sso_secciones', $request->session()->get('sso_secciones', []));
 
         return $next($request);
@@ -1689,7 +1689,7 @@ $this->withSession(['sso_usuario' => ['email' => $admin->email], 'sso_secciones'
     ->getJson('/api/admin/datos/tablas')...
 ```
 
-`check.role:admin`/`check.role:editor` de kpis-sso lee `$request->user()->rol` — pero con `auth.sso` YA NO hay un `$request->user()` de Sanctum poblado (no se pasó por ningún guard de usuario local). **Esto requiere revisar `CheckRole` de kpis-sso también**: dado que el rol real ahora lo decide apphub (vía `usuarios_aplicaciones`+secciones, no la tabla `usuarios` local de kpis-sso), y el spec original dice explícitamente que la tabla `usuarios` de kpis-sso "sale del flujo de auth, no se borra en esta fase" — el concepto de rol admin/editor LOCAL de kpis-sso deja de tener sentido una vez que el gateway ya filtró quién entra. Decisión tomada acá (revisar cuando el usuario vuelva): **las rutas que hoy tienen `check.role:admin` en kpis-sso pasan a validar contra `sso_secciones` en vez de contra la tabla `usuarios` local** — ej. `/api/admin/datos/tablas` requiere que `sso_secciones` contenga la sección `metricas` o `historial` con cualquier nivel (son de solo lectura, alcanza con "ver"). Esto es una Task aparte, ver Task B6.
+`check.role:admin`/`check.role:editor` de kpis-sso lee `$request->user()->rol` — pero con `auth.sso` YA NO hay un `$request->user()` de Sanctum poblado (no se pasó por ningún guard de usuario local). **Esto requiere revisar `CheckRole` de kpis-sso también**: dado que el rol real ahora lo decide apphub (vía `usuarios_aplicaciones`+secciones, no la tabla `usuarios` local de kpis-sso), y el spec original dice explícitamente que la tabla `usuarios` de kpis-sso "sale del flujo de auth, no se borra en esta fase" — el concepto de rol admin/editor LOCAL de kpis-sso deja de tener sentido una vez que el gateway ya filtró quién entra. Decisión tomada acá (revisar cuando el usuario vuelva): **las rutas que hoy tienen `check.role:admin` en kpis-sso pasan a validar contra `sso_secciones` en vez de contra la tabla `usuarios` local** — ej. `/api/admin/datos/tablas` requiere que `sso_secciones` contenga la sección `metricas` o `historial` con cualquier nivel (son de solo lectura, alcanza con "ver"). Esto es una Task aparte, ver Task 12.
 
 - [ ] **Step 6: Commit (solo el middleware + su propio test, todavía no el swap de rutas)**
 
@@ -1699,20 +1699,20 @@ git add backend/app/Http/Middleware/EnsureSsoSession.php backend/bootstrap/app.p
 git commit -m "feat: middleware auth.sso que valida la sesion abierta via handoff"
 ```
 
-**No hacer commit todavía del swap de `auth:sanctum` → `auth.sso` en `routes/api.php`** — eso se hace junto con Task B6 (que resuelve `check.role`), para no dejar el repo en un estado a medias donde las rutas ya cambiaron de guard pero los tests de rol siguen rotos.
+**No hacer commit todavía del swap de `auth:sanctum` → `auth.sso` en `routes/api.php`** — eso se hace junto con Task 12 (que resuelve `check.role`), para no dejar el repo en un estado a medias donde las rutas ya cambiaron de guard pero los tests de rol siguen rotos.
 
 ---
 
-### Task B6: kpis-sso — reemplazar `CheckRole` local por chequeo de `sso_secciones`, y completar el swap de rutas
+### Task 12: kpis-sso — reemplazar `CheckRole` local por chequeo de `sso_secciones`, y completar el swap de rutas
 
 **Files:**
 - Modify: `kpis-sso/backend/app/Http/Middleware/CheckRole.php`
 - Modify: `kpis-sso/backend/routes/api.php`
-- Modify: todos los tests listados por `grep -rl "actingAs.*sanctum" tests/Feature` (Step 5 de Task B5)
+- Modify: todos los tests listados por `grep -rl "actingAs.*sanctum" tests/Feature` (Step 5 de Task 11)
 - Test: extender `kpis-sso/backend/tests/Feature/EnsureSsoSessionTest.php`
 
 **Interfaces:**
-- Consumes: `$request->attributes->get('sso_secciones')` (Task B5).
+- Consumes: `$request->attributes->get('sso_secciones')` (Task 11).
 - Produces: `check.role:cargar` ahora significa "requiere nivel `editar` en la sección `cargar`"; sin argumento (`auth.sso` solo) significa "cualquier sesión SSO válida alcanza" (equivalente a "ver").
 
 - [ ] **Step 1: Write the failing test**
@@ -1777,13 +1777,13 @@ class CheckRole
 
 - [ ] **Step 4: Swap de rutas + ajuste de `check.role:admin` existentes**
 
-En `kpis-sso/backend/routes/api.php`: cambiar `auth:sanctum` por `auth.sso` (ver Task B5 Step 5), y cambiar el único uso existente `->middleware('check.role:admin')` (la ruta `/admin/logs` y las 2 de `/admin/datos/tablas` agregadas hoy) a `->middleware('check.role:historial')` — el nivel `editar` en la sección `historial` es, en la práctica, "usuario de confianza" ya que hoy solo el superusuario reparte accesos vía apphub. Documentar esta decisión igual que la de Task B5 (a revisar con el usuario).
+En `kpis-sso/backend/routes/api.php`: cambiar `auth:sanctum` por `auth.sso` (ver Task 11 Step 5), y cambiar el único uso existente `->middleware('check.role:admin')` (la ruta `/admin/logs` y las 2 de `/admin/datos/tablas` agregadas hoy) a `->middleware('check.role:historial')` — el nivel `editar` en la sección `historial` es, en la práctica, "usuario de confianza" ya que hoy solo el superusuario reparte accesos vía apphub. Documentar esta decisión igual que la de Task 11 (a revisar con el usuario).
 
 - [ ] **Step 5: Correr y arreglar TODOS los tests de kpis-sso**
 
 Run: `cd kpis-sso/backend && php artisan test`
 
-Esperar varias fallas — reemplazar cada `actingAs($usuario, 'sanctum')` por `withSession(['sso_usuario' => [...], 'sso_secciones' => [...]])` con las secciones que ese test necesite (ver tabla de mapeo abajo). Repetir `php artisan test` hasta que todo esté en verde. **No avanzar a Task B7 con tests rotos.**
+Esperar varias fallas — reemplazar cada `actingAs($usuario, 'sanctum')` por `withSession(['sso_usuario' => [...], 'sso_secciones' => [...]])` con las secciones que ese test necesite (ver tabla de mapeo abajo). Repetir `php artisan test` hasta que todo esté en verde. **No avanzar a Task 13 con tests rotos.**
 
 | Test antiguo (`actingAs`) | Sesión SSO equivalente |
 |---|---|
@@ -1802,7 +1802,7 @@ git commit -m "feat: check.role valida secciones de la sesion SSO en vez del rol
 
 ---
 
-### Task B7: kpis-sso — `index.html` redirige a apphub si no hay sesión SSO
+### Task 13: kpis-sso — `index.html` redirige a apphub si no hay sesión SSO
 
 **Files:**
 - Modify: `kpis-sso/backend/public/index.html`
@@ -1810,7 +1810,7 @@ git commit -m "feat: check.role valida secciones de la sesion SSO en vez del rol
 - Test: `kpis-sso/backend/tests/Feature/AuthTest.php` (ajustar `me()`)
 
 **Interfaces:**
-- Consumes: `auth.sso` (Task B5).
+- Consumes: `auth.sso` (Task 11).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1849,7 +1849,7 @@ Expected: FAIL — `me()` sigue leyendo `$request->user()` de Sanctum.
     }
 ```
 
-En `routes/api.php`, quitar la línea `Route::post('/auth/login', ...)` del enrutamiento activo (dejar el método `login()` en el archivo, inerte, tal como el spec original permite) y mover `/auth/me` fuera del grupo `auth:sanctum` (que ya no existe) — ya está bajo `auth.sso` por el Step 4 de Task B6, así que `/auth/me` solo necesita quedar DENTRO de ese mismo grupo si no lo está ya.
+En `routes/api.php`, quitar la línea `Route::post('/auth/login', ...)` del enrutamiento activo (dejar el método `login()` en el archivo, inerte, tal como el spec original permite) y mover `/auth/me` fuera del grupo `auth:sanctum` (que ya no existe) — ya está bajo `auth.sso` por el Step 4 de Task 12, así que `/auth/me` solo necesita quedar DENTRO de ese mismo grupo si no lo está ya.
 
 Modificar `public/index.html`: reemplazar el formulario de login por un chequeo simple. Si el archivo hoy es un `<form>` con JS de submit a `/api/auth/login`, reemplazar el script final por:
 
@@ -1890,7 +1890,7 @@ git commit -m "feat: retirar login propio de kpis-sso, index.html redirige a app
 
 ## PARTE C — Frontend: launcher de apphub + panel de súper usuario
 
-### Task C1: Página `launcher.html` en apphub con las 4 tarjetas + logo
+### Task 14: Página `launcher.html` en apphub con las 4 tarjetas + logo
 
 **Files:**
 - Create: `apphub/backend/public/app/launcher.html`
@@ -2005,7 +2005,7 @@ git commit -m "feat: pagina launcher con las 4 tarjetas del ecosistema SSO"
 
 ---
 
-### Task C2: `superuser.html` — nueva pestaña "Aplicaciones" (otorgar/revocar acceso + secciones)
+### Task 15: `superuser.html` — nueva pestaña "Aplicaciones" (otorgar/revocar acceso + secciones)
 
 **Files:**
 - Modify: `apphub/backend/public/app/superuser.html`
@@ -2156,13 +2156,13 @@ git commit -m "feat: pestaña Aplicaciones en el panel de superusuario (otorgar/
 
 ---
 
-### Task C3: Extender el modal de "Aprobar solicitud" para otorgar apps en el mismo paso
+### Task 16: Extender el modal de "Aprobar solicitud" para otorgar apps en el mismo paso
 
 **Files:**
 - Modify: `apphub/backend/public/app/superuser.html`
 
 **Interfaces:**
-- Consumes: `POST /api/admin/solicitudes/{id}/aprobar` con el campo `aplicaciones` (Task A6).
+- Consumes: `POST /api/admin/solicitudes/{id}/aprobar` con el campo `aplicaciones` (Task 6).
 
 - [ ] **Step 1: Agregar el bloque de selección de apps al `#form-solicitud` existente**
 
@@ -2192,7 +2192,7 @@ document.getElementById('solicitud-secciones-lista').innerHTML =
   `).join('');
 ```
 
-(Requiere que `aplicacionesCache` de Task C2 ya esté cargado antes de abrir este modal — si el usuario abre "Solicitudes" antes que "Aplicaciones", llamar `apiGet('/admin/aplicaciones')` de forma perezosa acá también si `aplicacionesCache` está vacío.)
+(Requiere que `aplicacionesCache` de Task 15 ya esté cargado antes de abrir este modal — si el usuario abre "Solicitudes" antes que "Aplicaciones", llamar `apiGet('/admin/aplicaciones')` de forma perezosa acá también si `aplicacionesCache` está vacío.)
 
 - [ ] **Step 2: Incluir `aplicaciones` en el submit del form de aprobación**
 
@@ -2214,7 +2214,7 @@ Y agregar `aplicaciones: Object.values(porApp)` al body del `apiPost` existente 
 
 - [ ] **Step 3: Verificación manual en navegador**
 
-Crear una solicitud de prueba (o usar una real si existe alguna pendiente), aprobarla marcando una sección de kpis-sso, confirmar en la tabla de "Aplicaciones" (Task C2) que el nuevo usuario aparece con ese grant.
+Crear una solicitud de prueba (o usar una real si existe alguna pendiente), aprobarla marcando una sección de kpis-sso, confirmar en la tabla de "Aplicaciones" (Task 15) que el nuevo usuario aparece con ese grant.
 
 - [ ] **Step 4: Commit**
 
@@ -2228,7 +2228,7 @@ git commit -m "feat: aprobar solicitud permite otorgar apps y secciones en el mi
 
 ## PARTE D — Deploy + verificación de humo end-to-end
 
-### Task D1: Generar y configurar `SSO_HANDOFF_SECRET` en el servidor (una sola vez)
+### Task 17: Generar y configurar `SSO_HANDOFF_SECRET` en el servidor (una sola vez)
 
 - [ ] Generar un secreto fuerte y agregarlo al `.env` real de AMBAS apps en el servidor (mismo valor en las dos, nunca commiteado):
 
@@ -2247,7 +2247,7 @@ ssh hjkl@100.67.54.60 '
 
 (El secreto nunca aparece en la salida de este comando ni en ningún log — se genera y se escribe directo en el `.env` remoto en la misma línea de shell.)
 
-### Task D2: Migrar + deployar apphub, luego kpis-sso, en ese orden
+### Task 18: Migrar + deployar apphub, luego kpis-sso, en ese orden
 
 - [ ] Correr las migraciones nuevas + el seeder en apphub ANTES de deployar el código que las usa (mismo proceso de deploy manual documentado en `bitacora-kpis-sso-toggle-historial-tablas.md`, adaptado a apphub — confirmar el path real de `docker-compose.yml` de apphub en el servidor con `ssh hjkl@100.67.54.60 'ls /home/hjkl/homelab/apps/'` antes de asumirlo).
 - [ ] Deploy de apphub (build + up -d), luego correr `php artisan migrate --force` y `php artisan db:seed --class=AplicacionesSeeder --force` DENTRO del contenedor.
@@ -2258,7 +2258,7 @@ ssh hjkl@100.67.54.60 '
   ssh hjkl@100.67.54.60 "curl -s -o /dev/null -w '%{http_code}\n' https://kpis-sso.lglabproyect.com/sso/entrar?handoff=x"        # 403 esperado (handoff inválido, no 500)
   ```
 
-### Task D3: Verificación de humo end-to-end REAL (con el usuario admin real, en un navegador)
+### Task 19: Verificación de humo end-to-end REAL (con el usuario admin real, en un navegador)
 
 Estos 5 chequeos son los del spec original (sección "Verificación de humo"), sin cambios porque el comportamiento observable para el usuario final es el mismo aunque el mecanismo interno cambió:
 
@@ -2284,10 +2284,10 @@ ssh hjkl@100.67.54.60 'docker exec -it apphub php artisan tinker --execute="
 
 ## Self-Review
 
-**Cobertura del spec + ampliación:** decisión 1 (login único) → Tasks B4/B7; decisión 2 (permisos por app, superusuario) → Tasks A1-A4; decisión 3 (SSO real) → Parte B completa (mecanismo cambiado, documentado); decisión 4 (sin acoplar DBs) → el handoff es la única comunicación entre apps, sin queries cruzadas; decisión 5 (rediseño visual fuera de alcance) → no tocado. Ampliación "solicitudes de usuarios nuevos" → Task A6+C3 (ya existía la pestaña, se extendió el approve). Ampliación "permisos por sección ver/editar" → Tasks A1, A4, B6. Launcher con 4 tarjetas + próximamente → Task A5, C1. Imagen del logo → Task C1.
+**Cobertura del spec + ampliación:** decisión 1 (login único) → Tasks B4/B7; decisión 2 (permisos por app, superusuario) → Tasks A1-A4; decisión 3 (SSO real) → Parte B completa (mecanismo cambiado, documentado); decisión 4 (sin acoplar DBs) → el handoff es la única comunicación entre apps, sin queries cruzadas; decisión 5 (rediseño visual fuera de alcance) → no tocado. Ampliación "solicitudes de usuarios nuevos" → Task 6+C3 (ya existía la pestaña, se extendió el approve). Ampliación "permisos por sección ver/editar" → Tasks A1, A4, B6. Launcher con 4 tarjetas + próximamente → Task 5, C1. Imagen del logo → Task 14.
 
 **Placeholders:** ninguno — cada Step tiene código completo, sin "TODO"/"similar a".
 
-**Consistencia de tipos:** `seccionesDeAplicacion(): array<string,string>` (Task A1) se usa igual en A4, A6, B2. El formato `secciones: [{seccion_id, nivel}]` del body HTTP es el mismo en A4 (`AccesoAplicacionController`) y A6 (`SolicitudController::approve`). `sso_secciones` en sesión de kpis-sso tiene la MISMA forma (`{codigo: nivel}`) en B2 (lo que apphub firma), B4 (lo que kpis-sso guarda), B6 (lo que `CheckRole` lee) — verificado, coincide en los tres.
+**Consistencia de tipos:** `seccionesDeAplicacion(): array<string,string>` (Task 1) se usa igual en A4, A6, B2. El formato `secciones: [{seccion_id, nivel}]` del body HTTP es el mismo en A4 (`AccesoAplicacionController`) y A6 (`SolicitudController::approve`). `sso_secciones` en sesión de kpis-sso tiene la MISMA forma (`{codigo: nivel}`) en B2 (lo que apphub firma), B4 (lo que kpis-sso guarda), B6 (lo que `CheckRole` lee) — verificado, coincide en los tres.
 
-**Riesgo más alto del plan:** Task B6 (romper y reparar todos los tests existentes de kpis-sso al cambiar el guard de auth). Ejecutar con cuidado, de a un archivo de test por vez, sin avanzar a Parte C hasta que la suite completa esté verde.
+**Riesgo más alto del plan:** Task 12 (romper y reparar todos los tests existentes de kpis-sso al cambiar el guard de auth). Ejecutar con cuidado, de a un archivo de test por vez, sin avanzar a Parte C hasta que la suite completa esté verde.

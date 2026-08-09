@@ -97,4 +97,19 @@ class AccesoAplicacionControllerTest extends TestCase
 
         $this->withToken($token)->getJson('/api/admin/accesos-aplicacion')->assertStatus(403);
     }
+
+    public function test_index_incluye_las_secciones_de_cada_acceso(): void
+    {
+        $app = AplicacionExterna::create(['codigo' => 'kpis-sso', 'nombre' => 'KPI', 'url_base' => 'https://x', 'activo' => true]);
+        $seccion = $app->secciones()->create(['codigo' => 'cargar', 'nombre' => 'Cargar datos']);
+        $usuario = Usuario::factory()->create();
+        $usuario->aplicaciones()->attach($app->id);
+        $usuario->seccionesAplicaciones()->attach($seccion->id, ['aplicacion_id' => $app->id, 'nivel' => 'editar']);
+
+        $this->withToken($this->superuserToken())
+            ->getJson('/api/admin/accesos-aplicacion')
+            ->assertStatus(200)
+            ->assertJsonPath('data.0.secciones.0.codigo', 'cargar')
+            ->assertJsonPath('data.0.secciones.0.nivel', 'editar');
+    }
 }

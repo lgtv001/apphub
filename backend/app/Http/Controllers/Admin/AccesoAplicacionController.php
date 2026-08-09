@@ -18,6 +18,17 @@ class AccesoAplicacionController extends Controller
             ->orderBy('aplicacion_id')
             ->get();
 
+        $seccionesPorGrant = UsuarioAplicacionSeccion::with('seccion:id,codigo,nombre')
+            ->get()
+            ->groupBy(fn ($s) => "{$s->usuario_id}:{$s->aplicacion_id}");
+
+        $accesos->each(function ($acceso) use ($seccionesPorGrant) {
+            $clave = "{$acceso->usuario_id}:{$acceso->aplicacion_id}";
+            $acceso->secciones = ($seccionesPorGrant[$clave] ?? collect())
+                ->map(fn ($s) => ['codigo' => $s->seccion->codigo, 'nombre' => $s->seccion->nombre, 'nivel' => $s->nivel])
+                ->values();
+        });
+
         return response()->json(['data' => $accesos]);
     }
 

@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('codigo', 30)->unique();
             $table->string('nombre');
-            $table->string('url_base');
+            $table->string('url_base')->nullable();
             $table->boolean('activo')->default(true);
             $table->timestamps();
         });

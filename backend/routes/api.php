@@ -7,6 +7,7 @@ use App\Http\Controllers\SistemaController;
 use App\Http\Controllers\SubsistemaController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\Admin\AplicacionController;
 use App\Http\Controllers\Admin\AsignacionController;
 use App\Http\Controllers\Admin\LogController;
 use App\Http\Controllers\Admin\SolicitudController;
@@ -68,6 +69,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/asignaciones',          [AsignacionController::class, 'index']);
         Route::post('/asignaciones',         [AsignacionController::class, 'store']);
         Route::delete('/asignaciones/{id}',  [AsignacionController::class, 'destroy']);
+
+        Route::get('/aplicaciones',      [AplicacionController::class, 'index']);
+        Route::post('/aplicaciones',     [AplicacionController::class, 'store']);
+        Route::put('/aplicaciones/{id}', [AplicacionController::class, 'update']);
 
         Route::get('/logs',                  [LogController::class, 'index']);
 

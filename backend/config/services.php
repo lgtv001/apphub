@@ -47,4 +47,8 @@ return [
         'redirect'      => env('APP_URL') . '/auth/google/callback',
     ],
 
+    'sso_handoff' => [
+        'secret' => env('SSO_HANDOFF_SECRET'),
+    ],
+
 ];

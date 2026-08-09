@@ -576,7 +576,7 @@
 </div>
 
 <script type="module">
-  import { saveSession, getToken, ensureCsrf } from '/assets/js/api.js';
+  import { saveSession, getToken, ensureCsrf, apiGet } from '/assets/js/api.js';
 
   if (getToken()) {
     window.location.href = '/dashboard.html';
@@ -648,7 +648,16 @@
       }
 
       saveSession(data.token, data.usuario);
-      window.location.href = '/dashboard.html';
+
+      let destino = '/dashboard.html';
+      try {
+        const { data: apps } = await apiGet('/launcher/aplicaciones');
+        if (apps.some((app) => !app.proximamente)) destino = '/app/launcher.html';
+      } catch {
+        // Si falla la consulta del launcher, no bloqueamos el login -- se queda en el dashboard
+        // interno de apphub como hoy, el usuario puede navegar a /app/launcher.html a mano.
+      }
+      window.location.href = destino;
 
     } catch {
       showError('No se pudo conectar al servidor. Verifica tu conexión.');

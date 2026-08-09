@@ -6,6 +6,20 @@
   <title>AppHub — Ecosistema SSO</title>
   <link rel="stylesheet" href="/assets/css/app.css"/>
   <style>
+    .app-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      cursor: pointer;
+    }
+    .app-icon {
+      width: 48px; height: 48px; border-radius: 10px;
+      background: rgba(79,126,255,0.1);
+      border: 1px solid rgba(79,126,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .app-info h3 { margin-bottom: 4px; }
     .app-card.disabled { opacity: .55; cursor: not-allowed; }
     .app-card.disabled:hover { transform: none; }
     .proximamente-badge {
@@ -50,14 +64,18 @@
 
     const ICONOS = { 'kpis-sso': '📊', 'tarjetas-verdes': '🟩', 'vcc': '✅', 'higiene-seguridad': '🦺' };
 
+    function escHtml(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
     async function cargar() {
       const { data } = await apiGet('/launcher/aplicaciones');
       const grid = document.getElementById('apps-grid');
       grid.innerHTML = data.map((app) => `
-        <div class="card card-selectable app-card ${app.proximamente ? 'disabled' : ''}" data-codigo="${app.codigo}">
+        <div class="card card-selectable app-card ${app.proximamente ? 'disabled' : ''}" data-codigo="${escHtml(app.codigo)}">
           <div class="app-icon">${ICONOS[app.codigo] ?? '📦'}</div>
           <div class="app-info">
-            <h3>${app.nombre}${app.proximamente ? '<span class="proximamente-badge">Próximamente</span>' : ''}</h3>
+            <h3>${escHtml(app.nombre)}${app.proximamente ? '<span class="proximamente-badge">Próximamente</span>' : ''}</h3>
           </div>
         </div>
       `).join('');

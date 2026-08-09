@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\AplicacionExterna;
+use App\Services\SsoHandoffService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class LauncherController extends Controller
 {
-    public function __construct(private \App\Services\SsoHandoffService $firmador) {}
+    public function __construct(private SsoHandoffService $firmador) {}
 
     public function index(Request $request)
     {
@@ -30,7 +32,7 @@ class LauncherController extends Controller
 
     public function entrar(Request $request, string $codigo)
     {
-        $app = \App\Models\AplicacionExterna::where('codigo', $codigo)->where('activo', true)->first();
+        $app = AplicacionExterna::where('codigo', $codigo)->where('activo', true)->first();
         if (!$app) {
             return response()->json(['message' => 'Aplicación no encontrada'], 404);
         }
@@ -45,7 +47,7 @@ class LauncherController extends Controller
             'nombre'    => $usuario->nombre,
             'app'       => $app->codigo,
             'secciones' => $usuario->seccionesDeAplicacion($app->codigo),
-            'nonce'     => \Illuminate\Support\Str::random(32),
+            'nonce'     => Str::random(32),
             'exp'       => now()->addSeconds(60)->timestamp,
         ]);
 

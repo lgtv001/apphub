@@ -51,11 +51,26 @@ class LauncherControllerTest extends TestCase
         $usuario->aplicaciones()->attach($app->id);
         $usuario->seccionesAplicaciones()->attach($seccion->id, ['aplicacion_id' => $app->id, 'nivel' => 'ver']);
 
+        $antes = now()->timestamp;
         $resp = $this->withToken($usuario->createToken('t')->plainTextToken)
             ->postJson('/api/launcher/aplicaciones/kpis-sso/entrar')
             ->assertStatus(200);
 
-        $this->assertStringStartsWith('https://kpis-sso.test/sso/entrar?handoff=', $resp->json('url'));
+        $url = $resp->json('url');
+        $this->assertStringStartsWith('https://kpis-sso.test/sso/entrar?handoff=', $url);
+
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+        [$codificado, $firma] = explode('.', $query['handoff'], 2);
+        $this->assertSame(hash_hmac('sha256', $codificado, 'secreto-de-test'), $firma, 'la firma debe corresponder al secreto configurado');
+
+        $payload = json_decode(base64_decode($codificado), true);
+        $this->assertSame($usuario->email, $payload['sub']);
+        $this->assertSame($usuario->nombre, $payload['nombre']);
+        $this->assertSame('kpis-sso', $payload['app']);
+        $this->assertSame(['metricas' => 'ver'], $payload['secciones']);
+        $this->assertNotEmpty($payload['nonce']);
+        $this->assertGreaterThanOrEqual($antes + 55, $payload['exp']);
+        $this->assertLessThanOrEqual($antes + 65, $payload['exp']);
     }
 
     public function test_entrar_da_403_sin_grant(): void

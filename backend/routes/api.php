@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/me',     [AuthController::class, 'me']);
 
     Route::get('/launcher/aplicaciones', [LauncherController::class, 'index']);
+    Route::post('/launcher/aplicaciones/{codigo}/entrar', [LauncherController::class, 'entrar']);
 
     Route::get('/proyectos',      [ProyectoController::class, 'index']);
     Route::get('/proyectos/{id}', [ProyectoController::class, 'show']);

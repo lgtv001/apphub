@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 
 class LauncherController extends Controller
 {
+    public function __construct(private \App\Services\SsoHandoffService $firmador) {}
+
     public function index(Request $request)
     {
         $usuario = $request->user();
@@ -24,5 +26,29 @@ class LauncherController extends Controller
             ->values();
 
         return response()->json(['data' => $data]);
+    }
+
+    public function entrar(Request $request, string $codigo)
+    {
+        $app = \App\Models\AplicacionExterna::where('codigo', $codigo)->where('activo', true)->first();
+        if (!$app) {
+            return response()->json(['message' => 'Aplicación no encontrada'], 404);
+        }
+
+        $usuario = $request->user();
+        if (!$usuario->aplicaciones()->where('aplicaciones_externas.id', $app->id)->exists()) {
+            return response()->json(['message' => 'Sin acceso a esta aplicación'], 403);
+        }
+
+        $handoff = $this->firmador->firmar([
+            'sub'       => $usuario->email,
+            'nombre'    => $usuario->nombre,
+            'app'       => $app->codigo,
+            'secciones' => $usuario->seccionesDeAplicacion($app->codigo),
+            'nonce'     => \Illuminate\Support\Str::random(32),
+            'exp'       => now()->addSeconds(60)->timestamp,
+        ]);
+
+        return response()->json(['url' => "{$app->url_base}/sso/entrar?handoff=" . urlencode($handoff)]);
     }
 }

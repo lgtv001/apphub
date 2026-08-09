@@ -41,4 +41,40 @@ class LauncherControllerTest extends TestCase
         $this->assertNull($dataSinGrant->firstWhere('codigo', 'kpis-sso'));
         $this->assertNotNull($dataConGrant->firstWhere('codigo', 'kpis-sso'));
     }
+
+    public function test_entrar_devuelve_url_con_handoff_si_tiene_grant(): void
+    {
+        config(['services.sso_handoff.secret' => 'secreto-de-test']);
+        $app = AplicacionExterna::create(['codigo' => 'kpis-sso', 'nombre' => 'KPI', 'url_base' => 'https://kpis-sso.test', 'activo' => true]);
+        $seccion = $app->secciones()->create(['codigo' => 'metricas', 'nombre' => 'Métricas']);
+        $usuario = Usuario::factory()->create();
+        $usuario->aplicaciones()->attach($app->id);
+        $usuario->seccionesAplicaciones()->attach($seccion->id, ['aplicacion_id' => $app->id, 'nivel' => 'ver']);
+
+        $resp = $this->withToken($usuario->createToken('t')->plainTextToken)
+            ->postJson('/api/launcher/aplicaciones/kpis-sso/entrar')
+            ->assertStatus(200);
+
+        $this->assertStringStartsWith('https://kpis-sso.test/sso/entrar?handoff=', $resp->json('url'));
+    }
+
+    public function test_entrar_da_403_sin_grant(): void
+    {
+        AplicacionExterna::create(['codigo' => 'kpis-sso', 'nombre' => 'KPI', 'url_base' => 'https://kpis-sso.test', 'activo' => true]);
+        $usuario = Usuario::factory()->create();
+
+        $this->withToken($usuario->createToken('t')->plainTextToken)
+            ->postJson('/api/launcher/aplicaciones/kpis-sso/entrar')
+            ->assertStatus(403);
+    }
+
+    public function test_entrar_da_404_si_la_app_no_existe_o_esta_inactiva(): void
+    {
+        AplicacionExterna::create(['codigo' => 'vcc', 'nombre' => 'VCC', 'url_base' => '', 'activo' => false]);
+        $usuario = Usuario::factory()->create();
+
+        $this->withToken($usuario->createToken('t')->plainTextToken)
+            ->postJson('/api/launcher/aplicaciones/vcc/entrar')
+            ->assertStatus(404);
+    }
 }

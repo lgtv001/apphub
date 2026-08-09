@@ -19,6 +19,14 @@ class AccesoAplicacionControllerTest extends TestCase
 
     public function test_otorga_acceso_con_secciones_y_niveles(): void
     {
+        // Usuario "de relleno" SIN grant antes del que se prueba: desplaza el contador de
+        // ids de `usuarios` en +1 sin tocar el de `usuarios_aplicaciones`, así el id del
+        // grant real (primera fila de usuarios_aplicaciones) queda garantizado distinto del
+        // id del usuario real (segundo usuario creado). Un relleno simétrico (usuario +
+        // grant a la vez, como se probó primero) NO sirve: desplaza ambos contadores por
+        // igual y siguen coincidiendo -- confirmado empíricamente (2 == 2) en re-review.
+        $otroUsuario = Usuario::factory()->create();
+
         $app = AplicacionExterna::create(['codigo' => 'kpis-sso', 'nombre' => 'KPI', 'url_base' => 'https://x', 'activo' => true]);
         $cargar = $app->secciones()->create(['codigo' => 'cargar', 'nombre' => 'Cargar datos']);
         $metricas = $app->secciones()->create(['codigo' => 'metricas', 'nombre' => 'Métricas']);
@@ -33,22 +41,29 @@ class AccesoAplicacionControllerTest extends TestCase
             ],
         ])->assertStatus(201);
 
+        $grant = UsuarioAplicacion::where('usuario_id', $usuario->id)->where('aplicacion_id', $app->id)->firstOrFail();
+        $this->assertNotEquals($usuario->id, $grant->id, 'el id del grant y el id del usuario deben poder distinguirse en la prueba');
+        $this->assertDatabaseHas('usuarios_aplicaciones_log', ['entidad_id' => $grant->id, 'accion' => 'CREATE']);
+        $this->assertDatabaseMissing('usuarios_aplicaciones_log', ['entidad_id' => $usuario->id, 'accion' => 'CREATE']);
+
         $this->assertDatabaseHas('usuarios_aplicaciones', ['usuario_id' => $usuario->id, 'aplicacion_id' => $app->id]);
         $this->assertSame(['cargar' => 'editar', 'metricas' => 'ver'], $usuario->fresh()->seccionesDeAplicacion('kpis-sso'));
-
-        $grant = UsuarioAplicacion::where('usuario_id', $usuario->id)->where('aplicacion_id', $app->id)->first();
-        $this->assertDatabaseHas('usuarios_aplicaciones_log', ['accion' => 'CREATE', 'entidad_id' => $grant->id]);
     }
 
     public function test_revocar_acceso_borra_grant_y_secciones(): void
     {
+        // Usuario "de relleno" SIN grant, mismo motivo que en el test de arriba: garantiza
+        // que el id del grant real y el id del usuario real difieran de forma determinista.
+        $otroUsuario = Usuario::factory()->create();
+
         $app = AplicacionExterna::create(['codigo' => 'kpis-sso', 'nombre' => 'KPI', 'url_base' => 'https://x', 'activo' => true]);
         $seccion = $app->secciones()->create(['codigo' => 'metricas', 'nombre' => 'Métricas']);
         $usuario = Usuario::factory()->create();
         $usuario->aplicaciones()->attach($app->id);
         $usuario->seccionesAplicaciones()->attach($seccion->id, ['aplicacion_id' => $app->id, 'nivel' => 'ver']);
 
-        $grantId = UsuarioAplicacion::where('usuario_id', $usuario->id)->where('aplicacion_id', $app->id)->first()->id;
+        $grantId = UsuarioAplicacion::where('usuario_id', $usuario->id)->where('aplicacion_id', $app->id)->firstOrFail()->id;
+        $this->assertNotEquals($usuario->id, $grantId, 'el id del grant y el id del usuario deben poder distinguirse en la prueba');
 
         $this->withToken($this->superuserToken())
             ->deleteJson("/api/admin/accesos-aplicacion/{$usuario->id}/{$app->id}")
@@ -56,7 +71,8 @@ class AccesoAplicacionControllerTest extends TestCase
 
         $this->assertDatabaseMissing('usuarios_aplicaciones', ['usuario_id' => $usuario->id, 'aplicacion_id' => $app->id]);
         $this->assertSame([], $usuario->fresh()->seccionesDeAplicacion('kpis-sso'));
-        $this->assertDatabaseHas('usuarios_aplicaciones_log', ['accion' => 'DELETE', 'entidad_id' => $grantId]);
+        $this->assertDatabaseHas('usuarios_aplicaciones_log', ['entidad_id' => $grantId, 'accion' => 'DELETE']);
+        $this->assertDatabaseMissing('usuarios_aplicaciones_log', ['entidad_id' => $usuario->id, 'accion' => 'DELETE']);
     }
 
     public function test_seccion_de_otra_aplicacion_es_rechazada(): void

@@ -11,6 +11,7 @@ class LogController extends Controller
     private const TABLAS = [
         'areas', 'subareas', 'sistemas', 'subsistemas',
         'proyectos', 'usuarios', 'usuarios_proyectos',
+        'aplicaciones_externas', 'usuarios_aplicaciones',
     ];
 
     public function index(Request $request)

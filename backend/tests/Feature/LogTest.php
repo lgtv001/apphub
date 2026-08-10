@@ -103,4 +103,36 @@ class LogTest extends TestCase
 
         $this->assertLessThanOrEqual(200, count($response->json('data')));
     }
+
+    public function test_log_incluye_aplicaciones_externas_y_usuarios_aplicaciones(): void
+    {
+        $token = $this->superuserToken();
+        $su    = Usuario::where('rol_global', 'superuser')->first();
+
+        LogService::log('aplicaciones_externas', null, $su->id, 'CREATE', 999);
+        LogService::log('usuarios_aplicaciones', null, $su->id, 'CREATE', 888);
+
+        $response = $this->withToken($token)->getJson('/api/admin/logs');
+        $response->assertStatus(200);
+
+        $origenes = collect($response->json('data'))->pluck('origen');
+        $this->assertTrue($origenes->contains('aplicaciones_externas'));
+        $this->assertTrue($origenes->contains('usuarios_aplicaciones'));
+    }
+
+    public function test_log_de_aplicaciones_no_aparece_al_filtrar_por_proyecto(): void
+    {
+        $token    = $this->superuserToken();
+        $su       = Usuario::where('rol_global', 'superuser')->first();
+        $proyecto = Proyecto::factory()->create();
+
+        LogService::log('areas', $proyecto->id, $su->id, 'CREATE', 1);
+        LogService::log('aplicaciones_externas', null, $su->id, 'CREATE', 999);
+
+        $response = $this->withToken($token)
+            ->getJson("/api/admin/logs?proyecto_id={$proyecto->id}");
+
+        $origenes = collect($response->json('data'))->pluck('origen');
+        $this->assertFalse($origenes->contains('aplicaciones_externas'));
+    }
 }

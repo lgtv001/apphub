@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\SolicitudAcceso;
+use App\Models\AplicacionSeccion;
 use App\Models\Usuario;
 use App\Models\UsuarioAplicacion;
 use App\Models\UsuarioAplicacionSeccion;
@@ -10,6 +11,7 @@ use App\Services\LogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class SolicitudController extends Controller
 {
@@ -24,7 +26,7 @@ class SolicitudController extends Controller
 
     public function approve(int $id, Request $request)
     {
-        $data = $request->validate([
+        $validator = Validator::make($request->all(), [
             'nombre'     => 'required|string|max:255',
             'email'      => 'required|email|unique:usuarios,email',
             'password'   => 'required|string|min:8',
@@ -35,6 +37,35 @@ class SolicitudController extends Controller
             'aplicaciones.*.secciones.*.seccion_id' => 'required|exists:aplicaciones_secciones,id',
             'aplicaciones.*.secciones.*.nivel'      => 'required|in:ver,editar',
         ]);
+
+        $validator->after(function ($validator) use ($request) {
+            foreach ($request->input('aplicaciones', []) as $i => $app) {
+                $aplicacionId = $app['aplicacion_id'] ?? null;
+                if (!$aplicacionId) {
+                    continue;
+                }
+
+                foreach ($app['secciones'] ?? [] as $j => $seccion) {
+                    $seccionId = $seccion['seccion_id'] ?? null;
+                    if (!$seccionId) {
+                        continue;
+                    }
+
+                    $perteneceALaApp = AplicacionSeccion::where('id', $seccionId)
+                        ->where('aplicacion_id', $aplicacionId)
+                        ->exists();
+
+                    if (!$perteneceALaApp) {
+                        $validator->errors()->add(
+                            "aplicaciones.{$i}.secciones.{$j}.seccion_id",
+                            'La sección seleccionada no pertenece a la aplicación indicada.'
+                        );
+                    }
+                }
+            }
+        });
+
+        $data = $validator->validate();
 
         $solicitud = SolicitudAcceso::findOrFail($id);
 

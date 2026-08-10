@@ -79,4 +79,23 @@ class SolicitudControllerTest extends TestCase
         $this->assertDatabaseHas('usuarios_aplicaciones_log', ['entidad_id' => $grant->id, 'accion' => 'CREATE']);
         $this->assertDatabaseMissing('usuarios_aplicaciones_log', ['entidad_id' => $usuarioNuevo->id, 'accion' => 'CREATE']);
     }
+
+    public function test_seccion_de_otra_aplicacion_es_rechazada_al_aprobar(): void
+    {
+        $appA = AplicacionExterna::create(['codigo' => 'kpis-sso', 'nombre' => 'KPI', 'url_base' => 'https://x', 'activo' => true]);
+        $appB = AplicacionExterna::create(['codigo' => 'vcc', 'nombre' => 'VCC', 'url_base' => 'https://y', 'activo' => true]);
+        $seccionDeB = $appB->secciones()->create(['codigo' => 'metricas', 'nombre' => 'Métricas']);
+        $solicitud = SolicitudAcceso::create([
+            'nombre' => 'Nuevo', 'email' => 'nuevo4@test.com', 'provider' => 'github', 'provider_id' => '999',
+        ]);
+
+        $this->withToken($this->superuserToken())->postJson("/api/admin/solicitudes/{$solicitud->id}/aprobar", [
+            'nombre' => 'Nuevo', 'email' => 'nuevo4@test.com', 'password' => 'secret1234', 'rol_global' => 'usuario',
+            'aplicaciones' => [
+                ['aplicacion_id' => $appA->id, 'secciones' => [['seccion_id' => $seccionDeB->id, 'nivel' => 'ver']]],
+            ],
+        ])->assertStatus(422);
+
+        $this->assertDatabaseMissing('usuarios', ['email' => 'nuevo4@test.com']);
+    }
 }

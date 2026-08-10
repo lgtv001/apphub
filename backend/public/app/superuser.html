@@ -417,6 +417,10 @@
             <option value="superuser">SUPERUSER</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Aplicaciones (opcional)</label>
+          <div id="solicitud-secciones-lista"></div>
+        </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
           <button type="button" class="btn btn-ghost" id="cancel-solicitud">Cancelar</button>
           <button type="submit" class="btn btn-primary" id="submit-solicitud">Crear cuenta</button>
@@ -966,7 +970,7 @@
       }).join('');
     }
 
-    window.openApprove = (id) => {
+    window.openApprove = async (id) => {
       const tbody = document.getElementById('tbody-solicitudes');
       const rows  = [...tbody.querySelectorAll('tr')];
       // Get data from the API cache via DOM is awkward; re-fetch inline by id from last load
@@ -979,6 +983,27 @@
       document.getElementById('s-password').value = '';
       document.getElementById('s-rol').value      = 'usuario';
       clearErrors('form-solicitud');
+
+      if (!aplicacionesCache.length) {
+        const { data } = await apiGet('/admin/aplicaciones');
+        aplicacionesCache = data ?? [];
+      }
+      document.getElementById('solicitud-secciones-lista').innerHTML =
+        aplicacionesCache.map((app) => `
+          <fieldset style="margin-top:8px">
+            <legend>${escHtml(app.nombre)}</legend>
+            ${(app.secciones ?? []).map((s) => `
+              <label style="display:flex;align-items:center;gap:8px">
+                <input type="checkbox" class="chk-solicitud-seccion" data-app="${app.id}" value="${s.id}"/> ${escHtml(s.nombre)}
+                <select class="nivel-solicitud-seccion" data-seccion="${s.id}">
+                  <option value="ver">Ver</option>
+                  <option value="editar">Ver y editar/cargar</option>
+                </select>
+              </label>
+            `).join('')}
+          </fieldset>
+        `).join('');
+
       document.getElementById('modal-solicitud').classList.add('open');
     };
 
@@ -1008,10 +1033,20 @@
       if (!password) { showErr('err-s-password');  valid = false; }
       if (!valid) return;
 
+      const porApp = {};
+      document.querySelectorAll('.chk-solicitud-seccion:checked').forEach((chk) => {
+        const appId = chk.dataset.app;
+        porApp[appId] ??= { aplicacion_id: Number(appId), secciones: [] };
+        porApp[appId].secciones.push({
+          seccion_id: Number(chk.value),
+          nivel: document.querySelector(`.nivel-solicitud-seccion[data-seccion="${chk.value}"]`).value,
+        });
+      });
+
       const btn = document.getElementById('submit-solicitud');
       btn.disabled = true;
       try {
-        await apiPost(`/admin/solicitudes/${id}/aprobar`, { nombre, email, password, rol_global: rol });
+        await apiPost(`/admin/solicitudes/${id}/aprobar`, { nombre, email, password, rol_global: rol, aplicaciones: Object.values(porApp) });
         document.getElementById('modal-solicitud').classList.remove('open');
         loadSolicitudes();
         loadUsuarios();

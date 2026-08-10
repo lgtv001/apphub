@@ -4,53 +4,204 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AppHub — Ecosistema SSO</title>
-  <link rel="stylesheet" href="/assets/css/app.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
-    .app-card {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      cursor: pointer;
+    /*
+      Consistente con el rediseño "Sala de control" de login.html (mismos tokens/fuentes) --
+      este panel es la pantalla siguiente en el mismo flujo, así que hereda la identidad en vez
+      de introducir una paleta nueva. Comprometida a tema oscuro a propósito, misma razón que
+      login.html (ver comentario ahí).
+    */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0c;
+      --surface: #131316;
+      --surface2: #191a1e;
+      --border: rgba(255,255,255,0.08);
+      --border-strong: rgba(255,255,255,0.16);
+      --accent: #ff9142;
+      --accent2: #3fd6d6;
+      --accent-deep: #e0611c;
+      --accent-glow: rgba(255,145,66,0.22);
+      --text: #f2f0ea;
+      --muted: #8c8c92;
+      --muted2: #55555c;
+      --success: #4fd18a;
+      --success-glow: rgba(79,209,138,0.16);
+      --font-head: 'IBM Plex Sans Condensed', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
+      --radius: 14px;
+      --radius-sm: 7px;
+      --grid-color: rgba(255,145,66,0.045);
     }
-    .app-icon {
-      width: 48px; height: 48px; border-radius: 10px;
-      background: rgba(79,126,255,0.1);
-      border: 1px solid rgba(79,126,255,0.25);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; flex-shrink: 0;
+
+    html, body { min-height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
     }
-    .app-info h3 { margin-bottom: 4px; }
-    .app-card.disabled { opacity: .55; cursor: not-allowed; }
-    .app-card.disabled:hover { transform: none; }
-    .proximamente-badge {
-      display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 100px;
-      background: rgba(255,255,255,0.08); color: var(--text-muted); margin-left: 8px;
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+      background-size: 46px 46px;
+      pointer-events: none;
+      z-index: 0;
     }
-    .logo-header { width: 56px; height: 56px; border-radius: 12px; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+
+    a { color: inherit; }
+
+    /* ── Nav ──────────────────────────────────────────────── */
+    .nav {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand img { width: 34px; height: 34px; border-radius: 8px; }
+    .brand-text { font-family: var(--font-head); font-weight: 700; font-size: 16px; }
+    .brand-sub {
+      font-family: var(--font-mono); font-size: 10.5px; color: var(--muted);
+      letter-spacing: 0.07em; text-transform: uppercase; margin-top: 2px;
+    }
+    .nav-right { display: flex; align-items: center; gap: 22px; }
+    .nav-link {
+      font-size: 13px; color: var(--muted); text-decoration: none;
+      border-bottom: 1px solid transparent; transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-link:hover { color: var(--accent2); border-color: var(--accent2); }
+    .session { text-align: right; }
+    .session .name { font-size: 13px; font-weight: 500; }
+    .session .role {
+      display: flex; align-items: center; gap: 5px; justify-content: flex-end;
+      font-family: var(--font-mono); font-size: 10px; color: var(--success);
+      letter-spacing: 0.05em; text-transform: uppercase; margin-top: 2px;
+    }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px var(--success-glow); }
+    .btn-ghost-sm {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.04em;
+      color: var(--muted); background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 8px 13px; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-ghost-sm:hover { color: var(--text); border-color: var(--border-strong); }
+
+    /* ── Main ─────────────────────────────────────────────── */
+    .main { position: relative; z-index: 1; padding: 52px 40px 72px; max-width: 1040px; margin: 0 auto; }
+
+    .badge-pill {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,145,66,0.1); border: 1px solid rgba(255,145,66,0.28);
+      border-radius: 100px; padding: 6px 14px;
+      font-family: var(--font-mono); font-size: 11px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase; color: #ffb27a;
+      margin-bottom: 22px; animation: fadeUp 0.5s ease both;
+    }
+    .badge-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; }
+
+    h1 {
+      font-family: var(--font-head); font-weight: 700; font-size: 34px;
+      letter-spacing: -0.01em; text-wrap: balance;
+      animation: fadeUp 0.5s 0.06s ease both;
+    }
+    .sub {
+      font-size: 14.5px; line-height: 1.6; color: var(--muted); margin-top: 10px; max-width: 60ch;
+      animation: fadeUp 0.5s 0.12s ease both;
+    }
+
+    .grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 36px;
+    }
+    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+
+    .card {
+      position: relative;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 22px 22px 20px; cursor: pointer; text-align: left;
+      font-family: inherit; color: inherit; width: 100%;
+      transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s, background 0.2s;
+      animation: fadeUp 0.5s 0.18s ease both;
+    }
+    .card:not(.disabled):hover,
+    .card:not(.disabled):focus-visible {
+      border-color: var(--accent); background: var(--surface2);
+      transform: translateY(-2px); box-shadow: 0 10px 30px -12px var(--accent-glow);
+    }
+    .card:focus-visible { outline: none; }
+    .card.disabled { cursor: default; opacity: 0.58; }
+
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .icon-bezel {
+      width: 42px; height: 42px; border-radius: 9px;
+      background: var(--surface2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0;
+    }
+    .card.disabled .icon-bezel { color: var(--muted2); }
+    .icon-bezel svg { width: 21px; height: 21px; }
+
+    .readout {
+      font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: 0.06em;
+      padding: 4px 9px; border-radius: 100px; text-transform: uppercase; white-space: nowrap;
+    }
+    .readout.ok { color: var(--success); background: var(--success-glow); }
+    .readout.warn { color: var(--muted); background: var(--surface2); border: 1px solid var(--border); }
+
+    .card h3 { font-family: var(--font-head); font-weight: 600; font-size: 17px; margin-top: 16px; }
+    .card p { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; max-width: 42ch; }
+    .card-code {
+      font-family: var(--font-mono); font-size: 10.5px; color: var(--muted2);
+      margin-top: 14px; letter-spacing: 0.03em; font-variant-numeric: tabular-nums;
+    }
+
+    .grid[data-placeholder] { min-height: 140px; display: flex; align-items: center; justify-content: center; }
+    .grid[data-placeholder] .grid-status {
+      grid-column: 1 / -1; font-family: var(--font-mono); font-size: 12px; color: var(--muted2);
+      letter-spacing: 0.04em;
+    }
   </style>
 </head>
 <body>
-  <nav class="navbar">
-    <div style="display:flex;align-items:center;gap:12px">
-      <img src="/assets/img/logo-sso.png" alt="Logo SSO" class="logo-header"/>
-      <span class="navbar-brand">Ecosistema SSO — El Abra</span>
+
+  <nav class="nav">
+    <div class="brand">
+      <img src="/assets/img/logo-sso.png" alt="Logo Ecosistema SSO"/>
+      <div>
+        <div class="brand-text">AppHub</div>
+        <div class="brand-sub">Ecosistema SSO — El Abra</div>
+      </div>
     </div>
-    <div class="navbar-user">
-      <span id="user-name" class="text-muted"></span>
-      <a href="/app/selector-proyecto.html" class="btn btn-ghost btn-sm">AppHub interno</a>
-      <button class="btn btn-ghost btn-sm" id="btn-logout">Cerrar sesión</button>
+    <div class="nav-right">
+      <a href="/app/selector-proyecto.html" class="nav-link">AppHub interno</a>
+      <div class="session">
+        <div class="name" id="user-name"></div>
+        <div class="role"><span class="status-dot"></span>Sesión activa</div>
+      </div>
+      <button class="btn-ghost-sm" id="btn-logout" type="button">Cerrar sesión</button>
     </div>
   </nav>
 
-  <div class="container">
-    <div class="page-header">
-      <div>
-        <h1>Aplicaciones</h1>
-        <p class="subtitle mt-8">Elegí con qué app querés trabajar</p>
-      </div>
-    </div>
+  <div class="main">
+    <span class="badge-pill"><span class="badge-dot"></span>Panel · Selección de sistema</span>
+    <h1>Aplicaciones</h1>
+    <p class="sub">Elegí con qué app querés trabajar. El acceso a cada sistema depende de los permisos que te otorgó el superusuario.</p>
 
-    <div id="apps-grid" class="cards-grid" style="max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:16px"></div>
+    <div class="grid" id="apps-grid" data-placeholder>
+      <span class="grid-status">Cargando aplicaciones…</span>
+    </div>
   </div>
 
   <script type="module">
@@ -63,7 +214,24 @@
       window.location.href = '/app/login.html';
     });
 
-    const ICONOS = { 'kpis-sso': '📊', 'tarjetas-verdes': '🟩', 'vcc': '✅', 'higiene-seguridad': '🦺' };
+    const ICONOS = {
+      'kpis-sso': '<svg viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20V14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+      'tarjetas-verdes': '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" stroke-width="2"/><path d="M8 12l2.5 2.5L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      'vcc': '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+      'higiene-seguridad': '<svg viewBox="0 0 24 24" fill="none"><path d="M4 16a8 8 0 0116 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M2 16h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 8v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    };
+    const ICONO_DEFAULT = '<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="2"/></svg>';
+
+    // La API todavía no expone descripción por app (solo codigo/nombre/proximamente) --
+    // se mantiene acá, del lado del cliente, para no forzar una migración de schema por un
+    // cambio que era puramente visual. Si se agrega `descripcion` en el backend más adelante,
+    // usar esa en vez de este mapa.
+    const DESCRIPCIONES = {
+      'kpis-sso': 'Panel de indicadores de seguridad ocupacional: TRIR, incidentes y exposición.',
+      'tarjetas-verdes': 'Seguimiento de tarjetas verdes de seguridad en terreno.',
+      'vcc': 'Seguimiento de cumplimiento VCC.',
+      'higiene-seguridad': 'Exámenes ocupacionales y control de higiene.',
+    };
 
     function escHtml(s) {
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -72,16 +240,27 @@
     async function cargar() {
       const { data } = await apiGet('/launcher/aplicaciones');
       const grid = document.getElementById('apps-grid');
-      grid.innerHTML = data.map((app) => `
-        <div class="card card-selectable app-card ${app.proximamente ? 'disabled' : ''}" data-codigo="${escHtml(app.codigo)}">
-          <div class="app-icon">${ICONOS[app.codigo] ?? '📦'}</div>
-          <div class="app-info">
-            <h3>${escHtml(app.nombre)}${app.proximamente ? '<span class="proximamente-badge">Próximamente</span>' : ''}</h3>
+
+      if (!data.length) {
+        grid.innerHTML = '<span class="grid-status">No tenés aplicaciones habilitadas todavía.</span>';
+        return;
+      }
+
+      grid.removeAttribute('data-placeholder');
+
+      grid.innerHTML = data.map((app, i) => `
+        <button type="button" class="card ${app.proximamente ? 'disabled' : ''}" data-codigo="${escHtml(app.codigo)}" ${app.proximamente ? 'disabled' : ''}>
+          <div class="card-top">
+            <div class="icon-bezel">${ICONOS[app.codigo] ?? ICONO_DEFAULT}</div>
+            <span class="readout ${app.proximamente ? 'warn' : 'ok'}">${app.proximamente ? 'Próximamente' : 'Disponible'}</span>
           </div>
-        </div>
+          <h3>${escHtml(app.nombre)}</h3>
+          ${DESCRIPCIONES[app.codigo] ? `<p>${escHtml(DESCRIPCIONES[app.codigo])}</p>` : ''}
+          <div class="card-code">SYS/${String(i + 1).padStart(2, '0')} · ${escHtml(app.codigo)}</div>
+        </button>
       `).join('');
 
-      grid.querySelectorAll('.app-card:not(.disabled)').forEach((card) => {
+      grid.querySelectorAll('.card:not(.disabled)').forEach((card) => {
         card.addEventListener('click', async () => {
           const { url } = await apiPost(`/launcher/aplicaciones/${card.dataset.codigo}/entrar`, {});
           window.location.href = url;

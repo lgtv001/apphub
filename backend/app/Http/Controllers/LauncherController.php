@@ -38,6 +38,9 @@ class LauncherController extends Controller
         }
 
         $usuario = $request->user();
+        if (!$usuario->activo) {
+            abort(403, 'Usuario inactivo');
+        }
         if (!$usuario->aplicaciones()->where('aplicaciones_externas.id', $app->id)->exists()) {
             return response()->json(['message' => 'Sin acceso a esta aplicación'], 403);
         }

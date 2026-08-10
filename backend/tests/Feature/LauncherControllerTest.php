@@ -92,4 +92,16 @@ class LauncherControllerTest extends TestCase
             ->postJson('/api/launcher/aplicaciones/vcc/entrar')
             ->assertStatus(404);
     }
+
+    public function test_entrar_da_403_si_el_usuario_esta_inactivo_aunque_tenga_grant(): void
+    {
+        config(['services.sso_handoff.secret' => 'secreto-de-test']);
+        $app = AplicacionExterna::create(['codigo' => 'kpis-sso', 'nombre' => 'KPI', 'url_base' => 'https://x', 'activo' => true]);
+        $usuario = Usuario::factory()->inactivo()->create();
+        $usuario->aplicaciones()->attach($app->id);
+
+        $this->withToken($usuario->createToken('t')->plainTextToken)
+            ->postJson('/api/launcher/aplicaciones/kpis-sso/entrar')
+            ->assertStatus(403);
+    }
 }

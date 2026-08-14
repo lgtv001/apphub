@@ -7,6 +7,12 @@
   --bg-row:    #111318;
   --border:    rgba(255,255,255,0.08);
   --border-lo: rgba(255,255,255,0.04);
+  /* Agregados 2026-08-14 al sumar modo claro: dashboard.html/quiebre.html/superuser.html
+     tenían rgba(255,255,255,N) sueltos para tracks de barras de progreso y hover de filas --
+     invisibles (blanco sobre blanco) en modo claro sin esto. */
+  --hover-row:    rgba(255,255,255,0.02);
+  --track:        rgba(255,255,255,0.06);
+  --track-strong: rgba(255,255,255,0.18);
   --text:      #F0F2F8;
   --text-muted:#7A7F96;
   --text-dim:  #4A4F66;
@@ -22,13 +28,22 @@
   --text-secondary: var(--text-muted);
 }
 
+/* :not([data-theme="dark"]) (agregado 2026-08-14): sin esto, forzar oscuro manualmente con el
+   sistema operativo en claro no funcionaba -- este media query pisaba igual el :root de arriba
+   porque no tenía forma de saber que había un override activo. Ver también
+   :root[data-theme="light"]/[data-theme="dark"] más abajo (cubren los otros 2 casos: forzar
+   claro con el SO en oscuro, y la reafirmación explícita de oscuro con más especificidad que
+   el :root de la base). Mismo patrón ya usado en kpis-sso/public/dashboard.html. */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
     --bg:        #F5F7FF;
     --bg-card:   #FFFFFF;
     --bg-row:    #EDF0FA;
     --border:    rgba(0,0,0,0.08);
     --border-lo: rgba(0,0,0,0.04);
+    --hover-row:    rgba(0,0,0,0.02);
+    --track:        rgba(0,0,0,0.06);
+    --track-strong: rgba(0,0,0,0.14);
     --text:      #111320;
     --text-muted:#4A4F6A;
     --text-dim:  #7A7F96;
@@ -38,6 +53,42 @@
     --green:     #15925F;
     --orange:    #C47A15;
   }
+}
+:root[data-theme="light"] {
+  --bg:        #F5F7FF;
+  --bg-card:   #FFFFFF;
+  --bg-row:    #EDF0FA;
+  --border:    rgba(0,0,0,0.08);
+  --border-lo: rgba(0,0,0,0.04);
+  --hover-row:    rgba(0,0,0,0.02);
+  --track:        rgba(0,0,0,0.06);
+  --track-strong: rgba(0,0,0,0.14);
+  --text:      #111320;
+  --text-muted:#4A4F6A;
+  --text-dim:  #7A7F96;
+  --blue:      #4F7EFF;
+  --blue-soft: #2E5EE8;
+  --red:       #D93025;
+  --green:     #15925F;
+  --orange:    #C47A15;
+}
+:root[data-theme="dark"] {
+  --bg:        #08090C;
+  --bg-card:   #0D0E12;
+  --bg-row:    #111318;
+  --border:    rgba(255,255,255,0.08);
+  --border-lo: rgba(255,255,255,0.04);
+  --hover-row:    rgba(255,255,255,0.02);
+  --track:        rgba(255,255,255,0.06);
+  --track-strong: rgba(255,255,255,0.18);
+  --text:      #F0F2F8;
+  --text-muted:#7A7F96;
+  --text-dim:  #4A4F66;
+  --blue:      #4F7EFF;
+  --blue-soft: #8AABFF;
+  --red:       #FF6B6B;
+  --green:     #2ECC8A;
+  --orange:    #FFB347;
 }
 
 body {
@@ -236,6 +287,19 @@ input.is-error { border-color: var(--red); }
 .alert-error   { background: rgba(255,107,107,0.1); color: var(--red);   border: 1px solid rgba(255,107,107,0.25); }
 .alert-success { background: rgba(46,204,138,0.08); color: var(--green); border: 1px solid rgba(46,204,138,0.2); }
 .alert.hidden  { display: none; }
+
+/* ── Selector de tema (claro/oscuro/sistema) ────────────────
+   Mismo componente en las 6 páginas que usan este archivo -- ver assets/js/theme.js. */
+.tema-selector { display: inline-flex; gap: 2px; }
+.tema-opcion {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; padding: 0;
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text-muted); cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+}
+.tema-opcion:hover { background: var(--bg-row); color: var(--text); }
+.tema-opcion.active { background: rgba(79,126,255,0.12); border-color: var(--blue); color: var(--blue-soft); }
+.tema-opcion:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
 
 /* ── Utilidades ──────────────────────────────────────────── */
 .hidden    { display: none !important; }

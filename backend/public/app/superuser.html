@@ -2,8 +2,13 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Panel SUPERUSER — AppHub</title>
+  <script>
+    var t = localStorage.getItem('apphub_theme_override');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  </script>
   <link rel="stylesheet" href="/assets/css/app.css"/>
   <style>
     .tabs { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
@@ -20,8 +25,8 @@
       font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
       padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border);
     }
-    .admin-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text); }
-    .admin-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .admin-table td { padding: 8px 12px; border-bottom: 1px solid var(--border-lo); color: var(--text); }
+    .admin-table tr:hover td { background: var(--hover-row); }
 
     .code-badge { font-family: monospace; font-size: 11px; background: rgba(79,126,255,0.08); color: var(--blue-soft); padding: 2px 7px; border-radius: 4px; }
     .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
@@ -72,7 +77,7 @@
     .field-error { color: var(--red); font-size: 11px; margin-top: 4px; display: none; }
     .field-error.visible { display: block; }
 
-    .log-origin { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.06); color: var(--text-muted); }
+    .log-origin { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--track); color: var(--text-muted); }
     .action-badge { font-size: 10px; font-weight: 600; }
     .action-CREATE  { color: var(--green); }
     .action-UPDATE  { color: var(--blue-soft); }
@@ -93,6 +98,11 @@
     <div class="nav-right">
       <span id="user-name" class="nav-user"></span>
       <a href="/app/selector-proyecto.html" class="btn btn-ghost btn-sm">Proyectos</a>
+      <div class="tema-selector" role="group" aria-label="Tema del sitio">
+        <button type="button" class="tema-opcion" data-tema="light" title="Claro" aria-label="Tema claro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.3" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.7v2M10 15.3v2M17.3 10h-2M4.7 10h-2M15.2 4.8l-1.4 1.4M6.2 13.8l-1.4 1.4M15.2 15.2l-1.4-1.4M6.2 6.2L4.8 4.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <button type="button" class="tema-opcion" data-tema="dark" title="Oscuro" aria-label="Tema oscuro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.3 12.4A6.8 6.8 0 017.6 3.7 7 7 0 1016.3 12.4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="tema-opcion" data-tema="auto" title="Sistema" aria-label="Seguir el tema del sistema"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 3a7 7 0 010 14z" fill="currentColor"/></svg></button>
+      </div>
     </div>
   </nav>
 
@@ -431,6 +441,8 @@
 
   <script type="module">
     import { requireAuth, getUser, apiGet, apiPost, apiPut, apiDelete } from '/assets/js/api.js';
+    import { initSelectorTema } from '/assets/js/theme.js';
+    initSelectorTema();
 
     requireAuth();
 

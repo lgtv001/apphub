@@ -2,8 +2,15 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AppHub — Solicitud enviada</title>
+  <script>
+    // Sin toggle en esta página (de paso, sin navbar) -- solo respeta el override guardado si
+    // el usuario ya eligió uno en otra página. Ver assets/js/theme.js.
+    var t = localStorage.getItem('apphub_theme_override');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  </script>
   <link rel="stylesheet" href="/assets/css/app.css"/>
   <style>
     .pending-wrap {

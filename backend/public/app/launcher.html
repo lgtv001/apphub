@@ -2,17 +2,32 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AppHub — Ecosistema SSO</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet"/>
+  <script>
+    // Pedido 2026-08-14: mismo mecanismo que login.html -- si venimos de kpis-sso con
+    // ?tema= (botón "Volver a apphub"), aplicarlo antes de leer el override guardado.
+    var temaEntrante = new URLSearchParams(location.search).get('tema');
+    if (temaEntrante === 'light' || temaEntrante === 'dark') {
+      localStorage.setItem('apphub_theme_override', temaEntrante);
+    } else if (temaEntrante === 'auto') {
+      localStorage.removeItem('apphub_theme_override');
+    }
+    if (temaEntrante) window.history.replaceState({}, '', location.pathname);
+    var t = localStorage.getItem('apphub_theme_override');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  </script>
   <style>
     /*
       Consistente con el rediseño "Sala de control" de login.html (mismos tokens/fuentes) --
       este panel es la pantalla siguiente en el mismo flujo, así que hereda la identidad en vez
-      de introducir una paleta nueva. Comprometida a tema oscuro a propósito, misma razón que
-      login.html (ver comentario ahí).
+      de introducir una paleta nueva. La nota vieja decía "comprometida a tema oscuro a
+      propósito" -- eso cambió 2026-08-14, mismo pedido y misma estructura de 3 niveles que
+      login.html (ver comentario ahí, y kpis-sso/public/dashboard.html).
     */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -23,6 +38,7 @@
       --border: rgba(255,255,255,0.08);
       --border-strong: rgba(255,255,255,0.16);
       --accent: #ff9142;
+      --accent-ink: #ff9142;
       --accent2: #3fd6d6;
       --accent-deep: #e0611c;
       --accent-glow: rgba(255,145,66,0.22);
@@ -36,6 +52,35 @@
       --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Consolas, monospace;
       --radius: 14px;
       --radius-sm: 7px;
+      --grid-color: rgba(255,145,66,0.045);
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --bg: #f4f2ee; --surface: #ffffff; --surface2: #ecebe6;
+        --border: rgba(10,10,12,0.10); --border-strong: rgba(10,10,12,0.20);
+        --accent: #ff9142; --accent-ink: #b84e0e; --accent2: #036e94; --accent-deep: #e0611c;
+        --accent-glow: rgba(255,145,66,0.22);
+        --text: #1a1a1c; --muted: #5c5c62; --muted2: #b8b6b0;
+        --success: #1a7f4a; --success-glow: rgba(26,127,74,0.14);
+        --grid-color: rgba(255,145,66,0.045);
+      }
+    }
+    :root[data-theme="light"] {
+      --bg: #f4f2ee; --surface: #ffffff; --surface2: #ecebe6;
+      --border: rgba(10,10,12,0.10); --border-strong: rgba(10,10,12,0.20);
+      --accent: #ff9142; --accent-ink: #b84e0e; --accent2: #036e94; --accent-deep: #e0611c;
+      --accent-glow: rgba(255,145,66,0.22);
+      --text: #1a1a1c; --muted: #5c5c62; --muted2: #b8b6b0;
+      --success: #1a7f4a; --success-glow: rgba(26,127,74,0.14);
+      --grid-color: rgba(255,145,66,0.045);
+    }
+    :root[data-theme="dark"] {
+      --bg: #0a0a0c; --surface: #131316; --surface2: #191a1e;
+      --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.16);
+      --accent: #ff9142; --accent-ink: #ff9142; --accent2: #3fd6d6; --accent-deep: #e0611c;
+      --accent-glow: rgba(255,145,66,0.22);
+      --text: #f2f0ea; --muted: #8c8c92; --muted2: #55555c;
+      --success: #4fd18a; --success-glow: rgba(79,209,138,0.16);
       --grid-color: rgba(255,145,66,0.045);
     }
 
@@ -79,6 +124,16 @@
       letter-spacing: 0.07em; text-transform: uppercase; margin-top: 2px;
     }
     .nav-right { display: flex; align-items: center; gap: 22px; }
+    .tema-selector { display: inline-flex; gap: 2px; }
+    .tema-opcion {
+      display: flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; padding: 0;
+      background: none; border: 1px solid var(--border); border-radius: 7px;
+      color: var(--muted); cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+    }
+    .tema-opcion:hover { background: var(--surface2); color: var(--text); }
+    .tema-opcion.active { background: var(--accent-glow); border-color: var(--accent); color: var(--text); }
+    .tema-opcion:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     .nav-link {
       font-size: 13px; color: var(--muted); text-decoration: none;
       border-bottom: 1px solid transparent; transition: color 0.2s, border-color 0.2s;
@@ -191,6 +246,11 @@
         <div class="role"><span class="status-dot"></span>Sesión activa</div>
       </div>
       <button class="btn-ghost-sm" id="btn-logout" type="button">Cerrar sesión</button>
+      <div class="tema-selector" role="group" aria-label="Tema del sitio">
+        <button type="button" class="tema-opcion" data-tema="light" title="Claro" aria-label="Tema claro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.3" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.7v2M10 15.3v2M17.3 10h-2M4.7 10h-2M15.2 4.8l-1.4 1.4M6.2 13.8l-1.4 1.4M15.2 15.2l-1.4-1.4M6.2 6.2L4.8 4.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <button type="button" class="tema-opcion" data-tema="dark" title="Oscuro" aria-label="Tema oscuro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.3 12.4A6.8 6.8 0 017.6 3.7 7 7 0 1016.3 12.4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="tema-opcion" data-tema="auto" title="Sistema" aria-label="Seguir el tema del sistema"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 3a7 7 0 010 14z" fill="currentColor"/></svg></button>
+      </div>
     </div>
   </nav>
 
@@ -206,8 +266,10 @@
 
   <script type="module">
     import { requireAuth, getUser, apiGet, apiPost, clearSession } from '/assets/js/api.js';
+    import { initSelectorTema } from '/assets/js/theme.js';
 
     requireAuth();
+    initSelectorTema();
     document.getElementById('user-name').textContent = getUser()?.nombre ?? '';
     document.getElementById('btn-logout').addEventListener('click', () => {
       clearSession();
@@ -262,7 +324,13 @@
 
       grid.querySelectorAll('.card:not(.disabled)').forEach((card) => {
         card.addEventListener('click', async () => {
-          const { url } = await apiPost(`/launcher/aplicaciones/${card.dataset.codigo}/entrar`, {});
+          // Manda el tema actual (o null si está en "sistema", sin override) -- el backend
+          // no puede leer localStorage por su cuenta, ver LauncherController::entrar.
+          // 'auto' explícito (no null) cuando no hay override -- el backend ya lo trata igual
+          // (ver LauncherController::entrar), pero mandarlo así de entrada es más claro que
+          // depender de que null termine cayendo en el mismo default en dos lugares distintos.
+          const temaActual = document.documentElement.getAttribute('data-theme') || 'auto';
+          const { url } = await apiPost(`/launcher/aplicaciones/${card.dataset.codigo}/entrar`, { tema: temaActual });
           window.location.href = url;
         });
       });

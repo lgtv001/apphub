@@ -2,8 +2,16 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard — AppHub</title>
+  <script>
+    // Aplica el override de tema guardado (si hay) antes de pintar -- corre antes que el
+    // <link> de app.css se resuelva. Sin esto se ve el tema del sistema un instante y después
+    // cambia de golpe. Selector real + wiring de clicks en assets/js/theme.js.
+    var t = localStorage.getItem('apphub_theme_override');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  </script>
   <link rel="stylesheet" href="/assets/css/app.css"/>
   <style>
     .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
@@ -11,25 +19,25 @@
     .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
     .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
     .stat-card.danger .stat-value { color: var(--red); }
-    .progress-bar-bg { background: rgba(255,255,255,0.06); border-radius: 6px; height: 10px; margin-top: 12px; }
+    .progress-bar-bg { background: var(--track); border-radius: 6px; height: 10px; margin-top: 12px; }
     .progress-bar-fill { height: 10px; border-radius: 6px; background: var(--blue); transition: width 0.4s; }
 
     .section-title { font-size: 13px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin: 24px 0 12px; }
 
     .gantt-table { width: 100%; border-collapse: collapse; }
     .gantt-table th { background: var(--bg-row); color: var(--text-dim); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-    .gantt-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+    .gantt-table td { padding: 8px 12px; border-bottom: 1px solid var(--border-lo); font-size: 12px; }
     .gantt-track { position: relative; height: 22px; }
     .gantt-bar { position: absolute; height: 8px; border-radius: 3px; min-width: 3px; }
-    .gantt-bar.plan  { background: rgba(255,255,255,0.18); top: 4px; }
+    .gantt-bar.plan  { background: var(--track-strong); top: 4px; }
     .gantt-bar.real  { background: var(--blue); top: 13px; }
     .gantt-bar.retraso { background: var(--red); }
 
     .avance-list { list-style: none; padding: 0; }
-    .avance-list li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 12px; }
+    .avance-list li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border-lo); font-size: 12px; }
     .a-code { font-family: monospace; background: rgba(79,126,255,0.08); color: var(--blue-soft); padding: 2px 7px; border-radius: 4px; font-size: 11px; white-space: nowrap; }
     .a-name { flex: 1; color: var(--text-muted); }
-    .a-bar-wrap { width: 120px; background: rgba(255,255,255,0.06); border-radius: 4px; height: 8px; flex-shrink: 0; }
+    .a-bar-wrap { width: 120px; background: var(--track); border-radius: 4px; height: 8px; flex-shrink: 0; }
     .a-bar-fill { height: 8px; border-radius: 4px; background: var(--blue); }
     .a-pct { width: 36px; text-align: right; color: var(--text-muted); }
   </style>
@@ -49,6 +57,11 @@
       <span id="user-name" class="nav-user"></span>
       <a id="btn-quiebre" href="/app/quiebre.html" class="btn btn-ghost btn-sm">← Quiebre del Contrato</a>
       <a href="/app/selector-proyecto.html" class="btn btn-ghost btn-sm">Cambiar proyecto</a>
+      <div class="tema-selector" role="group" aria-label="Tema del sitio">
+        <button type="button" class="tema-opcion" data-tema="light" title="Claro" aria-label="Tema claro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.3" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.7v2M10 15.3v2M17.3 10h-2M4.7 10h-2M15.2 4.8l-1.4 1.4M6.2 13.8l-1.4 1.4M15.2 15.2l-1.4-1.4M6.2 6.2L4.8 4.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <button type="button" class="tema-opcion" data-tema="dark" title="Oscuro" aria-label="Tema oscuro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.3 12.4A6.8 6.8 0 017.6 3.7 7 7 0 1016.3 12.4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="tema-opcion" data-tema="auto" title="Sistema" aria-label="Seguir el tema del sistema"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 3a7 7 0 010 14z" fill="currentColor"/></svg></button>
+      </div>
     </div>
   </nav>
 
@@ -105,6 +118,8 @@
 
   <script type="module">
     import { requireAuth, getUser, apiGet } from '/assets/js/api.js';
+    import { initSelectorTema } from '/assets/js/theme.js';
+    initSelectorTema();
 
     requireAuth();
 

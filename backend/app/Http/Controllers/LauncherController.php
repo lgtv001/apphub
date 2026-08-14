@@ -45,11 +45,26 @@ class LauncherController extends Controller
             return response()->json(['message' => 'Sin acceso a esta aplicación'], 403);
         }
 
+        // Pedido 2026-08-14, corregido el mismo día: propagar el tema claro/oscuro/automático
+        // elegido en apphub a la app de destino. La primera versión solo mandaba 'light'/
+        // 'dark' y usaba null para "sin override" -- pero null significaba "no digas nada", así
+        // que si apphub estaba en automático, kpis-sso se quedaba con lo que tuviera guardado
+        // de una sesión anterior en vez de también volver a automático (reporte real del
+        // usuario). "auto" es ahora un valor explícito más, nunca se omite: el estado de
+        // apphub siempre gana al entrar, sea cual sea. El backend nunca ve el localStorage del
+        // cliente por su cuenta -- el frontend (launcher.html) lo manda en el body de este
+        // POST. Se valida contra una lista blanca en vez de confiar en el string tal cual: es
+        // el único campo de este payload que viene directo de un input del cliente sin pasar
+        // antes por el modelo de permisos (secciones/nombre/email salen todos de $usuario).
+        $tema = $request->input('tema');
+        $tema = in_array($tema, ['light', 'dark', 'auto'], true) ? $tema : 'auto';
+
         $handoff = $this->firmador->firmar([
             'sub'       => $usuario->email,
             'nombre'    => $usuario->nombre,
             'app'       => $app->codigo,
             'secciones' => $usuario->seccionesDeAplicacion($app->codigo),
+            'tema'      => $tema,
             'nonce'     => Str::random(32),
             'exp'       => now()->addSeconds(60)->timestamp,
         ]);

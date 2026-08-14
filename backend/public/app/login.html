@@ -2,21 +2,44 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8"/>
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>AppHub — Iniciar sesión</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script>
+    // Pedido 2026-08-14: si venimos de kpis-sso con ?tema= en la URL (botón "Volver a apphub"
+    // o "Cerrar sesión" -- ver logout.html, que reenvía el suyo para acá), aplicarlo antes que
+    // nada. 'auto' borra cualquier override viejo de apphub, igual que el mismo caso del lado
+    // de kpis-sso -- si no, "Volver a apphub" desde kpis-sso en automático dejaría pegado
+    // cualquier tema que apphub tuviera de antes. Sin handoff firmado: no es un dato sensible.
+    var temaEntrante = new URLSearchParams(location.search).get('tema');
+    if (temaEntrante === 'light' || temaEntrante === 'dark') {
+      localStorage.setItem('apphub_theme_override', temaEntrante);
+    } else if (temaEntrante === 'auto') {
+      localStorage.removeItem('apphub_theme_override');
+    }
+    if (temaEntrante) window.history.replaceState({}, '', location.pathname);
+    // Mismo localStorage key que assets/js/theme.js -- la preferencia de tema es una sola por
+    // todo apphub, no una por página. Tiene que correr acá (no como módulo importado más
+    // abajo) para aplicarse antes del primer paint.
+    var t = localStorage.getItem('apphub_theme_override');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  </script>
   <style>
     /*
       Rediseño "Sala de control" (dirección aprobada para el ecosistema SSO, ver mockup del
-      dashboard de kpis-sso). Página COMPROMETIDA a tema oscuro a propósito: la metáfora es un
-      panel de control/terminal de operaciones, que no tiene un equivalente natural en modo
-      claro -- se elige un solo mundo visual en vez de invertir los colores sin sentido (ver
-      artifact-design: "A design that deliberately commits to one visual world may stay
-      single-theme -- make it a choice, not an omission"). Si en algún momento se quiere un modo
-      claro real, es una decisión de diseño aparte, no una inversión automática de estas
-      variables.
+      dashboard de kpis-sso). La nota vieja de acá decía "COMPROMETIDA a tema oscuro a
+      propósito... si en algún momento se quiere modo claro real, es una decisión de diseño
+      aparte" -- eso pasó el 2026-08-14, pedido explícito del usuario para todo apphub. Mismos
+      3 niveles que kpis-sso/public/dashboard.html: :root sin guardas = base oscura (siempre
+      fue el mundo visual principal de esta página), @media(light) guardado por
+      :not([data-theme="dark"]) = claro cuando el SO lo pide y no hay override, y los 2
+      :root[data-theme] de abajo fuerzan uno u otro. --accent/--accent2 en claro se
+      reoscurecieron un poco para que sigan siendo legibles como texto (validado con
+      scripts/validate_palette.js, skill dataviz) -- mismos valores exactos que kpis-sso, es la
+      misma identidad de marca.
     */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -27,6 +50,7 @@
       --border: rgba(255,255,255,0.08);
       --border-strong: rgba(255,255,255,0.16);
       --accent: #ff9142;
+      --accent-ink: #ff9142;
       --accent2: #3fd6d6;
       --accent-deep: #e0611c;
       --accent-glow: rgba(255,145,66,0.22);
@@ -43,6 +67,35 @@
       --radius-sm: 7px;
       --right-bg: rgba(19,19,22,0.55);
       --grid-color: rgba(255,145,66,0.045);
+    }
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        --bg: #f4f2ee; --surface: #ffffff; --surface2: #ecebe6;
+        --border: rgba(10,10,12,0.10); --border-strong: rgba(10,10,12,0.20);
+        --accent: #ff9142; --accent-ink: #b84e0e; --accent2: #036e94; --accent-deep: #e0611c;
+        --accent-glow: rgba(255,145,66,0.22); --accent2-glow: rgba(63,214,214,0.16);
+        --text: #1a1a1c; --muted: #5c5c62; --muted2: #b8b6b0;
+        --success: #1a7f4a; --danger: #9c1f4d;
+        --right-bg: rgba(255,255,255,0.55); --grid-color: rgba(255,145,66,0.045);
+      }
+    }
+    :root[data-theme="light"] {
+      --bg: #f4f2ee; --surface: #ffffff; --surface2: #ecebe6;
+      --border: rgba(10,10,12,0.10); --border-strong: rgba(10,10,12,0.20);
+      --accent: #ff9142; --accent-ink: #b84e0e; --accent2: #036e94; --accent-deep: #e0611c;
+      --accent-glow: rgba(255,145,66,0.22); --accent2-glow: rgba(63,214,214,0.16);
+      --text: #1a1a1c; --muted: #5c5c62; --muted2: #b8b6b0;
+      --success: #1a7f4a; --danger: #9c1f4d;
+      --right-bg: rgba(255,255,255,0.55); --grid-color: rgba(255,145,66,0.045);
+    }
+    :root[data-theme="dark"] {
+      --bg: #0a0a0c; --surface: #131316; --surface2: #191a1e;
+      --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.16);
+      --accent: #ff9142; --accent-ink: #ff9142; --accent2: #3fd6d6; --accent-deep: #e0611c;
+      --accent-glow: rgba(255,145,66,0.22); --accent2-glow: rgba(63,214,214,0.16);
+      --text: #f2f0ea; --muted: #8c8c92; --muted2: #55555c;
+      --success: #4fd18a; --danger: #ff6b6b;
+      --right-bg: rgba(19,19,22,0.55); --grid-color: rgba(255,145,66,0.045);
     }
 
     html, body {
@@ -65,6 +118,18 @@
       pointer-events: none;
       z-index: 0;
     }
+
+    /* ── Selector de tema (claro/oscuro/sistema) ── */
+    .tema-selector { position: fixed; top: 20px; right: 20px; z-index: 5; display: inline-flex; gap: 2px; }
+    .tema-opcion {
+      display: flex; align-items: center; justify-content: center;
+      width: 30px; height: 30px; padding: 0;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 7px;
+      color: var(--muted); cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+    }
+    .tema-opcion:hover { background: var(--surface2); color: var(--text); }
+    .tema-opcion.active { background: var(--accent-glow); border-color: var(--accent); color: var(--text); }
+    .tema-opcion:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
     /* ── Glow orbs ── */
     .orb {
@@ -132,7 +197,7 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
     }
-    .logo-name span { color: var(--accent); font-weight: 700; }
+    .logo-name span { color: var(--accent-ink); font-weight: 700; }
 
     .hero {
       flex: 1;
@@ -439,6 +504,12 @@
 </head>
 <body>
 
+<div class="tema-selector" role="group" aria-label="Tema del sitio">
+  <button type="button" class="tema-opcion" data-tema="light" title="Claro" aria-label="Tema claro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.3" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.7v2M10 15.3v2M17.3 10h-2M4.7 10h-2M15.2 4.8l-1.4 1.4M6.2 13.8l-1.4 1.4M15.2 15.2l-1.4-1.4M6.2 6.2L4.8 4.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  <button type="button" class="tema-opcion" data-tema="dark" title="Oscuro" aria-label="Tema oscuro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.3 12.4A6.8 6.8 0 017.6 3.7 7 7 0 1016.3 12.4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+  <button type="button" class="tema-opcion" data-tema="auto" title="Sistema" aria-label="Seguir el tema del sistema"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 3a7 7 0 010 14z" fill="currentColor"/></svg></button>
+</div>
+
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 
@@ -577,6 +648,8 @@
 
 <script type="module">
   import { saveSession, getToken, ensureCsrf, apiGet } from '/assets/js/api.js';
+  import { initSelectorTema } from '/assets/js/theme.js';
+  initSelectorTema();
 
   // '/dashboard.html' (raíz, sin /app/) es una maqueta vieja sin conexión real a nada, de un
   // rediseño visual anterior a esta pantalla -- las páginas reales son /app/launcher.html (SSO,

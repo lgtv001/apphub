@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, must-revalidate"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cerrando sesión — AppHub</title>
+<style>
+  /*
+    Redirector puro, mismo criterio que kpis-sso/public/index.html: nunca debe mostrarse
+    contenido, solo revocar la sesión y mandar a login.html. Existe porque otro origen
+    (ej. kpis-sso) no puede tocar el localStorage de apphub por su cuenta -- las apps del
+    ecosistema SSO mandan al usuario acá para forzar un logout real en vez de solo volver
+    al hub con el token de apphub todavía vivo (login.html detecta ese token y rebota
+    directo al launcher sin pedir nada, pedido explícito del usuario 2026-08-14).
+  */
+  html, body { height: 100%; margin: 0; background: #0a0a0c; }
+</style>
+</head>
+<body>
+<script type="module">
+  import { clearSession } from '/assets/js/api.js';
+
+  const token = localStorage.getItem('apphub_token');
+
+  // Mismo patrón que el logout de selector-proyecto.html: revocar el token en el servidor
+  // (Sanctum) antes de borrarlo del navegador. Si el fetch falla (red caída, token ya
+  // vencido, etc.) igual se limpia la sesión local -- lo local manda, el servidor es un
+  // best-effort.
+  if (token) {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
+        },
+      });
+    } catch (e) {
+      // sin conexión o token ya inválido -- no bloquea el logout local
+    }
+  }
+
+  clearSession();
+  // Pedido 2026-08-14: reenviar el ?tema= que haya llegado (ej. de kpis-sso/logout(), ver
+  // dashboard.html de kpis-sso) hacia login.html -- si no, se pierde en este paso intermedio
+  // y "Cerrar sesión" desde kpis-sso no conserva el tema aunque "Volver a apphub" sí.
+  const temaEntrante = new URLSearchParams(location.search).get('tema');
+  const destino = temaEntrante ? '/app/login.html?tema=' + encodeURIComponent(temaEntrante) : '/app/login.html';
+  window.location.replace(destino);
+</script>
+</body>
+</html>

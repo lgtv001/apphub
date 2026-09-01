@@ -232,21 +232,6 @@
       </svg>
       <span>Tipos de Usuario</span>
     </button>
-    <button type="button" class="nav-item" data-tab="asignaciones">
-      <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <path d="M8.5 11.5l3-3M7 8.2L5.6 6.8a2.3 2.3 0 113.3-3.3l1.4 1.4M13 11.8l1.4 1.4a2.3 2.3 0 11-3.3 3.3L9.7 15.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>Asignaciones</span>
-    </button>
-    <button type="button" class="nav-item" data-tab="aplicaciones">
-      <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <rect x="3.5" y="3.5" width="5.2" height="5.2" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
-        <rect x="11.3" y="3.5" width="5.2" height="5.2" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
-        <rect x="3.5" y="11.3" width="5.2" height="5.2" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
-        <rect x="11.3" y="11.3" width="5.2" height="5.2" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
-      </svg>
-      <span>Aplicaciones</span>
-    </button>
     <button type="button" class="nav-item" data-tab="solicitudes">
       <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
         <path d="M3.5 11.5h3.8l1 1.8h3.4l1-1.8h3.8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
@@ -323,35 +308,8 @@
       </div>
       <div class="card" style="padding:0;overflow:hidden">
         <table class="admin-table">
-          <thead><tr><th>Nombre</th><th>Descripción</th><th>Activo</th><th style="width:80px"></th></tr></thead>
-          <tbody id="tbody-tipos"><tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- TAB: Asignaciones -->
-    <div id="tab-asignaciones" class="tab-panel hidden">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-        <button class="btn btn-primary btn-sm" id="btn-new-asignacion">+ Nueva Asignación</button>
-      </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <table class="admin-table">
-          <thead><tr><th>Usuario</th><th>Proyecto</th><th>Rol</th><th>Tipo</th><th style="width:60px"></th></tr></thead>
-          <tbody id="tbody-asignaciones"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- TAB: Aplicaciones -->
-    <div id="tab-aplicaciones" class="tab-panel hidden">
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
-        <button class="btn btn-ghost btn-sm" id="btn-reload-aplicaciones">↺ Actualizar</button>
-        <button class="btn btn-primary btn-sm" id="btn-nuevo-acceso">+ Otorgar acceso</button>
-      </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <table class="admin-table">
-          <thead><tr><th>Usuario</th><th>Aplicación</th><th>Secciones</th><th style="width:60px"></th></tr></thead>
-          <tbody id="tbody-accesos-aplicacion"><tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
+          <thead><tr><th>Nombre</th><th>Descripción</th><th>Acceso</th><th>Activo</th><th style="width:80px"></th></tr></thead>
+          <tbody id="tbody-tipos"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Cargando…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -454,6 +412,10 @@
             <option value="0">No</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Tipos de Usuario</label>
+          <div id="usuario-tipos-lista" style="display:flex;flex-direction:column;gap:6px"></div>
+        </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
           <button type="button" class="btn btn-ghost" id="cancel-usuario">Cancelar</button>
           <button type="submit" class="btn btn-primary" id="submit-usuario">Guardar</button>
@@ -484,82 +446,13 @@
             <option value="0">No</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Acceso a aplicaciones</label>
+          <div id="tipo-secciones-lista" style="display:flex;flex-direction:column;gap:12px"></div>
+        </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
           <button type="button" class="btn btn-ghost" id="cancel-tipo">Cancelar</button>
           <button type="submit" class="btn btn-primary" id="submit-tipo">Guardar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Asignación -->
-  <div class="modal-overlay" id="modal-asignacion">
-    <div class="modal">
-      <button class="modal-close" id="close-modal-asignacion">✕</button>
-      <h2 class="modal-title">Nueva Asignación</h2>
-      <form id="form-asignacion" novalidate>
-        <div class="form-group">
-          <label>Usuario *</label>
-          <select id="a-usuario">
-            <option value="">— Seleccionar usuario —</option>
-          </select>
-          <div class="field-error" id="err-a-usuario">Campo obligatorio.</div>
-        </div>
-        <div class="form-group">
-          <label>Proyecto *</label>
-          <select id="a-proyecto">
-            <option value="">— Seleccionar proyecto —</option>
-          </select>
-          <div class="field-error" id="err-a-proyecto">Campo obligatorio.</div>
-        </div>
-        <div class="form-group">
-          <label>Rol en el proyecto</label>
-          <select id="a-rol">
-            <option value="usuario">Usuario</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Tipo (opcional)</label>
-          <select id="a-tipo">
-            <option value="">— Sin tipo especial —</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
-          <button type="button" class="btn btn-ghost" id="cancel-asignacion">Cancelar</button>
-          <button type="submit" class="btn btn-primary" id="submit-asignacion">Guardar</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal: Acceso a Aplicación -->
-  <div class="modal-overlay" id="modal-acceso-aplicacion">
-    <div class="modal">
-      <button class="modal-close" id="close-modal-acceso-aplicacion">✕</button>
-      <h2 class="modal-title">Otorgar acceso a una aplicación</h2>
-      <form id="form-acceso-aplicacion" novalidate>
-        <div class="form-group">
-          <label>Usuario *</label>
-          <select id="acceso-usuario-id">
-            <option value="">— Seleccionar usuario —</option>
-          </select>
-          <div class="field-error" id="err-acceso-usuario-id">Campo obligatorio.</div>
-        </div>
-        <div class="form-group">
-          <label>Aplicación *</label>
-          <select id="acceso-aplicacion-id">
-            <option value="">— Seleccionar aplicación —</option>
-          </select>
-          <div class="field-error" id="err-acceso-aplicacion-id">Campo obligatorio.</div>
-        </div>
-        <div class="form-group">
-          <label>Secciones (opcional)</label>
-          <div id="acceso-secciones-lista" style="display:flex;flex-direction:column;gap:8px"></div>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
-          <button type="button" class="btn btn-ghost" id="cancel-acceso-aplicacion">Cancelar</button>
-          <button type="submit" class="btn btn-primary" id="submit-acceso-aplicacion">Otorgar</button>
         </div>
       </form>
     </div>
@@ -596,8 +489,8 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Aplicaciones (opcional)</label>
-          <div id="solicitud-secciones-lista"></div>
+          <label>Tipos de Usuario (opcional)</label>
+          <div id="solicitud-tipos-lista" style="display:flex;flex-direction:column;gap:6px"></div>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
           <button type="button" class="btn btn-ghost" id="cancel-solicitud">Cancelar</button>
@@ -639,8 +532,6 @@
       if (tab === 'proyectos')    loadProyectos();
       if (tab === 'usuarios')     loadUsuarios();
       if (tab === 'tipos')        loadTipos();
-      if (tab === 'asignaciones') loadAsignaciones();
-      if (tab === 'aplicaciones') loadAccesosAplicacion();
       if (tab === 'solicitudes')  loadSolicitudes();
       if (tab === 'logs')         loadLogs();
     }
@@ -733,6 +624,11 @@
 
     // ── TAB: Usuarios ──────────────────────────────────────────────
     async function loadUsuarios() {
+      if (!tiposCache.length) {
+        const r = await apiGet('/admin/tipos-usuario');
+        tiposCache = r?.data ?? [];
+      }
+
       const resp = await apiGet('/admin/usuarios');
       usuariosCache = resp?.data ?? [];
       const tbody = document.getElementById('tbody-usuarios');
@@ -761,6 +657,20 @@
       return (nombre ?? '').split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('');
     }
 
+    function renderTiposDelUsuario(containerId, tiposSeleccionadosIds = []) {
+      const cont = document.getElementById(containerId);
+      if (!tiposCache.length) {
+        cont.innerHTML = `<span style="color:var(--text-muted);font-size:12px">No hay tipos de usuario definidos todavía.</span>`;
+        return;
+      }
+      cont.innerHTML = tiposCache.filter(t => t.activo).map(t => `
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;color:var(--text)">
+          <input type="checkbox" class="chk-usuario-tipo" data-container="${containerId}" value="${t.id}" ${tiposSeleccionadosIds.includes(t.id) ? 'checked' : ''}/>
+          <span>${escHtml(t.nombre)}</span>
+        </label>
+      `).join('');
+    }
+
     let editUsuarioId = null;
 
     document.getElementById('btn-new-usuario').addEventListener('click', () => {
@@ -770,6 +680,7 @@
       document.getElementById('label-u-password').textContent = 'Contraseña *';
       document.getElementById('u-password').placeholder = 'Mínimo 8 caracteres';
       clearErrors('form-usuario');
+      renderTiposDelUsuario('usuario-tipos-lista', []);
       document.getElementById('modal-usuario').classList.add('open');
     });
 
@@ -785,6 +696,7 @@
       document.getElementById('label-u-password').textContent = 'Contraseña (dejar vacío para no cambiar)';
       document.getElementById('u-password').placeholder = 'Dejar vacío para mantener';
       clearErrors('form-usuario');
+      renderTiposDelUsuario('usuario-tipos-lista', (u.tipos_usuario ?? []).map(t => t.id));
       document.getElementById('modal-usuario').classList.add('open');
     };
 
@@ -808,6 +720,7 @@
       const password = document.getElementById('u-password').value;
       const rol      = document.getElementById('u-rol').value;
       const activo   = document.getElementById('u-activo').value === '1';
+      const tipos = [...document.querySelectorAll('.chk-usuario-tipo[data-container="usuario-tipos-lista"]:checked')].map(chk => Number(chk.value));
 
       let valid = true;
       if (!nombre) { showErr('err-u-nombre'); valid = false; }
@@ -815,7 +728,7 @@
       if (!editUsuarioId && !password) { showErr('err-u-password'); valid = false; }
       if (!valid) return;
 
-      const body = { nombre, email, rol_global: rol, activo };
+      const body = { nombre, email, rol_global: rol, activo, tipos };
       if (password) body.password = password;
 
       const btn = document.getElementById('submit-usuario');
@@ -834,18 +747,26 @@
     });
 
     // ── TAB: Tipos de Usuario ──────────────────────────────────────
+    let aplicacionesCache = [];
+
     async function loadTipos() {
+      if (!aplicacionesCache.length) {
+        const r = await apiGet('/admin/aplicaciones');
+        aplicacionesCache = r?.data ?? [];
+      }
+
       const resp = await apiGet('/admin/tipos-usuario');
       tiposCache = resp?.data ?? [];
       const tbody = document.getElementById('tbody-tipos');
       if (!tiposCache.length) {
-        tbody.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)">Sin tipos definidos.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Sin tipos definidos.</td></tr>`;
         return;
       }
       tbody.innerHTML = tiposCache.map(t => `
         <tr>
           <td>${escHtml(t.nombre)}</td>
           <td style="color:var(--text-muted)">${escHtml(t.descripcion ?? '—')}</td>
+          <td style="color:var(--text-muted);font-size:11px">${(t.secciones_resumen ?? []).map(s => `${escHtml(s.aplicacion_codigo)}.${escHtml(s.codigo)}:${escHtml(s.nivel)}`).join(', ') || '—'}</td>
           <td>${t.activo ? '<span style="color:var(--green)">Sí</span>' : '<span style="color:var(--text-dim)">No</span>'}</td>
           <td><div class="btn-row">
             <button class="btn-tbl" onclick="openEditTipo(${t.id})">✏</button>
@@ -853,14 +774,33 @@
           </div></td>
         </tr>
       `).join('');
+    }
 
-      const sel = document.getElementById('a-tipo');
-      sel.innerHTML = '<option value="">— Sin tipo especial —</option>';
-      tiposCache.filter(t => t.activo).forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.id; opt.textContent = t.nombre;
-        sel.appendChild(opt);
-      });
+    function renderSeccionesDelTipo(seccionesSeleccionadas = []) {
+      const cont = document.getElementById('tipo-secciones-lista');
+      const nivelPorSeccion = new Map(seccionesSeleccionadas.map(s => [s.seccion_id, s.nivel]));
+      if (!aplicacionesCache.length) {
+        cont.innerHTML = `<span style="color:var(--text-muted);font-size:12px">No hay aplicaciones definidas todavía.</span>`;
+        return;
+      }
+      cont.innerHTML = aplicacionesCache.map(app => `
+        <fieldset style="border:1px solid var(--border);border-radius:8px;padding:8px 10px">
+          <legend style="font-size:11px;color:var(--text-muted)">${escHtml(app.nombre)}</legend>
+          ${(app.secciones ?? []).map(s => {
+            const marcado = nivelPorSeccion.has(s.id);
+            const nivel = nivelPorSeccion.get(s.id) ?? 'ver';
+            return `
+              <label style="display:flex;align-items:center;gap:8px;font-weight:400;color:var(--text);margin:4px 0">
+                <input type="checkbox" class="chk-tipo-seccion" value="${s.id}" ${marcado ? 'checked' : ''}/>
+                <span style="flex:1">${escHtml(s.nombre)}</span>
+                <select class="nivel-tipo-seccion" data-seccion="${s.id}" style="width:auto">
+                  <option value="ver" ${nivel === 'ver' ? 'selected' : ''}>Ver</option>
+                  <option value="editar" ${nivel === 'editar' ? 'selected' : ''}>Ver y editar/cargar</option>
+                </select>
+              </label>`;
+          }).join('') || '<span style="color:var(--text-muted);font-size:12px">Sin secciones.</span>'}
+        </fieldset>
+      `).join('');
     }
 
     let editTipoId = null;
@@ -870,6 +810,7 @@
       document.getElementById('title-modal-tipo').textContent = 'Nuevo Tipo de Usuario';
       document.getElementById('form-tipo').reset();
       clearErrors('form-tipo');
+      renderSeccionesDelTipo([]);
       document.getElementById('modal-tipo').classList.add('open');
     });
 
@@ -881,6 +822,7 @@
       document.getElementById('t-descripcion').value = t.descripcion ?? '';
       document.getElementById('t-activo').value      = t.activo ? '1' : '0';
       clearErrors('form-tipo');
+      renderSeccionesDelTipo(t.secciones_resumen ?? []);
       document.getElementById('modal-tipo').classList.add('open');
     };
 
@@ -890,7 +832,10 @@
       try {
         await apiDelete(`/admin/tipos-usuario/${id}`);
         loadTipos();
-      } catch (err) { alert(err?.message ?? 'Error.'); }
+      } catch (err) {
+        // El backend devuelve 409 si el tipo tiene usuarios asignados -- mostrar el mensaje tal cual.
+        alert(err?.message ?? 'Error.');
+      }
     };
 
     document.getElementById('close-modal-tipo').addEventListener('click', () => document.getElementById('modal-tipo').classList.remove('open'));
@@ -902,6 +847,10 @@
       const nombre      = document.getElementById('t-nombre').value.trim();
       const descripcion = document.getElementById('t-descripcion').value.trim();
       const activo      = document.getElementById('t-activo').value === '1';
+      const secciones = [...document.querySelectorAll('.chk-tipo-seccion:checked')].map(chk => ({
+        seccion_id: Number(chk.value),
+        nivel: document.querySelector(`.nivel-tipo-seccion[data-seccion="${chk.value}"]`).value,
+      }));
 
       if (!nombre) { showErr('err-t-nombre'); return; }
 
@@ -909,201 +858,14 @@
       btn.disabled = true;
       try {
         if (editTipoId) {
-          await apiPut(`/admin/tipos-usuario/${editTipoId}`, { nombre, descripcion, activo });
+          await apiPut(`/admin/tipos-usuario/${editTipoId}`, { nombre, descripcion, activo, secciones });
         } else {
-          await apiPost('/admin/tipos-usuario', { nombre, descripcion, activo });
+          await apiPost('/admin/tipos-usuario', { nombre, descripcion, activo, secciones });
         }
         document.getElementById('modal-tipo').classList.remove('open');
         loadTipos();
       } catch (err) {
         handleFormError(err, { nombre: 'err-t-nombre' });
-      } finally { btn.disabled = false; }
-    });
-
-    // ── TAB: Asignaciones ──────────────────────────────────────────
-    async function loadAsignaciones() {
-      if (!proyectosCache.length) {
-        const r = await apiGet('/proyectos?all=1');
-        proyectosCache = r?.data ?? [];
-      }
-      if (!usuariosCache.length) {
-        const r = await apiGet('/admin/usuarios');
-        usuariosCache = r?.data ?? [];
-      }
-      if (!tiposCache.length) {
-        const r = await apiGet('/admin/tipos-usuario');
-        tiposCache = r?.data ?? [];
-      }
-
-      populateSelectFromCache('a-usuario', usuariosCache,  'id', 'nombre');
-      populateSelectFromCache('a-proyecto', proyectosCache, 'id', 'nombre');
-
-      const resp = await apiGet('/admin/asignaciones');
-      const rows = resp?.data ?? [];
-      const tbody = document.getElementById('tbody-asignaciones');
-      if (!rows.length) {
-        tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-muted)">Sin asignaciones.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = rows.map(a => {
-        const u = usuariosCache.find(x => x.id === a.usuario_id);
-        const p = proyectosCache.find(x => x.id === a.proyecto_id);
-        const t = tiposCache.find(x => x.id === a.tipo_id);
-        return `<tr>
-          <td>${escHtml(u?.nombre ?? `#${a.usuario_id}`)}</td>
-          <td><span class="code-badge">${escHtml(p?.codigo ?? `#${a.proyecto_id}`)}</span> ${escHtml(p?.nombre ?? '')}</td>
-          <td><span class="role-badge role-${a.rol === 'admin' ? 'admin' : 'usuario'}">${escHtml(a.rol)}</span></td>
-          <td style="color:var(--text-muted)">${escHtml(t?.nombre ?? '—')}</td>
-          <td><button class="btn-tbl danger" onclick="deleteAsignacion(${a.id})">✕</button></td>
-        </tr>`;
-      }).join('');
-    }
-
-    window.deleteAsignacion = async (id) => {
-      if (!confirm('¿Revocar esta asignación?')) return;
-      try {
-        await apiDelete(`/admin/asignaciones/${id}`);
-        loadAsignaciones();
-      } catch (err) { alert(err?.message ?? 'Error.'); }
-    };
-
-    document.getElementById('btn-new-asignacion').addEventListener('click', () => {
-      document.getElementById('form-asignacion').reset();
-      clearErrors('form-asignacion');
-      document.getElementById('modal-asignacion').classList.add('open');
-    });
-    document.getElementById('close-modal-asignacion').addEventListener('click', () => document.getElementById('modal-asignacion').classList.remove('open'));
-    document.getElementById('cancel-asignacion').addEventListener('click', () => document.getElementById('modal-asignacion').classList.remove('open'));
-
-    document.getElementById('form-asignacion').addEventListener('submit', async e => {
-      e.preventDefault();
-      clearErrors('form-asignacion');
-      const usuarioId  = document.getElementById('a-usuario').value;
-      const proyectoId = document.getElementById('a-proyecto').value;
-      const rol        = document.getElementById('a-rol').value;
-      const tipoId     = document.getElementById('a-tipo').value || null;
-
-      let valid = true;
-      if (!usuarioId)  { showErr('err-a-usuario');  valid = false; }
-      if (!proyectoId) { showErr('err-a-proyecto'); valid = false; }
-      if (!valid) return;
-
-      const btn = document.getElementById('submit-asignacion');
-      btn.disabled = true;
-      try {
-        await apiPost('/admin/asignaciones', { usuario_id: usuarioId, proyecto_id: proyectoId, rol, tipo_id: tipoId });
-        document.getElementById('modal-asignacion').classList.remove('open');
-        loadAsignaciones();
-      } catch (err) {
-        handleFormError(err, { usuario_id: 'err-a-usuario', proyecto_id: 'err-a-proyecto' });
-      } finally { btn.disabled = false; }
-    });
-
-    // ── TAB: Aplicaciones ──────────────────────────────────────────
-    let aplicacionesCache = [];
-
-    async function loadAccesosAplicacion() {
-      if (!usuariosCache.length) {
-        const r = await apiGet('/admin/usuarios');
-        usuariosCache = r?.data ?? [];
-      }
-
-      const [accesosResp, aplicacionesResp] = await Promise.all([
-        apiGet('/admin/accesos-aplicacion'),
-        apiGet('/admin/aplicaciones'),
-      ]);
-      const accesos = accesosResp?.data ?? [];
-      aplicacionesCache = aplicacionesResp?.data ?? [];
-
-      populateSelectFromCache('acceso-usuario-id', usuariosCache, 'id', 'nombre');
-      const selectApp = document.getElementById('acceso-aplicacion-id');
-      selectApp.innerHTML = '<option value="">— Seleccionar aplicación —</option>'
-        + aplicacionesCache.map(a => `<option value="${a.id}">${escHtml(a.nombre)}</option>`).join('');
-      renderSeccionesDelForm(aplicacionesCache[0]?.id ?? null);
-
-      const tbody = document.getElementById('tbody-accesos-aplicacion');
-      if (!accesos.length) {
-        tbody.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:var(--text-muted)">Sin accesos otorgados.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = accesos.map(a => `
-        <tr>
-          <td>${escHtml(a.usuario?.nombre ?? `#${a.usuario_id}`)}</td>
-          <td>${escHtml(a.aplicacion?.nombre ?? `#${a.aplicacion_id}`)}</td>
-          <td style="color:var(--text-muted)">${(a.secciones ?? []).map(s => `${escHtml(s.codigo)}:${escHtml(s.nivel)}`).join(', ') || '—'}</td>
-          <td><button class="btn-tbl danger" onclick="revocarAcceso(${a.usuario_id}, ${a.aplicacion_id})">✕</button></td>
-        </tr>
-      `).join('');
-    }
-
-    function renderSeccionesDelForm(aplicacionId) {
-      const cont = document.getElementById('acceso-secciones-lista');
-      const app  = aplicacionesCache.find(a => a.id === aplicacionId);
-      const secciones = app?.secciones ?? [];
-      if (!secciones.length) {
-        cont.innerHTML = `<span style="color:var(--text-muted);font-size:12px">Esta aplicación no tiene secciones definidas.</span>`;
-        return;
-      }
-      cont.innerHTML = secciones.map(s => `
-        <label style="display:flex;align-items:center;gap:8px;font-weight:400;color:var(--text)">
-          <input type="checkbox" class="chk-seccion" value="${s.id}"/>
-          <span style="flex:1">${escHtml(s.nombre)}</span>
-          <select class="nivel-seccion" data-seccion="${s.id}" style="width:auto">
-            <option value="ver">Ver</option>
-            <option value="editar">Ver y editar/cargar</option>
-          </select>
-        </label>
-      `).join('');
-    }
-
-    window.revocarAcceso = async (usuarioId, aplicacionId) => {
-      if (!confirm('¿Revocar este acceso?')) return;
-      try {
-        await apiDelete(`/admin/accesos-aplicacion/${usuarioId}/${aplicacionId}`);
-        loadAccesosAplicacion();
-      } catch (err) { alert(err?.message ?? 'Error al revocar.'); }
-    };
-
-    document.getElementById('btn-reload-aplicaciones').addEventListener('click', loadAccesosAplicacion);
-
-    document.getElementById('btn-nuevo-acceso').addEventListener('click', () => {
-      document.getElementById('form-acceso-aplicacion').reset();
-      clearErrors('form-acceso-aplicacion');
-      renderSeccionesDelForm(aplicacionesCache[0]?.id ?? null);
-      document.getElementById('modal-acceso-aplicacion').classList.add('open');
-    });
-    document.getElementById('close-modal-acceso-aplicacion').addEventListener('click', () => document.getElementById('modal-acceso-aplicacion').classList.remove('open'));
-    document.getElementById('cancel-acceso-aplicacion').addEventListener('click', () => document.getElementById('modal-acceso-aplicacion').classList.remove('open'));
-    document.getElementById('acceso-aplicacion-id').addEventListener('change', e => renderSeccionesDelForm(Number(e.target.value) || null));
-
-    document.getElementById('form-acceso-aplicacion').addEventListener('submit', async e => {
-      e.preventDefault();
-      clearErrors('form-acceso-aplicacion');
-      const usuarioId    = document.getElementById('acceso-usuario-id').value;
-      const aplicacionId = document.getElementById('acceso-aplicacion-id').value;
-
-      let valid = true;
-      if (!usuarioId)    { showErr('err-acceso-usuario-id');    valid = false; }
-      if (!aplicacionId) { showErr('err-acceso-aplicacion-id'); valid = false; }
-      if (!valid) return;
-
-      const secciones = [...document.querySelectorAll('.chk-seccion:checked')].map(chk => ({
-        seccion_id: Number(chk.value),
-        nivel: document.querySelector(`.nivel-seccion[data-seccion="${chk.value}"]`).value,
-      }));
-
-      const btn = document.getElementById('submit-acceso-aplicacion');
-      btn.disabled = true;
-      try {
-        await apiPost('/admin/accesos-aplicacion', {
-          usuario_id: Number(usuarioId),
-          aplicacion_id: Number(aplicacionId),
-          secciones,
-        });
-        document.getElementById('modal-acceso-aplicacion').classList.remove('open');
-        loadAccesosAplicacion();
-      } catch (err) {
-        handleFormError(err, { usuario_id: 'err-acceso-usuario-id', aplicacion_id: 'err-acceso-aplicacion-id' });
       } finally { btn.disabled = false; }
     });
 
@@ -1161,25 +923,11 @@
       document.getElementById('s-rol').value      = 'usuario';
       clearErrors('form-solicitud');
 
-      if (!aplicacionesCache.length) {
-        const { data } = await apiGet('/admin/aplicaciones');
-        aplicacionesCache = data ?? [];
+      if (!tiposCache.length) {
+        const r2 = await apiGet('/admin/tipos-usuario');
+        tiposCache = r2?.data ?? [];
       }
-      document.getElementById('solicitud-secciones-lista').innerHTML =
-        aplicacionesCache.map((app) => `
-          <fieldset style="margin-top:8px">
-            <legend>${escHtml(app.nombre)}</legend>
-            ${(app.secciones ?? []).map((s) => `
-              <label style="display:flex;align-items:center;gap:8px">
-                <input type="checkbox" class="chk-solicitud-seccion" data-app="${app.id}" value="${s.id}"/> ${escHtml(s.nombre)}
-                <select class="nivel-solicitud-seccion" data-seccion="${s.id}">
-                  <option value="ver">Ver</option>
-                  <option value="editar">Ver y editar/cargar</option>
-                </select>
-              </label>
-            `).join('')}
-          </fieldset>
-        `).join('');
+      renderTiposDelUsuario('solicitud-tipos-lista', []);
 
       document.getElementById('modal-solicitud').classList.add('open');
     };
@@ -1203,6 +951,7 @@
       const email    = document.getElementById('s-email').value.trim();
       const password = document.getElementById('s-password').value;
       const rol      = document.getElementById('s-rol').value;
+      const tipos = [...document.querySelectorAll('.chk-usuario-tipo[data-container="solicitud-tipos-lista"]:checked')].map(chk => Number(chk.value));
 
       let valid = true;
       if (!nombre)   { showErr('err-s-nombre');   valid = false; }
@@ -1210,20 +959,10 @@
       if (!password) { showErr('err-s-password');  valid = false; }
       if (!valid) return;
 
-      const porApp = {};
-      document.querySelectorAll('.chk-solicitud-seccion:checked').forEach((chk) => {
-        const appId = chk.dataset.app;
-        porApp[appId] ??= { aplicacion_id: Number(appId), secciones: [] };
-        porApp[appId].secciones.push({
-          seccion_id: Number(chk.value),
-          nivel: document.querySelector(`.nivel-solicitud-seccion[data-seccion="${chk.value}"]`).value,
-        });
-      });
-
       const btn = document.getElementById('submit-solicitud');
       btn.disabled = true;
       try {
-        await apiPost(`/admin/solicitudes/${id}/aprobar`, { nombre, email, password, rol_global: rol, aplicaciones: Object.values(porApp) });
+        await apiPost(`/admin/solicitudes/${id}/aprobar`, { nombre, email, password, rol_global: rol, tipos });
         document.getElementById('modal-solicitud').classList.remove('open');
         loadSolicitudes();
         loadUsuarios();

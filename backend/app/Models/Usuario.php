@@ -65,6 +65,47 @@ class Usuario extends Authenticatable
             ->withTimestamps();
     }
 
+    public function tieneAccesoA(string $codigoApp): bool
+    {
+        return $this->accesoEfectivoQuery()->where('a.codigo', $codigoApp)->exists();
+    }
+
+    /** @return string[] códigos de aplicaciones a las que el usuario tiene al menos una sección efectiva */
+    public function codigosDeAplicacionesConAcceso(): array
+    {
+        return $this->accesoEfectivoQuery()->distinct()->pluck('a.codigo')->all();
+    }
+
+    /** @return array<string,string> codigo de sección => nivel efectivo ('ver'|'editar') para una app */
+    public function seccionesDeAplicacionPorTipo(string $codigoApp): array
+    {
+        return $this->accesoEfectivoQuery()
+            ->where('a.codigo', $codigoApp)
+            ->select('s.codigo as seccion_codigo', \Illuminate\Support\Facades\DB::raw("MAX(CASE WHEN tas.nivel = 'editar' THEN 1 ELSE 0 END) as gana_editar"))
+            ->groupBy('s.codigo')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$row->seccion_codigo => $row->gana_editar ? 'editar' : 'ver'])
+            ->all();
+    }
+
+    /**
+     * Base de la unión de permisos: todos los tipos ACTIVOS asignados al usuario, unidos a las
+     * secciones que cada uno otorga. "Gana editar" se resuelve en el llamador vía CASE WHEN,
+     * NUNCA con MAX() directo sobre la columna nivel -- el enum se guarda como texto y ordena
+     * alfabético ('editar' < 'ver'), así que MAX() de texto da el resultado contrario al
+     * pretendido (confirmado real en Postgres y SQLite, hallazgo architect #5).
+     */
+    private function accesoEfectivoQuery()
+    {
+        return \Illuminate\Support\Facades\DB::table('usuarios_tipos_usuario as ut')
+            ->join('tipos_usuario as t', 't.id', '=', 'ut.tipo_usuario_id')
+            ->join('tipo_usuario_aplicacion_secciones as tas', 'tas.tipo_usuario_id', '=', 't.id')
+            ->join('aplicaciones_secciones as s', 's.id', '=', 'tas.seccion_id')
+            ->join('aplicaciones_externas as a', 'a.id', '=', 's.aplicacion_id')
+            ->where('ut.usuario_id', $this->id)
+            ->where('t.activo', true);
+    }
+
     /** @return array<string,string> codigo de sección => nivel ('ver'|'editar') para una app dada */
     public function seccionesDeAplicacion(string $codigoApp): array
     {

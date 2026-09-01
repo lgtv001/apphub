@@ -8,16 +8,124 @@
   <script>
     var t = localStorage.getItem('apphub_theme_override');
     if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    // Mismo criterio que kpis-sso/dashboard.html: leer el estado del sidebar ANTES de pintar,
+    // si no se ve abierto un instante y recién después se colapsa (parpadeo feo).
+    if (localStorage.getItem('apphub_su_sidebar_collapsed') === '1') {
+      document.documentElement.classList.add('sidebar-collapsed');
+    }
   </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/assets/css/app.css"/>
   <style>
-    .tabs { display: flex; gap: 2px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
-    .tab {
-      padding: 8px 16px; font-size: 12px; font-weight: 600;
-      color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
-      margin-bottom: -1px; background: none; border-top: none; border-left: none; border-right: none;
+    /* ── Reskin "sala de control" (2026-08-31) ──────────────────────────────────────────────
+       Repinta esta página con la misma identidad visual de kpis-sso (paleta, tipografía,
+       sidebar) SIN tocar assets/css/app.css -- las demás páginas de apphub (login, launcher,
+       selector-proyecto, etc.) siguen exactamente igual. El truco: se mantienen los MISMOS
+       nombres de variable que ya usa esta página (--blue, --red, --bg-card, --text-muted...)
+       y solo se les cambia el VALOR acá abajo, en un <style> que carga después de app.css y
+       gana por orden. Todo el resto del CSS de esta página (admin-table, modales, badges)
+       sigue leyendo esas variables sin que haya que tocar una sola regla.
+       Además se agregan alias con los nombres que usa kpis-sso (--surface, --accent, --muted...)
+       para poder pegar su CSS de sidebar casi textual, sin traducir cada var() a mano. */
+    :root{
+      /* -- oscuro (default de apphub) -- */
+      --bg:#0a0a0c;--bg-card:#131316;--bg-row:#191a1e;
+      --border:rgba(255,255,255,.08);--border-lo:rgba(255,255,255,.04);
+      --hover-row:rgba(255,145,66,.14);--track:#191a1e;--track-strong:rgba(255,255,255,.16);
+      --text:#f2f0ea;--text-muted:#8c8c92;--text-dim:#55555c;
+      --blue:#ff9142;--blue-soft:#ff9142;--red:#ff6b6b;--green:#4fd18a;--orange:#e0611c;
+      /* alias con nombres de kpis-sso, mismos valores que arriba */
+      --surface:var(--bg-card);--surface2:var(--bg-row);--muted:var(--text-muted);--muted2:var(--text-dim);
+      --accent:var(--blue);--accent-ink:var(--blue-soft);--accent-deep:#e0611c;--accent2:#3fd6d6;
+      --accent-soft:rgba(255,145,66,.14);--accent-glow:rgba(255,145,66,.22);--border-strong:var(--track-strong);
+      --success:var(--green);--error:var(--red);
+      --font-head:'IBM Plex Sans Condensed',sans-serif;--font-body:'DM Sans',sans-serif;--font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
     }
-    .tab.active { color: var(--blue-soft); border-bottom-color: var(--blue); }
+    @media (prefers-color-scheme: light){
+      :root:not([data-theme="dark"]){
+        --bg:#f4f2ee;--bg-card:#ffffff;--bg-row:#ecebe6;
+        --border:rgba(10,10,12,.10);--border-lo:rgba(10,10,12,.05);
+        --hover-row:rgba(255,145,66,.14);--track:#ecebe6;--track-strong:rgba(10,10,12,.20);
+        --text:#1a1a1c;--text-muted:#5c5c62;--text-dim:#b8b6b0;
+        --blue:#ff9142;--blue-soft:#b84e0e;--red:#9c1f4d;--green:#1a7f4a;--orange:#e0611c;
+        --surface:var(--bg-card);--surface2:var(--bg-row);--muted:var(--text-muted);--muted2:var(--text-dim);
+        --accent:var(--blue);--accent-ink:var(--blue-soft);--accent-deep:#e0611c;--accent2:#036e94;
+        --accent-soft:rgba(255,145,66,.14);--accent-glow:rgba(255,145,66,.22);--border-strong:var(--track-strong);
+        --success:var(--green);--error:var(--red);
+      }
+    }
+    :root[data-theme="light"]{
+      --bg:#f4f2ee;--bg-card:#ffffff;--bg-row:#ecebe6;
+      --border:rgba(10,10,12,.10);--border-lo:rgba(10,10,12,.05);
+      --hover-row:rgba(255,145,66,.14);--track:#ecebe6;--track-strong:rgba(10,10,12,.20);
+      --text:#1a1a1c;--text-muted:#5c5c62;--text-dim:#b8b6b0;
+      --blue:#ff9142;--blue-soft:#b84e0e;--red:#9c1f4d;--green:#1a7f4a;--orange:#e0611c;
+      --surface:var(--bg-card);--surface2:var(--bg-row);--muted:var(--text-muted);--muted2:var(--text-dim);
+      --accent:var(--blue);--accent-ink:var(--blue-soft);--accent-deep:#e0611c;--accent2:#036e94;
+      --accent-soft:rgba(255,145,66,.14);--accent-glow:rgba(255,145,66,.22);--border-strong:var(--track-strong);
+      --success:var(--green);--error:var(--red);
+    }
+    :root[data-theme="dark"]{
+      --bg:#0a0a0c;--bg-card:#131316;--bg-row:#191a1e;
+      --border:rgba(255,255,255,.08);--border-lo:rgba(255,255,255,.04);
+      --hover-row:rgba(255,145,66,.14);--track:#191a1e;--track-strong:rgba(255,255,255,.16);
+      --text:#f2f0ea;--text-muted:#8c8c92;--text-dim:#55555c;
+      --blue:#ff9142;--blue-soft:#ff9142;--red:#ff6b6b;--green:#4fd18a;--orange:#e0611c;
+      --surface:var(--bg-card);--surface2:var(--bg-row);--muted:var(--text-muted);--muted2:var(--text-dim);
+      --accent:var(--blue);--accent-ink:var(--blue-soft);--accent-deep:#e0611c;--accent2:#3fd6d6;
+      --accent-soft:rgba(255,145,66,.14);--accent-glow:rgba(255,145,66,.22);--border-strong:var(--track-strong);
+      --success:var(--green);--error:var(--red);
+    }
+    body{background:var(--bg);color:var(--text);font-family:var(--font-body);display:flex;min-height:100vh;transition:background-color .15s ease,color .15s ease}
+    h1,h2,.modal-title{font-family:var(--font-head)}
+
+    /* -- Sidebar (reemplaza navbar+tabs de arriba), copiado del patrón de kpis-sso/dashboard -- */
+    .brand{display:flex;align-items:center;gap:.55rem}
+    .brand-mark{width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--accent-deep));display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:4px}
+    .brand-mark span{background:rgba(10,10,12,.55);border-radius:1.5px}
+    .brand-name{font-family:var(--font-mono);font-size:.92rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+    .su-badge-row{padding:0 1.1rem .8rem}
+    .su-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--red);background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.3);border-radius:100px;padding:2px 10px}
+    html.sidebar-collapsed .su-badge-row{display:none}
+
+    .sidebar{width:220px;min-width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;transition:width .18s ease,min-width .18s ease}
+    html.sidebar-collapsed .sidebar{width:60px;min-width:60px}
+    .sidebar-brand{padding:1.15rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:.4rem}
+    html.sidebar-collapsed .sidebar-brand{flex-direction:column;padding:1.15rem .5rem}
+    html.sidebar-collapsed .brand-name{display:none}
+    .sidebar-toggle{flex-shrink:0;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:none;border:none;border-radius:6px;color:var(--muted);cursor:pointer;transition:background .15s,color .15s}
+    .sidebar-toggle:hover{background:var(--surface2);color:var(--text)}
+    .sidebar-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+    .sidebar-nav{flex:1;padding:.7rem .55rem}
+    html.sidebar-collapsed .nav-item,html.sidebar-collapsed .sidebar-footer .nav-item{justify-content:center;padding:.6rem .4rem}
+    html.sidebar-collapsed .nav-item>span{display:none}
+    .nav-item{display:flex;align-items:center;gap:.65rem;width:100%;padding:.6rem .7rem;background:none;border:none;border-left:2px solid transparent;border-radius:8px;font-family:inherit;text-align:left;color:var(--muted);cursor:pointer;font-size:.86rem;line-height:1.2;transition:background .15s,color .15s,border-color .15s;user-select:none;text-decoration:none}
+    .nav-item:hover{background:var(--surface2);color:var(--text)}
+    .nav-item.active{background:var(--accent-soft);border-left-color:var(--accent);color:var(--text);font-weight:600}
+    .nav-item:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+    .nav-icon{flex-shrink:0}
+    .nav-badge{background:rgba(255,107,107,0.15);color:var(--red);border-radius:100px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:auto}
+    html.sidebar-collapsed .nav-badge{display:none}
+    .sidebar-footer{padding:.7rem .55rem;border-top:1px solid var(--border)}
+    .sidebar-user{display:flex;align-items:center;gap:8px;padding:.5rem .65rem .7rem;color:var(--muted);font-size:.8rem}
+    html.sidebar-collapsed .sidebar-user span{display:none}
+    .tema-selector{display:flex;gap:.3rem;padding:.5rem .55rem .2rem}
+    html.sidebar-collapsed .tema-selector{flex-direction:column}
+    .tema-opcion{flex:1;display:flex;align-items:center;justify-content:center;padding:.45rem;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+    .tema-opcion:hover{background:var(--surface2);color:var(--text)}
+    .tema-opcion.active{background:var(--accent-soft);border-color:var(--accent);color:var(--text)}
+    .tema-opcion:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+    main{flex:1;min-width:0}
+    .main-content{max-width:1200px;padding:1.6rem 2rem 2rem}
+    .page-header{margin-bottom:1.2rem}
+    .page-header h1{font-size:1.3rem}
+
+    /* -- Contenido de cada panel: mismo patrón visual de kpis-sso (card + admin-table) -- */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px}
+    .tab-panel.hidden{display:none}
 
     .admin-table { width: 100%; border-collapse: collapse; font-size: 12px; }
     .admin-table th {
@@ -28,21 +136,21 @@
     .admin-table td { padding: 8px 12px; border-bottom: 1px solid var(--border-lo); color: var(--text); }
     .admin-table tr:hover td { background: var(--hover-row); }
 
-    .code-badge { font-family: monospace; font-size: 11px; background: rgba(79,126,255,0.08); color: var(--blue-soft); padding: 2px 7px; border-radius: 4px; }
+    .code-badge { font-family: var(--font-mono); font-size: 11px; background: var(--accent-soft); color: var(--blue-soft); padding: 2px 7px; border-radius: 4px; }
     .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
     .dot-active   { background: var(--green); }
     .dot-archived { background: var(--text-dim); }
 
     .role-badge { padding: 2px 9px; border-radius: 100px; font-size: 10px; font-weight: 700; }
     .role-su      { background: rgba(255,107,107,0.1);  color: var(--red);      border: 1px solid rgba(255,107,107,0.25); }
-    .role-admin   { background: rgba(79,126,255,0.1);   color: var(--blue-soft); border: 1px solid rgba(79,126,255,0.25); }
+    .role-admin   { background: var(--accent-soft);      color: var(--blue-soft); border: 1px solid rgba(255,145,66,0.3); }
     .role-usuario { background: rgba(46,204,138,0.08);  color: var(--green);    border: 1px solid rgba(46,204,138,0.2); }
 
     .user-avatar {
       width: 30px; height: 30px; border-radius: 50%;
-      background: linear-gradient(135deg,#4F7EFF,#7C5DFF);
+      background: linear-gradient(135deg,var(--accent),var(--accent-deep));
       display: inline-flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 700; vertical-align: middle; margin-right: 8px;
+      font-size: 11px; font-weight: 700; vertical-align: middle; margin-right: 8px; color:#14100b;
     }
 
     .btn-row { display: flex; gap: 4px; }
@@ -70,14 +178,14 @@
     .form-group input,
     .form-group select {
       width: 100%; background: var(--bg); border: 1px solid var(--border);
-      border-radius: 6px; color: var(--text); padding: 8px 12px; font-size: 13px;
+      border-radius: 6px; color: var(--text); padding: 8px 12px; font-size: 13px; font-family: inherit;
     }
     .form-group input:focus,
     .form-group select:focus { outline: none; border-color: var(--blue); }
     .field-error { color: var(--red); font-size: 11px; margin-top: 4px; display: none; }
     .field-error.visible { display: block; }
 
-    .log-origin { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--track); color: var(--text-muted); }
+    .log-origin { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: var(--track); color: var(--text-muted); font-family: var(--font-mono); }
     .action-badge { font-size: 10px; font-weight: 600; }
     .action-CREATE  { color: var(--green); }
     .action-UPDATE  { color: var(--blue-soft); }
@@ -89,38 +197,97 @@
 </head>
 <body>
 
-  <nav class="navbar">
-    <div class="nav-left">
-      <span class="nav-brand">AppHub</span>
-      <span class="nav-sep">/</span>
-      <span class="nav-current" style="color:var(--red)">Panel SUPERUSER</span>
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand">
+      <div class="brand-mark"><span></span><span></span><span></span><span></span></div>
+      <div class="brand-name">apphub</div>
     </div>
-    <div class="nav-right">
-      <span id="user-name" class="nav-user"></span>
-      <a href="/app/selector-proyecto.html" class="btn btn-ghost btn-sm">Proyectos</a>
-      <div class="tema-selector" role="group" aria-label="Tema del sitio">
-        <button type="button" class="tema-opcion" data-tema="light" title="Claro" aria-label="Tema claro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.3" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.7v2M10 15.3v2M17.3 10h-2M4.7 10h-2M15.2 4.8l-1.4 1.4M6.2 13.8l-1.4 1.4M15.2 15.2l-1.4-1.4M6.2 6.2L4.8 4.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-        <button type="button" class="tema-opcion" data-tema="dark" title="Oscuro" aria-label="Tema oscuro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.3 12.4A6.8 6.8 0 017.6 3.7 7 7 0 1016.3 12.4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
-        <button type="button" class="tema-opcion" data-tema="auto" title="Sistema" aria-label="Seguir el tema del sistema"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 3a7 7 0 010 14z" fill="currentColor"/></svg></button>
-      </div>
-    </div>
+    <button type="button" class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Colapsar menú" title="Colapsar menú">
+      <svg width="15" height="15" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M4 5.5h12M4 10h12M4 14.5h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </div>
+  <div class="su-badge-row"><span class="su-badge">SUPERUSER</span></div>
+
+  <nav class="sidebar-nav">
+    <button type="button" class="nav-item active" data-tab="proyectos">
+      <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M3 6.2a1 1 0 011-1h3.6l1.4 1.8H16a1 1 0 011 1V15a1 1 0 01-1 1H4a1 1 0 01-1-1V6.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+      <span>Proyectos</span>
+    </button>
+    <button type="button" class="nav-item" data-tab="usuarios">
+      <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M4 17c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Usuarios</span>
+    </button>
+    <button type="button" class="nav-item" data-tab="tipos">
+      <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M10.5 3.5H16v5.5L9 16l-6-6 7.5-6.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle cx="13" cy="6.5" r="1" fill="currentColor"/>
+      </svg>
+      <span>Tipos de Usuario</span>
+    </button>
+    <button type="button" class="nav-item" data-tab="asignaciones">
+      <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M8.5 11.5l3-3M7 8.2L5.6 6.8a2.3 2.3 0 113.3-3.3l1.4 1.4M13 11.8l1.4 1.4a2.3 2.3 0 11-3.3 3.3L9.7 15.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Asignaciones</span>
+    </button>
+    <button type="button" class="nav-item" data-tab="aplicaciones">
+      <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <rect x="3.5" y="3.5" width="5.2" height="5.2" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="11.3" y="3.5" width="5.2" height="5.2" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="3.5" y="11.3" width="5.2" height="5.2" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="11.3" y="11.3" width="5.2" height="5.2" rx="1.2" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      <span>Aplicaciones</span>
+    </button>
+    <button type="button" class="nav-item" data-tab="solicitudes">
+      <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M3.5 11.5h3.8l1 1.8h3.4l1-1.8h3.8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M4 8l1.3-4.5a1 1 0 011-.7h7.4a1 1 0 011 .7L16 8v6a1 1 0 01-1 1H5a1 1 0 01-1-1V8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+      </svg>
+      <span>Solicitudes</span>
+      <span id="badge-solicitudes" class="nav-badge" style="display:none"></span>
+    </button>
+    <button type="button" class="nav-item" data-tab="logs">
+      <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M5 3.5h10v13l-2.5-1.6L10 16.5l-2.5-1.6L5 16.5v-13z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M7.2 7h5.6M7.2 9.6h5.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Logs</span>
+    </button>
   </nav>
 
-  <div class="container">
-    <div class="page-header">
-      <div>
-        <h1>Administración Global <span style="font-size:14px;vertical-align:middle;margin-left:8px;background:rgba(255,107,107,0.1);color:var(--red);border:1px solid rgba(255,107,107,0.3);border-radius:100px;padding:2px 10px;font-weight:700">SUPERUSER</span></h1>
-      </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <span class="user-avatar" style="width:22px;height:22px;font-size:9px;margin-right:0" id="user-avatar-mini"></span>
+      <span id="user-name"></span>
     </div>
+    <a href="/app/selector-proyecto.html" class="nav-item">
+      <svg class="nav-icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path d="M3 9.5L10 3l7 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5 8.2V16a1 1 0 001 1h2.5v-4.2h3V17H14a1 1 0 001-1V8.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Volver a Proyectos</span>
+    </a>
+    <div class="tema-selector" role="group" aria-label="Tema del sitio">
+      <button type="button" class="tema-opcion" data-tema="light" title="Claro" aria-label="Tema claro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="3.3" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.7v2M10 15.3v2M17.3 10h-2M4.7 10h-2M15.2 4.8l-1.4 1.4M6.2 13.8l-1.4 1.4M15.2 15.2l-1.4-1.4M6.2 6.2L4.8 4.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <button type="button" class="tema-opcion" data-tema="dark" title="Oscuro" aria-label="Tema oscuro"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M16.3 12.4A6.8 6.8 0 017.6 3.7 7 7 0 1016.3 12.4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+      <button type="button" class="tema-opcion" data-tema="auto" title="Sistema" aria-label="Seguir el tema del sistema"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M10 3a7 7 0 010 14z" fill="currentColor"/></svg></button>
+    </div>
+  </div>
+</aside>
 
-    <div class="tabs">
-      <button class="tab active" data-tab="proyectos">Proyectos</button>
-      <button class="tab"        data-tab="usuarios">Usuarios</button>
-      <button class="tab"        data-tab="tipos">Tipos de Usuario</button>
-      <button class="tab"        data-tab="asignaciones">Asignaciones</button>
-      <button class="tab"        data-tab="aplicaciones">Aplicaciones</button>
-      <button class="tab"        data-tab="solicitudes">Solicitudes <span id="badge-solicitudes" style="display:none;background:rgba(255,107,107,0.15);color:var(--red);border-radius:100px;padding:1px 7px;font-size:10px;font-weight:700;margin-left:4px"></span></button>
-      <button class="tab"        data-tab="logs">Logs</button>
+<main>
+  <div class="main-content">
+    <div class="page-header">
+      <h1>Administración Global</h1>
     </div>
 
     <!-- TAB: Proyectos -->
@@ -218,6 +385,7 @@
       </div>
     </div>
   </div>
+</main>
 
   <!-- Modal: Proyecto -->
   <div class="modal-overlay" id="modal-proyecto">
@@ -451,9 +619,10 @@
       window.location.href = '/app/selector-proyecto.html';
     }
     document.getElementById('user-name').textContent = user?.nombre ?? '';
+    document.getElementById('user-avatar-mini').textContent = initials(user?.nombre ?? '');
 
-    // ── Tabs ───────────────────────────────────────────────────────
-    const tabButtons = document.querySelectorAll('.tab');
+    // ── Sidebar nav (reemplaza los .tab de antes) ─────────────────────
+    const tabButtons = document.querySelectorAll('.nav-item[data-tab]');
     const tabPanels  = document.querySelectorAll('.tab-panel');
 
     tabButtons.forEach(btn => {
@@ -589,7 +758,7 @@
     }
 
     function initials(nombre) {
-      return nombre.split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('');
+      return (nombre ?? '').split(' ').slice(0,2).map(w => w[0]?.toUpperCase()).join('');
     }
 
     let editUsuarioId = null;
@@ -983,10 +1152,6 @@
     }
 
     window.openApprove = async (id) => {
-      const tbody = document.getElementById('tbody-solicitudes');
-      const rows  = [...tbody.querySelectorAll('tr')];
-      // Get data from the API cache via DOM is awkward; re-fetch inline by id from last load
-      // Instead we keep a local cache
       const r = solicitudesCache.find(x => x.id === id);
       if (!r) return;
       document.getElementById('s-id').value       = r.id;
@@ -1139,6 +1304,12 @@
       });
       sel.value = prev;
     }
+
+    // ── Sidebar toggle ─────────────────────────────────────────────
+    window.toggleSidebar = function toggleSidebar() {
+      const collapsado = document.documentElement.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('apphub_su_sidebar_collapsed', collapsado ? '1' : '0');
+    };
 
     // ── Init ───────────────────────────────────────────────────────
     loadProyectos();

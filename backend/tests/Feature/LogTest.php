@@ -135,4 +135,18 @@ class LogTest extends TestCase
         $origenes = collect($response->json('data'))->pluck('origen');
         $this->assertFalse($origenes->contains('aplicaciones_externas'));
     }
+
+    public function test_usuarios_aplicaciones_log_acepta_accion_update(): void
+    {
+        $token = $this->superuserToken();
+        $su    = Usuario::where('rol_global', 'superuser')->first();
+
+        LogService::log('usuarios_aplicaciones', null, $su->id, 'UPDATE', 777);
+
+        $response = $this->withToken($token)->getJson('/api/admin/logs');
+        $response->assertStatus(200);
+
+        $origenes = collect($response->json('data'))->pluck('origen');
+        $this->assertTrue($origenes->contains('usuarios_aplicaciones'));
+    }
 }

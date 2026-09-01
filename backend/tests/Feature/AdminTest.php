@@ -97,6 +97,56 @@ class AdminTest extends TestCase
         $this->assertDatabaseMissing('usuarios', ['id' => $usuario->id]);
     }
 
+    public function test_crear_usuario_con_tipos_los_asigna(): void
+    {
+        [, $token] = $this->superuserToken();
+        $tipo = TipoUsuario::factory()->create();
+
+        $resp = $this->withToken($token)->postJson('/api/admin/usuarios', [
+            'nombre'    => 'Con Tipo',
+            'email'     => 'contipo@test.com',
+            'password'  => 'secret1234',
+            'rol_global'=> 'usuario',
+            'tipos'     => [$tipo->id],
+        ])->assertStatus(201);
+
+        $usuario = Usuario::where('email', 'contipo@test.com')->firstOrFail();
+        $this->assertTrue($usuario->tiposUsuario->contains($tipo));
+        $this->assertDatabaseHas('usuarios_aplicaciones_log', ['entidad_id' => $usuario->id, 'accion' => 'CREATE']);
+    }
+
+    public function test_editar_usuario_sin_mandar_tipos_no_los_borra(): void
+    {
+        [, $token] = $this->superuserToken();
+        $tipo = TipoUsuario::factory()->create();
+        $usuario = Usuario::factory()->create();
+        $usuario->tiposUsuario()->attach($tipo->id);
+
+        $this->withToken($token)->putJson("/api/admin/usuarios/{$usuario->id}", [
+            'activo' => false,
+        ])->assertStatus(200);
+
+        $this->assertTrue($usuario->fresh()->tiposUsuario->contains($tipo));
+    }
+
+    public function test_editar_usuario_mandando_tipos_los_reemplaza(): void
+    {
+        [, $token] = $this->superuserToken();
+        $tipoViejo = TipoUsuario::factory()->create();
+        $tipoNuevo = TipoUsuario::factory()->create();
+        $usuario = Usuario::factory()->create();
+        $usuario->tiposUsuario()->attach($tipoViejo->id);
+
+        $this->withToken($token)->putJson("/api/admin/usuarios/{$usuario->id}", [
+            'tipos' => [$tipoNuevo->id],
+        ])->assertStatus(200);
+
+        $usuario->refresh();
+        $this->assertFalse($usuario->tiposUsuario->contains($tipoViejo));
+        $this->assertTrue($usuario->tiposUsuario->contains($tipoNuevo));
+        $this->assertDatabaseHas('usuarios_aplicaciones_log', ['entidad_id' => $usuario->id, 'accion' => 'UPDATE']);
+    }
+
     // ─── Tipos de usuario ────────────────────────────────────────
 
     public function test_superuser_puede_crear_tipo_usuario(): void

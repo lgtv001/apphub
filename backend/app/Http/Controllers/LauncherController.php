@@ -23,7 +23,7 @@ class LauncherController extends Controller
                 'nombre' => $app->nombre,
                 'url_base' => $app->activo ? $app->url_base : null,
                 'proximamente' => !$app->activo,
-                'secciones' => $app->activo ? $usuario->seccionesDeAplicacionPorTipo($app->codigo) : null,
+                'secciones' => $app->activo ? $usuario->seccionesDeAplicacion($app->codigo) : null,
             ])
             ->values();
 
@@ -63,7 +63,7 @@ class LauncherController extends Controller
             'sub'       => $usuario->email,
             'nombre'    => $usuario->nombre,
             'app'       => $app->codigo,
-            'secciones' => $usuario->seccionesDeAplicacionPorTipo($app->codigo),
+            'secciones' => $usuario->seccionesDeAplicacion($app->codigo),
             'tema'      => $tema,
             'nonce'     => Str::random(32),
             'exp'       => now()->addSeconds(60)->timestamp,

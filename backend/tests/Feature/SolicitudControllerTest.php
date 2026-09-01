@@ -48,7 +48,7 @@ class SolicitudControllerTest extends TestCase
         ])->assertStatus(201);
 
         $usuario = Usuario::where('email', 'nuevo2@test.com')->firstOrFail();
-        $this->assertSame(['metricas' => 'ver'], $usuario->seccionesDeAplicacionPorTipo('kpis-sso'));
+        $this->assertSame(['metricas' => 'ver'], $usuario->seccionesDeAplicacion('kpis-sso'));
     }
 
     public function test_aprobar_solicitud_con_tipos_registra_en_log(): void

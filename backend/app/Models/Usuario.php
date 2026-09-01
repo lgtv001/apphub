@@ -5,8 +5,7 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Laravel\Sanctum\HasApiTokens;
-use App\Models\AplicacionExterna;
-use App\Models\AplicacionSeccion;
+use Illuminate\Support\Facades\DB;
 
 class Usuario extends Authenticatable
 {
@@ -52,19 +51,6 @@ class Usuario extends Authenticatable
             ->withTimestamps();
     }
 
-    public function aplicaciones()
-    {
-        return $this->belongsToMany(AplicacionExterna::class, 'usuarios_aplicaciones', 'usuario_id', 'aplicacion_id')
-            ->withTimestamps();
-    }
-
-    public function seccionesAplicaciones()
-    {
-        return $this->belongsToMany(AplicacionSeccion::class, 'usuario_aplicacion_secciones', 'usuario_id', 'seccion_id')
-            ->withPivot('aplicacion_id', 'nivel')
-            ->withTimestamps();
-    }
-
     public function tieneAccesoA(string $codigoApp): bool
     {
         return $this->accesoEfectivoQuery()->where('a.codigo', $codigoApp)->exists();
@@ -77,11 +63,11 @@ class Usuario extends Authenticatable
     }
 
     /** @return array<string,string> codigo de sección => nivel efectivo ('ver'|'editar') para una app */
-    public function seccionesDeAplicacionPorTipo(string $codigoApp): array
+    public function seccionesDeAplicacion(string $codigoApp): array
     {
         return $this->accesoEfectivoQuery()
             ->where('a.codigo', $codigoApp)
-            ->select('s.codigo as seccion_codigo', \Illuminate\Support\Facades\DB::raw("MAX(CASE WHEN tas.nivel = 'editar' THEN 1 ELSE 0 END) as gana_editar"))
+            ->select('s.codigo as seccion_codigo', DB::raw("MAX(CASE WHEN tas.nivel = 'editar' THEN 1 ELSE 0 END) as gana_editar"))
             ->groupBy('s.codigo')
             ->get()
             ->mapWithKeys(fn ($row) => [$row->seccion_codigo => $row->gana_editar ? 'editar' : 'ver'])
@@ -97,22 +83,12 @@ class Usuario extends Authenticatable
      */
     private function accesoEfectivoQuery()
     {
-        return \Illuminate\Support\Facades\DB::table('usuarios_tipos_usuario as ut')
+        return DB::table('usuarios_tipos_usuario as ut')
             ->join('tipos_usuario as t', 't.id', '=', 'ut.tipo_usuario_id')
             ->join('tipo_usuario_aplicacion_secciones as tas', 'tas.tipo_usuario_id', '=', 't.id')
             ->join('aplicaciones_secciones as s', 's.id', '=', 'tas.seccion_id')
             ->join('aplicaciones_externas as a', 'a.id', '=', 's.aplicacion_id')
             ->where('ut.usuario_id', $this->id)
             ->where('t.activo', true);
-    }
-
-    /** @return array<string,string> codigo de sección => nivel ('ver'|'editar') para una app dada */
-    public function seccionesDeAplicacion(string $codigoApp): array
-    {
-        return $this->seccionesAplicaciones()
-            ->whereHas('aplicacion', fn ($q) => $q->where('codigo', $codigoApp))
-            ->get()
-            ->mapWithKeys(fn ($seccion) => [$seccion->codigo => $seccion->pivot->nivel])
-            ->all();
     }
 }

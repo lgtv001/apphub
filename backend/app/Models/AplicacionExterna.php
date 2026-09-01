@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -13,11 +12,5 @@ class AplicacionExterna extends Model
     public function secciones()
     {
         return $this->hasMany(AplicacionSeccion::class, 'aplicacion_id');
-    }
-
-    public function usuarios()
-    {
-        return $this->belongsToMany(Usuario::class, 'usuarios_aplicaciones', 'aplicacion_id', 'usuario_id')
-            ->withTimestamps();
     }
 }

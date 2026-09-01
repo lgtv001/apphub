@@ -3,15 +3,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\SolicitudAcceso;
-use App\Models\AplicacionSeccion;
 use App\Models\Usuario;
-use App\Models\UsuarioAplicacion;
-use App\Models\UsuarioAplicacionSeccion;
 use App\Services\LogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 
 class SolicitudController extends Controller
 {
@@ -26,46 +22,14 @@ class SolicitudController extends Controller
 
     public function approve(int $id, Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $data = $request->validate([
             'nombre'     => 'required|string|max:255',
             'email'      => 'required|email|unique:usuarios,email',
             'password'   => 'required|string|min:8',
             'rol_global' => 'required|in:superuser,admin,usuario',
-            'aplicaciones'              => 'array',
-            'aplicaciones.*.aplicacion_id' => 'required|exists:aplicaciones_externas,id',
-            'aplicaciones.*.secciones'      => 'array',
-            'aplicaciones.*.secciones.*.seccion_id' => 'required|exists:aplicaciones_secciones,id',
-            'aplicaciones.*.secciones.*.nivel'      => 'required|in:ver,editar',
+            'tipos'      => 'array',
+            'tipos.*'    => 'integer|distinct|exists:tipos_usuario,id',
         ]);
-
-        $validator->after(function ($validator) use ($request) {
-            foreach ($request->input('aplicaciones', []) as $i => $app) {
-                $aplicacionId = $app['aplicacion_id'] ?? null;
-                if (!$aplicacionId) {
-                    continue;
-                }
-
-                foreach ($app['secciones'] ?? [] as $j => $seccion) {
-                    $seccionId = $seccion['seccion_id'] ?? null;
-                    if (!$seccionId) {
-                        continue;
-                    }
-
-                    $perteneceALaApp = AplicacionSeccion::where('id', $seccionId)
-                        ->where('aplicacion_id', $aplicacionId)
-                        ->exists();
-
-                    if (!$perteneceALaApp) {
-                        $validator->errors()->add(
-                            "aplicaciones.{$i}.secciones.{$j}.seccion_id",
-                            'La sección seleccionada no pertenece a la aplicación indicada.'
-                        );
-                    }
-                }
-            }
-        });
-
-        $data = $validator->validate();
 
         $solicitud = SolicitudAcceso::findOrFail($id);
 
@@ -73,7 +37,7 @@ class SolicitudController extends Controller
             return response()->json(['message' => 'La solicitud ya fue procesada.'], 422);
         }
 
-        [$usuario, $grants] = DB::transaction(function () use ($data) {
+        $usuario = DB::transaction(function () use ($data) {
             $usuario = Usuario::create([
                 'nombre'        => $data['nombre'],
                 'email'         => $data['email'],
@@ -82,35 +46,21 @@ class SolicitudController extends Controller
                 'activo'        => true,
             ]);
 
-            $grants = [];
-
-            foreach ($data['aplicaciones'] ?? [] as $app) {
-                $grant = UsuarioAplicacion::updateOrCreate(
-                    ['usuario_id' => $usuario->id, 'aplicacion_id' => $app['aplicacion_id']],
-                    []
-                );
-
-                foreach ($app['secciones'] ?? [] as $seccion) {
-                    UsuarioAplicacionSeccion::updateOrCreate(
-                        ['usuario_id' => $usuario->id, 'seccion_id' => $seccion['seccion_id']],
-                        ['aplicacion_id' => $app['aplicacion_id'], 'nivel' => $seccion['nivel']]
-                    );
-                }
-
-                $grants[] = ['grant' => $grant, 'payload' => $app];
+            if (!empty($data['tipos'])) {
+                $usuario->tiposUsuario()->sync($data['tipos']);
             }
 
-            return [$usuario, $grants];
+            return $usuario;
         });
 
-        foreach ($grants as $entry) {
+        if (!empty($data['tipos'])) {
             LogService::log(
                 tabla:        'usuarios_aplicaciones',
                 proyectoId:   null,
                 usuarioId:    $request->user()->id,
                 accion:       'CREATE',
-                entidadId:    $entry['grant']->id,
-                datosDespues: $entry['payload'],
+                entidadId:    $usuario->id,
+                datosDespues: ['tipos' => $data['tipos']],
                 ip:           $request->ip()
             );
         }

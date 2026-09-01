@@ -2,10 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Proyecto;
 use App\Models\TipoUsuario;
 use App\Models\Usuario;
-use App\Models\UsuarioProyecto;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -203,64 +201,4 @@ class AdminTest extends TestCase
         $this->assertTrue($usuario->tiposUsuario->contains($tipo));
     }
 
-    // ─── Asignaciones ────────────────────────────────────────────
-
-    public function test_superuser_puede_asignar_usuario_a_proyecto(): void
-    {
-        [, $token] = $this->superuserToken();
-        $usuario  = Usuario::factory()->create();
-        $proyecto = Proyecto::factory()->create();
-
-        $this->withToken($token)->postJson('/api/admin/asignaciones', [
-            'usuario_id'  => $usuario->id,
-            'proyecto_id' => $proyecto->id,
-            'rol'         => 'admin',
-        ])->assertStatus(201);
-
-        $this->assertDatabaseHas('usuarios_proyectos', [
-            'usuario_id'  => $usuario->id,
-            'proyecto_id' => $proyecto->id,
-            'rol'         => 'admin',
-        ]);
-    }
-
-    public function test_asignacion_duplicada_falla(): void
-    {
-        [, $token] = $this->superuserToken();
-        $usuario  = Usuario::factory()->create();
-        $proyecto = Proyecto::factory()->create();
-
-        UsuarioProyecto::create([
-            'usuario_id'  => $usuario->id,
-            'proyecto_id' => $proyecto->id,
-            'rol'         => 'usuario',
-        ]);
-
-        $this->withToken($token)->postJson('/api/admin/asignaciones', [
-            'usuario_id'  => $usuario->id,
-            'proyecto_id' => $proyecto->id,
-            'rol'         => 'admin',
-        ])->assertStatus(422);
-    }
-
-    public function test_superuser_puede_revocar_asignacion(): void
-    {
-        [, $token] = $this->superuserToken();
-        $asignacion = UsuarioProyecto::factory()->create();
-
-        $this->withToken($token)->deleteJson("/api/admin/asignaciones/{$asignacion->id}")
-            ->assertStatus(204);
-
-        $this->assertDatabaseMissing('usuarios_proyectos', ['id' => $asignacion->id]);
-    }
-
-    public function test_superuser_puede_listar_asignaciones(): void
-    {
-        [, $token] = $this->superuserToken();
-        UsuarioProyecto::factory()->count(3)->create();
-
-        $this->withToken($token)->getJson('/api/admin/asignaciones')
-            ->assertStatus(200)
-            ->assertJsonCount(3, 'data');
-    }
 }

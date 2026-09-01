@@ -131,6 +131,14 @@ class AdminTest extends TestCase
         ])->assertStatus(200)->assertJsonPath('nombre', 'Actualizado');
     }
 
+    public function test_nombre_de_tipo_usuario_es_unico_a_nivel_de_base_de_datos(): void
+    {
+        TipoUsuario::factory()->create(['nombre' => 'Calidad']);
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+        TipoUsuario::query()->insert(['nombre' => 'Calidad', 'activo' => true, 'created_at' => now(), 'updated_at' => now()]);
+    }
+
     // ─── Asignaciones ────────────────────────────────────────────
 
     public function test_superuser_puede_asignar_usuario_a_proyecto(): void

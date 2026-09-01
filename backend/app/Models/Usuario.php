@@ -46,6 +46,12 @@ class Usuario extends Authenticatable
         return $this->hasMany(UsuarioProyecto::class, 'usuario_id');
     }
 
+    public function tiposUsuario()
+    {
+        return $this->belongsToMany(TipoUsuario::class, 'usuarios_tipos_usuario', 'usuario_id', 'tipo_usuario_id')
+            ->withTimestamps();
+    }
+
     public function aplicaciones()
     {
         return $this->belongsToMany(AplicacionExterna::class, 'usuarios_aplicaciones', 'usuario_id', 'aplicacion_id')

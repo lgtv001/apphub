@@ -139,6 +139,20 @@ class AdminTest extends TestCase
         TipoUsuario::query()->insert(['nombre' => 'Calidad', 'activo' => true, 'created_at' => now(), 'updated_at' => now()]);
     }
 
+    public function test_tipo_usuario_tiene_usuarios_y_secciones_con_nivel(): void
+    {
+        $app = \App\Models\AplicacionExterna::create(['codigo' => 'kpis-sso', 'nombre' => 'KPI', 'url_base' => 'https://x', 'activo' => true]);
+        $seccion = $app->secciones()->create(['codigo' => 'metricas', 'nombre' => 'Métricas']);
+        $tipo = TipoUsuario::factory()->create();
+        $tipo->secciones()->attach($seccion->id, ['nivel' => 'editar']);
+        $usuario = Usuario::factory()->create();
+        $usuario->tiposUsuario()->attach($tipo->id);
+
+        $this->assertTrue($tipo->usuarios->contains($usuario));
+        $this->assertSame('editar', $tipo->secciones->first()->pivot->nivel);
+        $this->assertTrue($usuario->tiposUsuario->contains($tipo));
+    }
+
     // ─── Asignaciones ────────────────────────────────────────────
 
     public function test_superuser_puede_asignar_usuario_a_proyecto(): void

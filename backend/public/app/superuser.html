@@ -663,10 +663,22 @@
         cont.innerHTML = `<span style="color:var(--text-muted);font-size:12px">No hay tipos de usuario definidos todavía.</span>`;
         return;
       }
-      cont.innerHTML = tiposCache.filter(t => t.activo).map(t => `
+      const activos = tiposCache.filter(t => t.activo);
+      // Un tipo asignado pero hoy inactivo no se puede desmarcar accidentalmente al guardar
+      // (checkbox marcado+disabled, pero igual entra en el querySelectorAll(':checked') del
+      // submit) -- si no se muestra, el submit manda `tipos` sin él y lo borra en silencio, y
+      // reactivar el tipo después NO restaura la asignación (spec: un tipo inactivo simplemente
+      // no aporta acceso hasta reactivarse, la asignación en sí debe sobrevivir).
+      const inactivosAsignados = tiposCache.filter(t => !t.activo && tiposSeleccionadosIds.includes(t.id));
+      cont.innerHTML = activos.map(t => `
         <label style="display:flex;align-items:center;gap:8px;font-weight:400;color:var(--text)">
           <input type="checkbox" class="chk-usuario-tipo" data-container="${containerId}" value="${t.id}" ${tiposSeleccionadosIds.includes(t.id) ? 'checked' : ''}/>
           <span>${escHtml(t.nombre)}</span>
+        </label>
+      `).join('') + inactivosAsignados.map(t => `
+        <label style="display:flex;align-items:center;gap:8px;font-weight:400;color:var(--text-muted)">
+          <input type="checkbox" class="chk-usuario-tipo" data-container="${containerId}" value="${t.id}" checked disabled/>
+          <span>${escHtml(t.nombre)} (inactivo)</span>
         </label>
       `).join('');
     }

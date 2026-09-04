@@ -96,7 +96,7 @@ Todos los hallazgos se incorporaron al spec (commit `fe1b158`) antes de seguir. 
 (tipos como única fuente de verdad, unión de permisos, "gana editar", `activo` como kill-switch)
 no cambió — lo que cambió fueron los detalles de CÓMO ejecutarlo sin romper nada.
 
-## Estado al cerrar esta sesión
+## Estado al cerrar esta sesión (2026-08-31)
 
 - Reskin: **desplegado en producción**, pendiente de que el usuario lo pruebe a fondo en el
   navegador (temas, las 6 secciones, el modal de Aplicaciones) y confirme antes de dar por
@@ -110,10 +110,75 @@ no cambió — lo que cambió fueron los detalles de CÓMO ejecutarlo sin romper
   sobre el diff completo (pedido explícito del usuario), y verificación manual de que el login a
   kpis-sso sigue funcionando de punta a punta tras la migración de datos.
 
+## Sesión 2026-09-01 (no documentada acá en su momento, reconstruida el 2026-09-04)
+
+Plan de 13 tareas escrito (`docs/superpowers/plans/2026-09-01-tipos-usuario-acceso-global.md`) y
+ejecutado con `subagent-driven-development` sobre worktree nativo `apphub/.worktrees/tipos`
+(branch `feat/tipos-usuario-acceso-global`). Las 12 tareas de código quedaron commiteadas y en
+verde (127 tests, 349 assertions). La Tarea 13 (revisión final `code-reviewer`+`security-reviewer`
+en paralelo, pedida por el spec) se dispatchó pero la sesión se cortó antes de registrar los
+veredictos — quedó como trabajo invisible hasta que se retomó.
+
+## Sesión 2026-09-04 — cierre real: revisión final, merge y deploy a producción
+
+Retomada la Tarea 13. Ambos agentes, corridos de nuevo sobre el diff completo (`2d07b8c..b01f873`,
+generando el SQL real contra la grammar de Postgres del `vendor/` del repo, no de memoria),
+coincidieron **de forma independiente** en:
+
+1. **CRITICAL/HIGH:** la migración que ensancha `usuarios_aplicaciones_log.accion` usaba
+   `->change()` sobre un enum, que en Postgres genera `ALTER COLUMN ... TYPE varchar(255)
+   check (...)` — sintaxis inválida ahí (`CHECK` no es válido dentro de `ALTER COLUMN...TYPE`).
+   Habría abortado `migrate --force` en el primer intento de deploy real. Los tests daban verde
+   porque `phpunit.xml` fuerza SQLite, donde `->change()` sí funciona (reconstruye la tabla).
+   **Arreglado** (commit `63323fd`): SQL crudo driver-aware, `DROP`/`ADD CONSTRAINT` en Postgres.
+2. **MEDIUM (contradecía el spec):** el modal de editar Usuario en `superuser.html` borraba en
+   silencio los Tipos de Usuario **inactivos** asignados a una persona al guardar cualquier otro
+   cambio — el spec dice explícito que la asignación debe sobrevivir la desactivación. **Arreglado**
+   (commit `1321375`): los tipos inactivos-pero-asignados se muestran marcados+disabled con
+   "(inactivo)", visibles y no desmarcables por accidente.
+3. Quedaron **deferred por decisión explícita del usuario** ("solo los 2 que bloquean/contradicen
+   el spec"): `entidad_id` ambiguo en el log de auditoría (mezcla ids de tipo y de usuario sin
+   discriminador), pre-flight de la migración de datos unidireccional (no chequea secciones
+   huérfanas sin grant padre), TOCTOU en `destroy()`, nombre de constraint mal formado en `down()`,
+   código muerto (`populateSelectFromCache`), y un XSS preexistente (no introducido por esta rama)
+   en el renderer de solicitudes. Detalle completo de cada uno en
+   `.superpowers/sdd/2026-09-01-tipos-usuario-acceso-global/progress.md`.
+
+**Merge + deploy real, en ese orden:**
+- `main` local mergeado (fast-forward, 15 commits) y pusheado a GitHub — de paso se encontró y
+  corrigió que el reskin del 31-ago (`2d07b8c`) nunca se había pusheado, `origin/main` estaba 2
+  commits atrás desde esa fecha.
+- Deploy vía `scp` + `docker cp` de los archivos cambiados al contenedor `apphub` en vivo (sin
+  bind mount, mismo patrón que el reskin), seguido de `docker restart` — que corrió
+  `migrate --force` real contra el Postgres de producción. **Las 3 migraciones nuevas corrieron sin
+  error**, confirmando en producción real que el fix del bug de Postgres funcionaba.
+- Verificado por script PHP corrido dentro del contenedor (lectura, sin tocar datos):
+  `luisgarnica@hotmail.cl` quedó con su propio tipo migrado ("Acceso SSO (migrado) —
+  luisgarnica@hotmail.cl"), acceso a `kpis-sso` con las 3 secciones exactas que tenía antes
+  (`metricas`/`historial`/`cargar`, todas en `editar`), y las tablas viejas
+  (`usuarios_aplicaciones`/`usuario_aplicacion_secciones`) quedaron dropeadas.
+- **Hallazgo fuera de alcance del spec, pedido corregir en la misma sesión:** el usuario notó que
+  `https://apphub.lglabproyect.com` (raíz) servía una versión vieja/mockup de apphub —
+  `public/index.html` con su propio formulario de login (que pegaba al mismo `/api/auth/login`
+  real, generando un segundo frente de entrada confuso), `public/dashboard.html` con tarjetas
+  casi todas muertas (`href="#"`, ya marcado antes como "maqueta vieja sin función" en un commit
+  de agosto), y `public/informe-desarrollo.html` como reporte estático. Nada de eso estaba
+  referenciado desde `/app/*.html` (verificado con grep antes de tocar). Reemplazados los 3 por un
+  redirect simple a `/app/login.html`, la única puerta de entrada real. Commiteado (`600f2cb`),
+  pusheado, y desplegado igual que el resto (archivos estáticos, no hizo falta reiniciar).
+
+**Pendiente para cerrar del todo:** verificación manual del usuario, en el navegador, del login
+real de punta a punta (`https://apphub.lglabproyect.com/app/login.html` → tarjeta de kpis-sso →
+handoff) — no se pudo automatizar porque no hay credenciales de superuser disponibles para esta
+sesión.
+
 ## Por qué importa para retomar
 
-Si se retoma esta sesión más adelante: leer primero el spec completo (ya tiene los 16 hallazgos
-incorporados, no hace falta re-correr `architect` sobre el mismo diseño salvo que cambie algo
-material). El dato más importante para no repetir investigación: **Proyectos/Asignaciones tiene 0
+**Todo lo del spec de tipos de usuario está implementado, revisado y desplegado en producción**
+(no falta escribir ni ejecutar ningún plan — si algo parece pendiente, revisar primero
+`.superpowers/sdd/2026-09-01-tipos-usuario-acceso-global/progress.md` antes de asumir que no se
+hizo). El dato más importante para no repetir investigación: **Proyectos/Asignaciones tiene 0
 filas reales, es seguro no tocarlo de raíz pero no hay que borrar `usuarios_proyectos`** — y
-**producción es Postgres, no confiar en `.env.example` del repo para saber el motor real.**
+**producción es Postgres, no confiar en `.env.example` del repo para saber el motor real** (y no
+confiar tampoco en que `->change()` de Laravel sobre un enum funcione igual en Postgres que en
+SQLite — no funciona).

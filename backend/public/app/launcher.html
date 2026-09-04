@@ -240,7 +240,7 @@
       </div>
     </div>
     <div class="nav-right">
-      <a href="/app/selector-proyecto.html" class="nav-link">AppHub interno</a>
+      <span id="nav-superuser-slot"></span>
       <div class="session">
         <div class="name" id="user-name"></div>
         <div class="role"><span class="status-dot"></span>Sesión activa</div>
@@ -265,12 +265,20 @@
   </div>
 
   <script type="module">
-    import { requireAuth, getUser, apiGet, apiPost, clearSession } from '/assets/js/api.js';
+    import { requireAuth, getUser, isSuperuser, apiGet, apiPost, clearSession } from '/assets/js/api.js';
     import { initSelectorTema } from '/assets/js/theme.js';
 
     requireAuth();
     initSelectorTema();
     document.getElementById('user-name').textContent = getUser()?.nombre ?? '';
+
+    // El link al panel de superusuario NUNCA existe en el HTML estático (arriba solo hay un
+    // <span> vacío) -- se inserta acá, solo si el usuario logueado es superuser, para que un
+    // usuario común no tenga forma de verlo ni de saber que existe (ni viendo el código fuente).
+    if (isSuperuser()) {
+      document.getElementById('nav-superuser-slot').innerHTML =
+        '<a href="/app/superuser.html" class="nav-link">Panel de Superusuario</a>';
+    }
     document.getElementById('btn-logout').addEventListener('click', () => {
       clearSession();
       window.location.href = '/app/login.html';

@@ -167,18 +167,36 @@ coincidieron **de forma independiente** en:
   redirect simple a `/app/login.html`, la única puerta de entrada real. Commiteado (`600f2cb`),
   pusheado, y desplegado igual que el resto (archivos estáticos, no hizo falta reiniciar).
 
-**Pendiente para cerrar del todo:** verificación manual del usuario, en el navegador, del login
-real de punta a punta (`https://apphub.lglabproyect.com/app/login.html` → tarjeta de kpis-sso →
-handoff) — no se pudo automatizar porque no hay credenciales de superuser disponibles para esta
-sesión.
+**Login real de punta a punta: CONFIRMADO por el usuario en el navegador** (mismo día) —
+`https://apphub.lglabproyect.com/app/login.html` → tarjeta de kpis-sso → handoff, sin error
+("login correcto"). **Task 13 del plan queda 100% cerrada** con esto — las 4 checkboxes del
+Step final marcadas en `docs/superpowers/plans/2026-09-01-tipos-usuario-acceso-global.md`.
+
+Del login real salieron 3 hallazgos más, todos arreglados y desplegados la misma sesión:
+
+1. **El botón "AppHub interno" del launcher** era visible para CUALQUIER usuario logueado sin
+   ningún gate de rol, y hasta ese momento no existía ningún link real al panel de superuser desde
+   el launcher (se llegaba solo escribiendo la URL a mano). Reemplazado por "Panel de
+   Superusuario" → `/app/superuser.html`, que **no existe en el HTML estático** (queda un `<span>`
+   vacío) y se inserta por JS solo si `isSuperuser()` — un usuario común no lo ve ni lo puede
+   descubrir viendo el código fuente. Commit `2382129`.
+2. **Auditoría de HTTPS/TLS de todo `*.lglabproyect.com`**, a pedido del usuario ("¿mi app trabaja
+   con https?"): certificados Universal+Backup de Cloudflare correctos y vigentes, pero
+   **"Always Use HTTPS" estaba apagado** — `http://apphub.lglabproyect.com` respondía 200 en texto
+   plano sin redirigir. El usuario lo activó desde el dashboard de Cloudflare, reverificado en vivo
+   con curl: ahora responde `301` → HTTPS. Detalle completo en
+   `Desktop\Server Aprendizaje\bitacora-fase8-monitoreo.md` (sección 2026-09-05) — no repetir esa
+   auditoría si se retoma este tema, ya está cerrada.
+3. (Ya documentado arriba pero vale repetirlo acá porque salió de la misma ronda de login real):
+   la raíz del dominio servía un mockup obsoleto — resuelto con el redirect a `/app/login.html`.
 
 ## Por qué importa para retomar
 
-**Todo lo del spec de tipos de usuario está implementado, revisado y desplegado en producción**
-(no falta escribir ni ejecutar ningún plan — si algo parece pendiente, revisar primero
-`.superpowers/sdd/2026-09-01-tipos-usuario-acceso-global/progress.md` antes de asumir que no se
-hizo). El dato más importante para no repetir investigación: **Proyectos/Asignaciones tiene 0
-filas reales, es seguro no tocarlo de raíz pero no hay que borrar `usuarios_proyectos`** — y
-**producción es Postgres, no confiar en `.env.example` del repo para saber el motor real** (y no
-confiar tampoco en que `->change()` de Laravel sobre un enum funcione igual en Postgres que en
-SQLite — no funciona).
+**Todo lo del spec de tipos de usuario está implementado, revisado, desplegado en producción Y
+verificado end-to-end por el usuario.** No queda nada pendiente de este spec — si algo parece
+pendiente, revisar primero `.superpowers/sdd/2026-09-01-tipos-usuario-acceso-global/progress.md`
+y el Task 13 del plan antes de asumir que no se hizo. El dato más importante para no repetir
+investigación: **Proyectos/Asignaciones tiene 0 filas reales, es seguro no tocarlo de raíz pero no
+hay que borrar `usuarios_proyectos`** — y **producción es Postgres, no confiar en `.env.example`
+del repo para saber el motor real** (y no confiar tampoco en que `->change()` de Laravel sobre un
+enum funcione igual en Postgres que en SQLite — no funciona).

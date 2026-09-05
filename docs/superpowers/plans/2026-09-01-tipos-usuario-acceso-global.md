@@ -2489,22 +2489,43 @@ git commit -m "feat: superuser.html -- acceso por Tipo de Usuario reemplaza Asig
 
 **Files:** ninguno nuevo — solo verificación.
 
-- [ ] **Step 1: Suite completo**
+- [x] **Step 1: Suite completo**
 
 Run: `php artisan test`
 Expected: PASS completo, 0 failures.
+**Hecho (2026-09-04):** 127 passed, 349 assertions, 0 failures.
 
-- [ ] **Step 2: `code-reviewer` + `security-reviewer` en paralelo sobre el diff completo**
+- [x] **Step 2: `code-reviewer` + `security-reviewer` en paralelo sobre el diff completo**
 
 Pedido explícito del spec ("Verificación", pendiente): `AccesoAplicacionController`/`AsignacionController` manejaban permisos directamente, la revisión de seguridad no es opcional acá. Correr ambos agentes contra `git diff main...HEAD` (o el rango de commits de este plan) antes de mergear.
+**Hecho (2026-09-04):** ambos agentes corrieron en paralelo sobre `main...HEAD` (2d07b8c..b01f873).
+Coincidieron de forma independiente en 1 hallazgo CRITICAL/HIGH (migración de `accion` genera SQL
+inválido en Postgres) y 1 MEDIUM (el modal de editar Usuario borraba en silencio tipos inactivos
+asignados, contradice el spec). Ambos arreglados — commits `63323fd` y `1321375`. Detalle completo
+en `.superpowers/sdd/2026-09-01-tipos-usuario-acceso-global/progress.md` (sección "Task 13").
 
-- [ ] **Step 3: Verificación manual en producción (post-deploy) — login de punta a punta**
+- [x] **Step 3: Verificación manual en producción (post-deploy) — login de punta a punta**
 
 Confirmar por SSH que el usuario real (`luisgarnica@hotmail.cl`) migrado por `AccesoLegacyMigrator` puede loguearse en kpis-sso de punta a punta (el handoff firmado de `LauncherController::entrar`) antes de dar la tarea por cerrada — es el único camino de producción que depende de `seccionesDeAplicacion()`. El panel de superuser se autoriza por `rol_global`, no por tipos, así que aunque algo saliera mal con la migración de datos no hay riesgo de lockout del panel (peor caso: reasignar el tipo a mano desde la UI).
+**Hecho (2026-09-04):** verificado primero por script PHP de solo lectura corrido dentro del
+contenedor (usuario migrado con su propio tipo, acceso a kpis-sso con las 3 secciones exactas que
+tenía antes). **Confirmado por el usuario en el navegador el mismo día** ("login correcto") —
+entró por `https://apphub.lglabproyect.com/app/login.html` y completó el handoff a kpis-sso de
+punta a punta. De ese mismo login real salieron 3 hallazgos nuevos, ya arreglados y desplegados:
+la raíz del dominio servía un mockup obsoleto con su propio login duplicado (commit `600f2cb`,
+redirect a `/app/login.html`), el link "AppHub interno" del launcher era visible para cualquier
+usuario sin gate de rol y no había ningún link real al panel de superuser (commit `2382129`,
+reemplazado por "Panel de Superusuario" solo visible para superusers), y una auditoría de
+HTTPS/TLS de todo `*.lglabproyect.com` a pedido del usuario (Cloudflare "Always Use HTTPS" estaba
+apagado, activado por el usuario, verificado con curl real que ahora redirige 301 — detalle en
+`Desktop\Server Aprendizaje\bitacora-fase8-monitoreo.md`, sección 2026-09-05).
 
-- [ ] **Step 4: Actualizar la bitácora**
+- [x] **Step 4: Actualizar la bitácora**
 
 Agregar una entrada a `docs/superpowers/bitacoras/2026-08-31-superuser-reskin-y-tipos-usuario.md` (o una nueva bitácora fechada el día del deploy) documentando: que se implementó, la fecha real de deploy, el resultado de `code-reviewer`/`security-reviewer`, y la confirmación del login end-to-end.
+**Hecho (2026-09-04/05):** bitácora actualizada con la sesión completa (revisión final, merge,
+deploy real, y los 3 hallazgos del login real). **Task 13 100% cerrada — el plan completo queda
+implementado, revisado, desplegado y verificado en producción.**
 
 ---
 

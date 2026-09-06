@@ -190,6 +190,15 @@ Del login real salieron 3 hallazgos más, todos arreglados y desplegados la mism
 3. (Ya documentado arriba pero vale repetirlo acá porque salió de la misma ronda de login real):
    la raíz del dominio servía un mockup obsoleto — resuelto con el redirect a `/app/login.html`.
 
+## Único pendiente cosmético (2026-09-06)
+
+Worktree `apphub/.worktrees/tipos` ya borrado del disco (`git worktree remove` + limpieza manual,
+tardó por un lock transitorio de Windows, resuelto con `rm -rf` directo). **La rama local
+`feat/tipos-usuario-acceso-global` sigue existiendo** (ya mergeada a `main` sin conflictos,
+fast-forward) — el usuario pidió dejar la decisión de borrarla para más tarde. No bloquea nada,
+es cero riesgo, solo prolijidad de repo. Si se retoma: `git branch -d feat/tipos-usuario-acceso-global`
+desde la raíz del repo (no hace falta `-D`, ya está mergeada).
+
 ## Por qué importa para retomar
 
 **Todo lo del spec de tipos de usuario está implementado, revisado, desplegado en producción Y
